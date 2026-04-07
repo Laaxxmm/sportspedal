@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Purchases - Sportspedal{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Purchase Orders</h2>
+    <div>
+        <a href="{{ url_for('purchases.download_purchases') }}" class="btn btn-outline-primary"><i class="bi bi-file-earmark-excel"></i> Download Excel</a>
+        <a href="{{ url_for('purchases.new_purchase') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Purchase</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr><th>Date</th><th>Order #</th><th>Supplier</th><th>Transporter</th><th>Status</th><th>Total</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+            {% for po in purchases %}
+            <tr>
+                <td>{{ po.order_date }}</td>
+                <td>{{ po.order_number or po.id }}</td>
+                <td>{{ po.supplier.name }}</td>
+                <td>{{ po.transporter or '-' }}</td>
+                <td><span class="badge bg-{{ 'success' if po.status == 'delivered' else ('info' if po.status == 'dispatched' else 'secondary') }}">{{ po.status }}</span></td>
+                <td>{{ "%.2f"|format(po.total_amount) }}</td>
+                <td>
+                    <a href="{{ url_for('purchases.view_purchase', id=po.id) }}" class="btn btn-sm btn-outline-info">View</a>
+                    <a href="{{ url_for('purchases.edit_purchase', id=po.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center text-muted py-4">No purchases yet</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+{% block title %}New Sale - Sportspedal{% endblock %}
+{% block content %}
+<h2 class="mb-4">New Sale</h2>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" id="sale-form">
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">Customer</label>
+                    <div class="input-group">
+                        <select name="customer_id" class="form-select" id="customer-select" required>
+                            <option value="">Select customer...</option>
+                            {% for c in customers %}
+                            <option value="{{ c.id }}" data-type="{{ c.customer_type }}" data-state="{{ c.state or 'Karnataka' }}">{{ c.name }} ({{ c.customer_type }})</option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addCustomerModal" title="Add New Customer">
+                            <i class="bi bi-person-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Date</label>
+                    <input type="date" name="sale_date" class="form-control" value="{{ sale.sale_date if sale else '' }}" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        {% for st in ['confirmed', 'dispatched', 'delivered'] %}
+                        <option value="{{ st }}">{{ st|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Transport Mode</label>
+                    <input type="text" name="transport_mode" class="form-control" value="">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">Transport</label>
+                    <input type="number" name="transport_charge" class="form-control" step="0.01" value="0" id="transport-charge">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">Discount</label>
+                    <input type="number" name="discount_amount" class="form-control" step="0.01" value="0" id="discount-amt">
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <label class="form-label">Notes</label>
+                    <input type="text" name="notes" class="form-control" value="">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Package Pricing</label>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" name="apply_package" value="1" id="apply-package">
+                        <label class="form-check-label" for="apply-package">Apply package price (skate+helmet+guards+bag)</label>
+                    </div>
+                </div>
+            </div>
+
+            <div id="package-info" class="alert alert-success d-none mb-3">
+                <i class="bi bi-check-circle"></i> <span id="package-msg"></span>
+            </div>
+
+            <hr>
+            <h5>Line Items</h5>
+            <table class="table table-sm" id="items-table">
+                <thead>
+                    <tr>
+                        <th style="width:35%">Product / Variant</th>
+                        <th>Stock</th>
+                        <th>Qty</th>
+                        <th>Unit Price</th>
+                        <th>GST%</th>
+                        <th>GST Amt</th>
+                        <th>Total</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="items-body"></tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4" class="text-end"><strong>Subtotal:</strong></td>
+                        <td></td>
+                        <td id="total-gst"><strong>0.00</strong></td>
+                        <td id="subtotal"><strong>0.00</strong></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td colspan="6" class="text-end"><strong>Grand Total (incl. transport - discount):</strong></td>
+                        <td id="grand-total"><strong>0.00</strong></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+            <button type="button" class="btn btn-sm btn-outline-success mb-3" id="add-row"><i class="bi bi-plus"></i> Add Item</button>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success">Create Sale</button>
+                <a href="{{ url_for('sales.list_sales') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- Add Customer Modal -->
+<div class="modal fade" id="addCustomerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-person-plus"></i> Quick Add Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Customer Name *</label>
+                    <input type="text" id="new-cust-name" class="form-control" required>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Type</label>
+                        <select id="new-cust-type" class="form-select">
+                            <option value="public">Public</option>
+                            <option value="coach">Coach</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Phone</label>
+                        <input type="text" id="new-cust-phone" class="form-control">
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">City</label>
+                        <input type="text" id="new-cust-city" class="form-control" value="Bangalore">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">State</label>
+                        <input type="text" id="new-cust-state" class="form-control" value="Karnataka">
+                    </div>
+                </div>
+                <div id="quick-add-error" class="alert alert-danger d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-new-customer"><i class="bi bi-check-lg"></i> Add & Select</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const stockMap = {{ stock_map|tojson }};
+const variantData = {
+    {% for v, p in variants %}
+    "{{ v.id }}": {cost: {{ v.effective_cost }}, coach: {{ v.effective_coach_price }}, mrp: {{ v.effective_mrp }}, gst: {{ p.gst_percent }}, category: "{{ p.category }}", productName: "{{ p.name }}"},
+    {% endfor %}
+};
+const packagePrices = {
+    {% for pkg in packages %}
+    "{{ pkg.skate_product.name }}": {coach: {{ pkg.coach_price }}, public: {{ pkg.public_price }}, name: "{{ pkg.name }}"},
+    {% endfor %}
+};
+
+const variantOptions = `<option value="">Select...</option>
+{% for v, p in variants %}{% if stock_map.get(v.id, 0) > 0 %}<option value="{{ v.id }}">{{ p.name }} - {{ v.color or '' }} {{ v.size or '' }} ({{ v.sku_code }}) [Stock: {{ stock_map.get(v.id, 0) }}]</option>
+{% endif %}{% endfor %}`;
+
+function getCustomerType() {
+    const sel = document.getElementById('customer-select');
+    const opt = sel.selectedOptions[0];
+    return opt ? (opt.dataset.type || 'public') : 'public';
+}
+
+function newRow() {
+    return `<tr class="item-row">
+        <td><select name="variant_id[]" class="form-select form-select-sm variant-select" required>${variantOptions}</select></td>
+        <td class="stock-cell">-</td>
+        <td><input type="number" name="qty[]" class="form-control form-control-sm qty" value="1" min="1"></td>
+        <td><input type="number" name="unit_price[]" class="form-control form-control-sm unit-price" step="0.01" value="0"></td>
+        <td><input type="number" name="gst_percent[]" class="form-control form-control-sm gst-pct" step="0.1" value="12"></td>
+        <td class="gst-amt">0.00</td>
+        <td class="row-total">0.00</td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-trash"></i></button></td>
+    </tr>`;
+}
+
+document.getElementById('add-row').addEventListener('click', () => {
+    document.getElementById('items-body').insertAdjacentHTML('beforeend', newRow());
+    bindEvents();
+});
+
+function recalc() {
+    let totalGst = 0, subtotal = 0;
+    document.querySelectorAll('.item-row').forEach(row => {
+        const qty = parseFloat(row.querySelector('.qty')?.value || 0);
+        const price = parseFloat(row.querySelector('.unit-price')?.value || 0);
+        const gstPct = parseFloat(row.querySelector('.gst-pct')?.value || 0);
+        const taxable = qty * price;
+        const gst = taxable * gstPct / 100;
+        row.querySelector('.gst-amt').textContent = gst.toFixed(2);
+        row.querySelector('.row-total').textContent = (taxable + gst).toFixed(2);
+        totalGst += gst;
+        subtotal += taxable + gst;
+    });
+    document.getElementById('total-gst').innerHTML = `<strong>${totalGst.toFixed(2)}</strong>`;
+    document.getElementById('subtotal').innerHTML = `<strong>${subtotal.toFixed(2)}</strong>`;
+
+    const transport = parseFloat(document.getElementById('transport-charge').value || 0);
+    const discount = parseFloat(document.getElementById('discount-amt').value || 0);
+    document.getElementById('grand-total').innerHTML = `<strong>${(subtotal + transport - discount).toFixed(2)}</strong>`;
+
+    checkPackage();
+}
+
+function checkPackage() {
+    const categories = {};
+    document.querySelectorAll('.variant-select').forEach(sel => {
+        const vid = sel.value;
+        if (vid && variantData[vid]) {
+            const cat = variantData[vid].category;
+            if (!categories[cat]) categories[cat] = variantData[vid].productName;
+        }
+    });
+    const hasAll = categories['skates'] && categories['helmet'] && categories['guards'] && categories['bag'];
+    const infoDiv = document.getElementById('package-info');
+    if (hasAll) {
+        const skateName = categories['skates'];
+        const pkg = packagePrices[skateName];
+        if (pkg) {
+            const custType = getCustomerType();
+            const price = custType === 'coach' ? pkg.coach : pkg.public;
+            document.getElementById('package-msg').textContent = `${pkg.name} detected! Package price: Rs. ${price} (${custType})`;
+            infoDiv.classList.remove('d-none');
+            return;
+        }
+    }
+    infoDiv.classList.add('d-none');
+}
+
+function bindEvents() {
+    document.querySelectorAll('.variant-select').forEach(sel => {
+        sel.onchange = function() {
+            const vid = this.value;
+            const row = this.closest('tr');
+            if (vid && variantData[vid]) {
+                const d = variantData[vid];
+                const custType = getCustomerType();
+                row.querySelector('.unit-price').value = custType === 'coach' ? d.coach : d.mrp;
+                row.querySelector('.gst-pct').value = d.gst;
+                row.querySelector('.stock-cell').textContent = stockMap[vid] || 0;
+            }
+            recalc();
+        };
+    });
+    document.querySelectorAll('.qty, .unit-price, .gst-pct').forEach(el => { el.oninput = recalc; });
+    document.querySelectorAll('.remove-row').forEach(btn => {
+        btn.onclick = function() { this.closest('tr').remove(); recalc(); };
+    });
+}
+
+document.getElementById('customer-select').addEventListener('change', function() {
+    document.querySelectorAll('.variant-select').forEach(sel => {
+        if (sel.value) sel.dispatchEvent(new Event('change'));
+    });
+});
+document.getElementById('transport-charge').addEventListener('input', recalc);
+document.getElementById('discount-amt').addEventListener('input', recalc);
+document.getElementById('apply-package').addEventListener('change', recalc);
+
+bindEvents();
+document.getElementById('add-row').click();
+
+// Quick Add Customer
+document.getElementById('save-new-customer').addEventListener('click', function() {
+    const name = document.getElementById('new-cust-name').value.trim();
+    if (!name) {
+        document.getElementById('quick-add-error').textContent = 'Name is required';
+        document.getElementById('quick-add-error').classList.remove('d-none');
+        return;
+    }
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('customer_type', document.getElementById('new-cust-type').value);
+    formData.append('phone', document.getElementById('new-cust-phone').value);
+    formData.append('city', document.getElementById('new-cust-city').value);
+    formData.append('state', document.getElementById('new-cust-state').value);
+
+    fetch('/customers/quick-add', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('quick-add-error').textContent = data.error;
+                document.getElementById('quick-add-error').classList.remove('d-none');
+                return;
+            }
+            const sel = document.getElementById('customer-select');
+            const opt = new Option(`${data.name} (${data.type})`, data.id);
+            opt.dataset.type = data.type;
+            opt.dataset.state = document.getElementById('new-cust-state').value;
+            sel.add(opt);
+            sel.value = data.id;
+            sel.dispatchEvent(new Event('change'));
+
+            // Close modal and reset
+            bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
+            document.getElementById('new-cust-name').value = '';
+            document.getElementById('new-cust-phone').value = '';
+            document.getElementById('quick-add-error').classList.add('d-none');
+        });
+});
+</script>
+{% endblock %}

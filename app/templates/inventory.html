@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Inventory - Sportspedal{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Inventory</h2>
+    <a href="{{ url_for('inventory.download_inventory') }}" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel"></i> Download Excel</a>
+</div>
+
+{% set zero_items = inventory | selectattr('stock', 'le', 0) | selectattr('inward', 'gt', 0) | list %}
+{% set zero_never = inventory | selectattr('stock', 'le', 0) | selectattr('inward', 'le', 0) | list %}
+
+<!-- Restock Alert Banner -->
+{% if zero_items %}
+<div class="detail-card alert-card mb-4" style="border-left-color: var(--sp-rose);">
+    <div class="detail-header" style="background: var(--sp-rose-light); color: #991b1b;">
+        <span><i class="bi bi-exclamation-octagon-fill"></i> Restock Required - {{ zero_items|length }} items at 0 stock</span>
+        <a href="{{ url_for('purchases.new_purchase') }}" class="btn btn-sm btn-danger"><i class="bi bi-cart-plus"></i> Create Purchase Order</a>
+    </div>
+    <div class="detail-body">
+        <table class="table mb-0">
+            <thead><tr><th>Product</th><th>Color</th><th>Size</th><th>SKU</th><th class="text-center">Was In Stock</th><th class="text-center">Sold Out</th><th>Priority</th></tr></thead>
+            <tbody>
+            {% for item in zero_items %}
+            <tr style="background: var(--sp-rose-light);">
+                <td><strong>{{ item.product_name }}</strong></td>
+                <td>{{ item.color }}</td>
+                <td>{{ item.size }}</td>
+                <td><code>{{ item.sku }}</code></td>
+                <td class="text-center">{{ item.inward }}</td>
+                <td class="text-center">{{ item.outward }}</td>
+                <td><span class="badge" style="background: var(--sp-rose);">URGENT</span></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Color</th>
+                    <th>Size</th>
+                    <th>SKU</th>
+                    <th class="text-center">Inward</th>
+                    <th class="text-center">Outward</th>
+                    <th class="text-center">Stock</th>
+                    <th class="text-end">Cost Price</th>
+                    <th class="text-end">Stock Value</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% set ns = namespace(total_value=0, total_stock=0) %}
+            {% for item in inventory %}
+            <tr class="{{ 'stock-zero' if item.stock <= 0 else ('stock-low' if item.stock < 3 else '') }}"
+                {% if item.stock <= 0 and item.inward > 0 %}style="background: var(--sp-rose-light) !important; border-left: 3px solid var(--sp-rose);"{% endif %}>
+                <td><strong>{{ item.product_name }}</strong></td>
+                <td><span class="badge bg-secondary">{{ item.category }}</span></td>
+                <td>{{ item.color }}</td>
+                <td>{{ item.size }}</td>
+                <td><code>{{ item.sku }}</code></td>
+                <td class="text-center">{{ item.inward }}</td>
+                <td class="text-center">{{ item.outward }}</td>
+                <td class="text-center">
+                    {% if item.stock <= 0 and item.inward > 0 %}
+                    <span class="badge" style="background: var(--sp-rose); font-size: 0.85rem;">0 - RESTOCK</span>
+                    {% elif item.stock <= 0 %}
+                    <strong style="color: var(--sp-gray-400);">0</strong>
+                    {% elif item.stock < 3 %}
+                    <strong style="color: var(--sp-amber);">{{ item.stock }}</strong>
+                    {% else %}
+                    <strong>{{ item.stock }}</strong>
+                    {% endif %}
+                </td>
+                <td class="text-end">{{ "%.2f"|format(item.cost_price) }}</td>
+                <td class="text-end">{{ "%.2f"|format(item.stock_value) }}</td>
+            </tr>
+            {% set ns.total_value = ns.total_value + item.stock_value %}
+            {% set ns.total_stock = ns.total_stock + item.stock %}
+            {% else %}
+            <tr><td colspan="10" class="text-center text-muted py-4">No products in inventory. <a href="{{ url_for('products.new_product') }}">Add products first</a></td></tr>
+            {% endfor %}
+            </tbody>
+            {% if inventory %}
+            <tfoot class="table-light">
+                <tr>
+                    <td colspan="7" class="text-end"><strong>Totals:</strong></td>
+                    <td class="text-center"><strong>{{ ns.total_stock }}</strong></td>
+                    <td></td>
+                    <td class="text-end"><strong>{{ "%.2f"|format(ns.total_value) }}</strong></td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+</div>
+
+<div class="mt-2">
+    <small class="text-muted">
+        <span class="px-2" style="background: var(--sp-rose-light); border-left: 3px solid var(--sp-rose);">Sold out - restock needed</span>
+        <span class="px-2 stock-low ms-2">Low stock (&lt;3)</span>
+        <span class="px-2 ms-2" style="color: var(--sp-gray-400);">Never stocked</span>
+    </small>
+</div>
+{% endblock %}

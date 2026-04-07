@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Settings - Sportspedal{% endblock %}
+{% block content %}
+<h2 class="mb-4">Business Settings</h2>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST">
+            <h5>Business Details</h5>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Business Name</label>
+                    <input type="text" name="name" class="form-control" value="{{ profile.name }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">GSTIN</label>
+                    <input type="text" name="gstin" class="form-control" value="{{ profile.gstin or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">PAN</label>
+                    <input type="text" name="pan" class="form-control" value="{{ profile.pan or '' }}">
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Address</label>
+                    <input type="text" name="address" class="form-control" value="{{ profile.address or '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">City</label>
+                    <input type="text" name="city" class="form-control" value="{{ profile.city or '' }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">State</label>
+                    <input type="text" name="state" class="form-control" value="{{ profile.state or '' }}">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">Code</label>
+                    <input type="text" name="state_code" class="form-control" value="{{ profile.state_code or '' }}">
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Phone</label>
+                    <input type="text" name="phone" class="form-control" value="{{ profile.phone or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" class="form-control" value="{{ profile.email or '' }}">
+                </div>
+            </div>
+
+            <hr>
+            <h5>Bank Details (for invoices)</h5>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Bank Name</label>
+                    <input type="text" name="bank_name" class="form-control" value="{{ profile.bank_name or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Account Number</label>
+                    <input type="text" name="bank_account" class="form-control" value="{{ profile.bank_account or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">IFSC Code</label>
+                    <input type="text" name="bank_ifsc" class="form-control" value="{{ profile.bank_ifsc or '' }}">
+                </div>
+            </div>
+
+            <hr>
+            <h5>Invoice Settings</h5>
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">Invoice Prefix</label>
+                    <input type="text" name="invoice_prefix" class="form-control" value="{{ profile.invoice_prefix or 'SP' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Challan Prefix</label>
+                    <input type="text" name="challan_prefix" class="form-control" value="{{ profile.challan_prefix or 'DC' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Financial Year</label>
+                    <input type="text" name="current_fy" class="form-control" value="{{ profile.current_fy or '2025-26' }}" placeholder="2025-26">
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+        </form>
+    </div>
+</div>
+
+{% if packages %}
+<div class="card mt-4">
+    <div class="card-header"><strong>Package Prices</strong></div>
+    <div class="card-body p-0">
+        <table class="table mb-0">
+            <thead class="table-light">
+                <tr><th>Package</th><th>Skate</th><th>Coach Price</th><th>Public Price</th></tr>
+            </thead>
+            <tbody>
+            {% for pkg in packages %}
+            <tr>
+                <td><strong>{{ pkg.name }}</strong></td>
+                <td>{{ pkg.skate_product.name }}</td>
+                <td>{{ "%.2f"|format(pkg.coach_price) }}</td>
+                <td>{{ "%.2f"|format(pkg.public_price) }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

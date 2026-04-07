@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Purchase #{{ purchase.order_number or purchase.id }} - Sportspedal{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Purchase Order #{{ purchase.order_number or purchase.id }}</h2>
+    <div>
+        <a href="{{ url_for('purchases.edit_purchase', id=purchase.id) }}" class="btn btn-outline-primary">Edit</a>
+        <a href="{{ url_for('purchases.list_purchases') }}" class="btn btn-outline-secondary">Back</a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <p><strong>Supplier:</strong> {{ purchase.supplier.name }}</p>
+                <p><strong>Date:</strong> {{ purchase.order_date }}</p>
+                <p><strong>Location:</strong> {{ purchase.location }}</p>
+                <p><strong>Transporter:</strong> {{ purchase.transporter or '-' }}</p>
+                <p><strong>Status:</strong> <span class="badge bg-{{ 'success' if purchase.status == 'delivered' else 'warning' }}">{{ purchase.status }}</span></p>
+                {% if purchase.notes %}<p><strong>Notes:</strong> {{ purchase.notes }}</p>{% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><strong>Items</strong></div>
+    <div class="card-body p-0">
+        <table class="table mb-0">
+            <thead class="table-light">
+                <tr><th>#</th><th>Product</th><th>SKU</th><th>Dispatched</th><th>Received</th><th>Unit Price</th><th>GST%</th><th>GST Amt</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+            {% for item in purchase.items %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ item.variant.display_name }}</td>
+                <td><code>{{ item.variant.sku_code }}</code></td>
+                <td>{{ item.quantity_dispatched }}</td>
+                <td>{{ item.quantity_received }}</td>
+                <td>{{ "%.2f"|format(item.unit_price) }}</td>
+                <td>{{ item.gst_percent }}%</td>
+                <td>{{ "%.2f"|format(item.gst_amount) }}</td>
+                <td>{{ "%.2f"|format(item.total_amount) }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+            <tfoot class="table-light">
+                <tr>
+                    <td colspan="7" class="text-end"><strong>Total:</strong></td>
+                    <td><strong>{{ "%.2f"|format(purchase.total_gst) }}</strong></td>
+                    <td><strong>{{ "%.2f"|format(purchase.total_amount) }}</strong></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% endblock %}

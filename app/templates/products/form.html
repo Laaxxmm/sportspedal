@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if product else 'New' }} Product - Sportspedal{% endblock %}
+{% block content %}
+<h2 class="mb-4">{{ 'Edit' if product else 'New' }} Product</h2>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('products.edit_product', id=product.id) if product else url_for('products.new_product') }}">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Product Name</label>
+                    <input type="text" name="name" class="form-control" value="{{ product.name if product else '' }}" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Category</label>
+                    <select name="category" class="form-select" required>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}" {{ 'selected' if product and product.category == cat }}>{{ cat|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">HSN Code</label>
+                    <input type="text" name="hsn_code" class="form-control" value="{{ product.hsn_code if product else '' }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">GST %</label>
+                    <input type="number" name="gst_percent" class="form-control" step="0.1" value="{{ product.gst_percent if product else 12.0 }}">
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">Cost Price (from supplier)</label>
+                    <input type="number" name="cost_price" class="form-control" step="0.01" value="{{ product.cost_price if product else 0 }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Coach Price (fixed)</label>
+                    <input type="number" name="coach_price" class="form-control" step="0.01" value="{{ product.coach_price if product else 0 }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">MRP (public price)</label>
+                    <input type="number" name="mrp" class="form-control" step="0.01" value="{{ product.mrp if product else 0 }}">
+                </div>
+            </div>
+
+            {% if not product %}
+            <hr>
+            <h5>Variants</h5>
+            <p class="text-muted small">Select colors and sizes to auto-generate variants. Leave blank for products without variants (e.g., bags).</p>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Colors</label>
+                    <div>
+                        {% for c in colors %}
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" name="colors" value="{{ c }}" id="color-{{ c }}">
+                            <label class="form-check-label" for="color-{{ c }}">{{ c }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Sizes</label>
+                    <div>
+                        {% for s in sizes %}
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" name="sizes" value="{{ s }}" id="size-{{ s }}">
+                            <label class="form-check-label" for="size-{{ s }}">{{ s }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">{{ 'Update' if product else 'Create' }} Product</button>
+                <a href="{{ url_for('products.list_products') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+
+        {% if product %}
+        <hr>
+        <h5>Add Variant</h5>
+        <form method="POST" action="{{ url_for('products.add_variant', id=product.id) }}" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label">Color</label>
+                <select name="color" class="form-select form-select-sm">
+                    <option value="">None</option>
+                    {% for c in colors %}
+                    <option value="{{ c }}">{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label">Size</label>
+                <select name="size" class="form-select form-select-sm">
+                    <option value="">None</option>
+                    {% for s in sizes %}
+                    <option value="{{ s }}">{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-sm btn-success">Add Variant</button>
+            </div>
+        </form>
+
+        <h5 class="mt-3">Existing Variants</h5>
+        <table class="table table-sm">
+            <thead><tr><th>SKU</th><th>Color</th><th>Size</th></tr></thead>
+            <tbody>
+            {% for v in product.variants.filter_by(is_active=True).all() %}
+            <tr>
+                <td><code>{{ v.sku_code }}</code></td>
+                <td>{{ v.color or '-' }}</td>
+                <td>{{ v.size or '-' }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

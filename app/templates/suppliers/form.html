@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if supplier else 'New' }} Supplier - Sportspedal{% endblock %}
+{% block content %}
+<h2 class="mb-4">{{ 'Edit' if supplier else 'New' }} Supplier</h2>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Name</label>
+                    <input type="text" name="name" class="form-control" value="{{ supplier.name if supplier else '' }}" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">GSTIN</label>
+                    <input type="text" name="gstin" class="form-control" value="{{ supplier.gstin if supplier else '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Phone</label>
+                    <input type="text" name="phone" class="form-control" value="{{ supplier.phone if supplier else '' }}">
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" class="form-control" value="{{ supplier.email if supplier else '' }}">
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label">Address</label>
+                    <input type="text" name="address" class="form-control" value="{{ supplier.address if supplier else '' }}">
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">{{ 'Update' if supplier else 'Create' }} Supplier</button>
+                <a href="{{ url_for('suppliers.list_suppliers') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

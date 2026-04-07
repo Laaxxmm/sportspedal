@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+data/sportspedal.db
+data/backups/
+~$*.xlsx
+.claude/
+migrations/
+*.egg-info/
+dist/
+build/
+.venv/
+venv/

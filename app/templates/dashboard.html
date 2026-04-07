@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Sportspedal{% endblock %}
+{% block content %}
+
+<!-- Header -->
+<div class="dash-header">
+    <div>
+        <h2>Dashboard</h2>
+        <div class="dash-date">{{ now.strftime('%A, %d %B %Y') if now else '' }}</div>
+    </div>
+    <div class="quick-actions d-flex gap-2">
+        <a href="{{ url_for('purchases.new_purchase') }}" class="btn btn-outline-primary"><i class="bi bi-cart-plus"></i> New Purchase</a>
+        <a href="{{ url_for('sales.new_sale') }}" class="btn btn-success"><i class="bi bi-plus-lg"></i> New Sale</a>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="kpi-card kpi-emerald">
+            <div class="kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
+            <div class="kpi-label">Total Revenue</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(total_revenue) }}</div>
+            <div class="kpi-sub">{{ recent_sales|length }} sales completed</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="kpi-card kpi-rose">
+            <div class="kpi-icon"><i class="bi bi-box-arrow-in-down"></i></div>
+            <div class="kpi-label">Purchase Cost</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(total_purchase_cost) }}</div>
+            <div class="kpi-sub">{{ recent_purchases|length }} orders from supplier</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="kpi-card {{ 'kpi-emerald' if gross_profit >= 0 else 'kpi-rose' }}">
+            <div class="kpi-icon"><i class="bi bi-{{ 'arrow-up-circle' if gross_profit >= 0 else 'arrow-down-circle' }}"></i></div>
+            <div class="kpi-label">Gross Profit</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(gross_profit) }}</div>
+            <div class="kpi-sub">{{ "{:.1f}".format(profit_margin) }}% margin on revenue</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="kpi-card kpi-indigo">
+            <div class="kpi-icon"><i class="bi bi-archive"></i></div>
+            <div class="kpi-label">Stock Value</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(stock_value) }}</div>
+            <div class="kpi-sub">{{ total_stock_units }} units on hand</div>
+        </div>
+    </div>
+</div>
+
+<!-- Coach vs Public Split -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="split-card split-coach">
+            <div class="split-header">
+                <i class="bi bi-person-badge-fill"></i> Coach Sales
+            </div>
+            <div class="split-body">
+                <div class="row">
+                    <div class="col-3 split-metric">
+                        <div class="metric-value" style="color: var(--sp-blue)">{{ coach_data.orders }}</div>
+                        <div class="metric-label">Orders</div>
+                    </div>
+                    <div class="col-3 split-metric">
+                        <div class="metric-value" style="color: var(--sp-blue)">{{ coach_data.qty }}</div>
+                        <div class="metric-label">Qty Sold</div>
+                    </div>
+                    <div class="col-3 split-metric">
+                        <div class="metric-value" style="color: var(--sp-emerald)">Rs.{{ "{:,.0f}".format(coach_data.revenue) }}</div>
+                        <div class="metric-label">Revenue</div>
+                    </div>
+                    <div class="col-3 split-metric">
+                        <div class="metric-value" style="color: {{ 'var(--sp-emerald)' if coach_data.profit >= 0 else 'var(--sp-rose)' }}">Rs.{{ "{:,.0f}".format(coach_data.profit) }}</div>
+                        <div class="metric-label">Profit</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="split-card split-public">
+            <div class="split-header">
+                <i class="bi bi-people-fill"></i> Public / Customer Sales
+            </div>
+            <div class="split-body">
+                <div class="row">
+                    <div class="col-3 split-metric">
+                        <div class="metric-value" style="color: var(--sp-indigo)">{{ public_data.orders }}</div>
+                        <div class="metric-label">Orders</div>
+                    </div>
+                    <div class="col-3 split-metric">
+                        <div class="metric-value" style="color: var(--sp-indigo)">{{ public_data.qty }}</div>
+                        <div class="metric-label">Qty Sold</div>
+                    </div>
+                    <div class="col-3 split-metric">
+                        <div class="metric-value" style="color: var(--sp-emerald)">Rs.{{ "{:,.0f}".format(public_data.revenue) }}</div>
+                        <div class="metric-label">Revenue</div>
+                    </div>
+                    <div class="col-3 split-metric">
+                        <div class="metric-value" style="color: {{ 'var(--sp-emerald)' if public_data.profit >= 0 else 'var(--sp-rose)' }}">Rs.{{ "{:,.0f}".format(public_data.profit) }}</div>
+                        <div class="metric-label">Profit</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Financial Breakdown -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="detail-card">
+            <div class="detail-header">
+                <span><i class="bi bi-calculator"></i> Financial Breakdown</span>
+            </div>
+            <div class="p-4">
+                <div class="row">
+                    <!-- Purchase Side -->
+                    <div class="col-md-4 fin-section">
+                        <h6><i class="bi bi-cart-fill"></i> Purchases</h6>
+                        <div class="fin-row">
+                            <span class="fin-label">Taxable Amount</span>
+                            <span class="fin-value">Rs.{{ "{:,.2f}".format(purchase_taxable) }}</span>
+                        </div>
+                        <div class="fin-row">
+                            <span class="fin-label">GST Paid (Input)</span>
+                            <span class="fin-value">Rs.{{ "{:,.2f}".format(purchase_gst) }}</span>
+                        </div>
+                        <div class="fin-row fin-total">
+                            <span class="fin-label">Total Paid</span>
+                            <span class="fin-value" style="color: var(--sp-rose)">Rs.{{ "{:,.2f}".format(total_purchase_cost) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Sales Side -->
+                    <div class="col-md-4 fin-section" style="border-left: 1px solid var(--sp-gray-200); padding-left: 24px;">
+                        <h6><i class="bi bi-receipt-cutoff"></i> Sales</h6>
+                        <div class="fin-row">
+                            <span class="fin-label">Total Revenue</span>
+                            <span class="fin-value">Rs.{{ "{:,.2f}".format(total_revenue) }}</span>
+                        </div>
+                        <div class="fin-row">
+                            <span class="fin-label">GST Collected</span>
+                            <span class="fin-value">Rs.{{ "{:,.2f}".format(total_sale_gst) }}</span>
+                        </div>
+                        <div class="fin-row fin-total">
+                            <span class="fin-label">COGS</span>
+                            <span class="fin-value">Rs.{{ "{:,.2f}".format(total_cogs) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Profit Highlight -->
+                    <div class="col-md-4 d-flex align-items-center justify-content-center">
+                        <div class="profit-highlight {{ 'profit-positive' if gross_profit >= 0 else 'profit-negative' }}" style="width: 100%;">
+                            <div><i class="bi bi-{{ 'trophy-fill' if gross_profit >= 0 else 'exclamation-triangle-fill' }}" style="font-size: 1.5rem; opacity: 0.6;"></i></div>
+                            <div class="profit-amount">Rs.{{ "{:,.2f}".format(gross_profit) }}</div>
+                            <div class="profit-label">Gross Profit ({{ "{:.1f}".format(profit_margin) }}%)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Restock Required -->
+{% if zero_stock %}
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="detail-card" style="border-left: 4px solid var(--sp-rose);">
+            <div class="detail-header" style="background: var(--sp-rose-light); color: #991b1b;">
+                <span><i class="bi bi-exclamation-octagon-fill"></i> Restock Required - {{ zero_stock|length }} items sold out</span>
+                <a href="{{ url_for('purchases.new_purchase') }}" class="btn btn-sm btn-danger"><i class="bi bi-cart-plus"></i> Create Purchase Order</a>
+            </div>
+            <div class="detail-body">
+                <table class="table">
+                    <thead>
+                        <tr><th>Product</th><th>Color</th><th>Size</th><th>SKU</th><th class="text-center">Total Sold</th><th>Priority</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for item in zero_stock %}
+                    <tr style="background: var(--sp-rose-light);">
+                        <td><strong>{{ item.product_name }}</strong></td>
+                        <td>{{ item.color }}</td>
+                        <td>{{ item.size }}</td>
+                        <td><code>{{ item.sku }}</code></td>
+                        <td class="text-center fw-bold">{{ item.outward }}</td>
+                        <td><span class="badge" style="background: var(--sp-rose); font-size: 0.8rem;"><i class="bi bi-arrow-repeat"></i> RESTOCK</span></td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Low Stock Warning -->
+{% if low_stock %}
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="detail-card alert-card">
+            <div class="detail-header">
+                <span><i class="bi bi-exclamation-triangle-fill"></i> Low Stock Warning - {{ low_stock|length }} items below 3 units</span>
+            </div>
+            <div class="detail-body">
+                <table class="table">
+                    <thead>
+                        <tr><th>Product</th><th>Color</th><th>Size</th><th class="text-center">Stock</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for item in low_stock %}
+                    <tr class="stock-low">
+                        <td><strong>{{ item.product_name }}</strong></td>
+                        <td>{{ item.color }}</td>
+                        <td>{{ item.size }}</td>
+                        <td class="text-center"><strong>{{ item.stock }}</strong></td>
+                        <td><span class="badge" style="background: var(--sp-amber);">Low Stock</span></td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Recent Activity -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="detail-card">
+            <div class="detail-header">
+                <span><i class="bi bi-cart-plus-fill"></i> Recent Purchases</span>
+                <a href="{{ url_for('purchases.new_purchase') }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus"></i> New</a>
+            </div>
+            <div class="detail-body">
+                <table class="table">
+                    <thead><tr><th>Date</th><th>Supplier</th><th>Status</th><th class="text-end">Total</th></tr></thead>
+                    <tbody>
+                    {% for po in recent_purchases %}
+                    <tr>
+                        <td>{{ po.order_date }}</td>
+                        <td>{{ po.supplier.name }}</td>
+                        <td><span class="badge badge-{{ po.status }}">{{ po.status }}</span></td>
+                        <td class="text-end fw-semibold">Rs.{{ "{:,.0f}".format(po.total_amount) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-center py-4" style="color: var(--sp-gray-400);">No purchases yet</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="detail-card">
+            <div class="detail-header">
+                <span><i class="bi bi-receipt-cutoff"></i> Recent Sales</span>
+                <a href="{{ url_for('sales.new_sale') }}" class="btn btn-sm btn-success"><i class="bi bi-plus"></i> New</a>
+            </div>
+            <div class="detail-body">
+                <table class="table">
+                    <thead><tr><th>Date</th><th>Invoice</th><th>Customer</th><th class="text-end">Total</th></tr></thead>
+                    <tbody>
+                    {% for sale in recent_sales %}
+                    <tr>
+                        <td>{{ sale.sale_date }}</td>
+                        <td><code style="font-size: 0.8rem;">{{ sale.invoice_number }}</code></td>
+                        <td>{{ sale.customer.name }}</td>
+                        <td class="text-end fw-semibold">Rs.{{ "{:,.0f}".format(sale.grand_total) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-center py-4" style="color: var(--sp-gray-400);">No sales yet</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

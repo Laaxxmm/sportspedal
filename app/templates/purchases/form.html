@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if purchase else 'New' }} Purchase - Sportspedal{% endblock %}
+{% block content %}
+<h2 class="mb-4">{{ 'Edit' if purchase else 'New' }} Purchase Order</h2>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" id="purchase-form">
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">Supplier</label>
+                    <select name="supplier_id" class="form-select" required>
+                        <option value="">Select supplier...</option>
+                        {% for s in suppliers %}
+                        <option value="{{ s.id }}" {{ 'selected' if purchase and purchase.supplier_id == s.id }}>{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Order #</label>
+                    <input type="text" name="order_number" class="form-control" value="{{ purchase.order_number if purchase else '' }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Date</label>
+                    <input type="date" name="order_date" class="form-control" value="{{ purchase.order_date if purchase else '' }}" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Transporter</label>
+                    <input type="text" name="transporter" class="form-control" value="{{ purchase.transporter if purchase else '' }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        {% for st in ['ordered', 'dispatched', 'delivered'] %}
+                        <option value="{{ st }}" {{ 'selected' if purchase and purchase.status == st }}>{{ st|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Location</label>
+                    <input type="text" name="location" class="form-control" value="{{ purchase.location if purchase else 'Bangalore' }}">
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label">Notes</label>
+                    <input type="text" name="notes" class="form-control" value="{{ purchase.notes if purchase else '' }}">
+                </div>
+            </div>
+
+            <hr>
+            <h5>Line Items</h5>
+            <table class="table table-sm" id="items-table">
+                <thead>
+                    <tr>
+                        <th style="width:35%">Product / Variant</th>
+                        <th>Qty Dispatched</th>
+                        <th>Qty Received</th>
+                        <th>Unit Price</th>
+                        <th>GST%</th>
+                        <th>GST Amt</th>
+                        <th>Total</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="items-body">
+                    {% if purchase %}
+                    {% for item in purchase.items %}
+                    <tr class="item-row">
+                        <td>
+                            <select name="variant_id[]" class="form-select form-select-sm variant-select" required>
+                                <option value="">Select...</option>
+                                {% for v, p in variants %}
+                                <option value="{{ v.id }}" data-cost="{{ v.effective_cost }}" data-gst="{{ p.gst_percent }}"
+                                    {{ 'selected' if v.id == item.variant_id }}>{{ p.name }} - {{ v.color or '' }} {{ v.size or '' }} ({{ v.sku_code }})</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td><input type="number" name="qty_dispatched[]" class="form-control form-control-sm" value="{{ item.quantity_dispatched }}" min="0"></td>
+                        <td><input type="number" name="qty_received[]" class="form-control form-control-sm qty-received" value="{{ item.quantity_received }}" min="0"></td>
+                        <td><input type="number" name="unit_price[]" class="form-control form-control-sm unit-price" step="0.01" value="{{ item.unit_price }}"></td>
+                        <td><input type="number" name="gst_percent[]" class="form-control form-control-sm gst-pct" step="0.1" value="{{ item.gst_percent }}"></td>
+                        <td class="gst-amt">{{ "%.2f"|format(item.gst_amount) }}</td>
+                        <td class="row-total">{{ "%.2f"|format(item.total_amount) }}</td>
+                        <td><button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-trash"></i></button></td>
+                    </tr>
+                    {% endfor %}
+                    {% endif %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="5" class="text-end"><strong>Grand Total:</strong></td>
+                        <td id="total-gst"><strong>0.00</strong></td>
+                        <td id="grand-total"><strong>0.00</strong></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+            <button type="button" class="btn btn-sm btn-outline-success mb-3" id="add-row"><i class="bi bi-plus"></i> Add Item</button>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">{{ 'Update' if purchase else 'Create' }} Purchase</button>
+                <a href="{{ url_for('purchases.list_purchases') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const variantOptions = `<option value="">Select...</option>
+{% for v, p in variants %}<option value="{{ v.id }}" data-cost="{{ v.effective_cost }}" data-gst="{{ p.gst_percent }}">{{ p.name }} - {{ v.color or '' }} {{ v.size or '' }} ({{ v.sku_code }})</option>
+{% endfor %}`;
+
+function newRow() {
+    return `<tr class="item-row">
+        <td><select name="variant_id[]" class="form-select form-select-sm variant-select" required>${variantOptions}</select></td>
+        <td><input type="number" name="qty_dispatched[]" class="form-control form-control-sm" value="0" min="0"></td>
+        <td><input type="number" name="qty_received[]" class="form-control form-control-sm qty-received" value="0" min="0"></td>
+        <td><input type="number" name="unit_price[]" class="form-control form-control-sm unit-price" step="0.01" value="0"></td>
+        <td><input type="number" name="gst_percent[]" class="form-control form-control-sm gst-pct" step="0.1" value="12"></td>
+        <td class="gst-amt">0.00</td>
+        <td class="row-total">0.00</td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-trash"></i></button></td>
+    </tr>`;
+}
+
+document.getElementById('add-row').addEventListener('click', () => {
+    document.getElementById('items-body').insertAdjacentHTML('beforeend', newRow());
+    bindEvents();
+});
+
+function recalc() {
+    let totalGst = 0, grandTotal = 0;
+    document.querySelectorAll('.item-row').forEach(row => {
+        const qty = parseFloat(row.querySelector('.qty-received')?.value || 0);
+        const price = parseFloat(row.querySelector('.unit-price')?.value || 0);
+        const gstPct = parseFloat(row.querySelector('.gst-pct')?.value || 0);
+        const taxable = qty * price;
+        const gst = taxable * gstPct / 100;
+        row.querySelector('.gst-amt').textContent = gst.toFixed(2);
+        row.querySelector('.row-total').textContent = (taxable + gst).toFixed(2);
+        totalGst += gst;
+        grandTotal += taxable + gst;
+    });
+    document.getElementById('total-gst').innerHTML = `<strong>${totalGst.toFixed(2)}</strong>`;
+    document.getElementById('grand-total').innerHTML = `<strong>${grandTotal.toFixed(2)}</strong>`;
+}
+
+function bindEvents() {
+    document.querySelectorAll('.variant-select').forEach(sel => {
+        sel.onchange = function() {
+            const opt = this.selectedOptions[0];
+            const row = this.closest('tr');
+            if (opt && opt.dataset.cost) {
+                row.querySelector('.unit-price').value = opt.dataset.cost;
+                row.querySelector('.gst-pct').value = opt.dataset.gst || 12;
+            }
+            recalc();
+        };
+    });
+    document.querySelectorAll('.qty-received, .unit-price, .gst-pct').forEach(el => { el.oninput = recalc; });
+    document.querySelectorAll('.remove-row').forEach(btn => {
+        btn.onclick = function() { this.closest('tr').remove(); recalc(); };
+    });
+}
+
+bindEvents();
+recalc();
+{% if not purchase %}document.getElementById('add-row').click();{% endif %}
+</script>
+{% endblock %}
