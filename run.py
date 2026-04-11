@@ -160,36 +160,31 @@ def seed_and_import():
 
 
 with app.app_context():
+    from app.config import DATA_DIR
+    db_path = os.path.join(DATA_DIR, 'sportspedal.db')
+
+    def fresh_start():
+        """Delete DB file and create from scratch."""
+        print("=== Fresh database setup ===")
+        db.session.remove()
+        db.engine.dispose()
+        if os.path.exists(db_path):
+            os.remove(db_path)
+            print("  Old database deleted")
+        db.create_all()
+        seed_and_import()
+
     try:
         db.create_all()
-        # Check if schema is current by testing a new column
-        try:
-            User.query.count()
-            if Product.query.count() == 0:
-                seed_and_import()
-            elif User.query.count() == 0:
-                print("=== Existing DB, creating superadmin ===")
-                loc = Location.query.first()
-                if not loc:
-                    loc = Location(state='Karnataka', district='Bengaluru Urban', state_code='29')
-                    db.session.add(loc)
-                    db.session.flush()
-                admin = User(username='admin', full_name='Super Admin', role='superadmin')
-                admin.set_password('admin123')
-                db.session.add(admin)
-                for key in PERMISSION_KEYS:
-                    db.session.add(AdminPermission(user_id=admin.id, permission_key=key, is_granted=True))
-                db.session.commit()
-                print("  Superadmin created: admin / admin123")
-        except Exception:
-            # Schema mismatch -- drop all and recreate fresh
-            print("=== Schema mismatch detected, rebuilding database ===")
-            db.session.rollback()
-            db.drop_all()
-            db.create_all()
+        # Test if schema is current
+        User.query.count()
+        if Product.query.count() == 0:
             seed_and_import()
+        elif User.query.count() == 0:
+            fresh_start()
     except Exception as e:
-        print(f"DB init error: {e}")
+        print(f"=== Schema error: {e} ===")
+        fresh_start()
 
 if __name__ == '__main__':
     app.run(debug=True, port=int(os.environ.get('PORT', 5000)), use_reloader=False)
