@@ -126,11 +126,18 @@ class Product(db.Model):
     cost_price = db.Column(db.Float, default=0)
     coach_price = db.Column(db.Float, default=0)
     mrp = db.Column(db.Float, default=0)
+    image_path = db.Column(db.String(200))  # WebP thumbnail path
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     variants = db.relationship('ProductVariant', backref='product', lazy='dynamic', cascade='all, delete-orphan')
+
+    @property
+    def image_url(self):
+        if self.image_path:
+            return f'/static/img/products/{self.image_path}'
+        return None
 
 
 class ProductVariant(db.Model):

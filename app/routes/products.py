@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required
 from app import db
 from app.models import Product, ProductVariant
+from app.services.image import save_product_image, delete_product_image, allowed_file
 
 bp = Blueprint('products', __name__)
 
@@ -42,6 +43,13 @@ def new_product():
             coach_price=float(request.form.get('coach_price', 0)),
             mrp=float(request.form.get('mrp', 0)),
         )
+
+        # Handle image upload
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename and allowed_file(file.filename):
+                product.image_path = save_product_image(file)
+
         db.session.add(product)
         db.session.flush()
 
@@ -51,27 +59,17 @@ def new_product():
         if colors and sizes:
             for color in colors:
                 for size in sizes:
-                    variant = ProductVariant(
-                        product_id=product.id,
-                        color=color,
-                        size=size,
-                        sku_code=generate_sku(product.name, color, size),
-                    )
-                    db.session.add(variant)
+                    db.session.add(ProductVariant(
+                        product_id=product.id, color=color, size=size,
+                        sku_code=generate_sku(product.name, color, size)))
         elif colors:
             for color in colors:
-                variant = ProductVariant(
-                    product_id=product.id,
-                    color=color,
-                    sku_code=generate_sku(product.name, color, None),
-                )
-                db.session.add(variant)
+                db.session.add(ProductVariant(
+                    product_id=product.id, color=color,
+                    sku_code=generate_sku(product.name, color, None)))
         else:
-            variant = ProductVariant(
-                product_id=product.id,
-                sku_code=generate_sku(product.name, None, None),
-            )
-            db.session.add(variant)
+            db.session.add(ProductVariant(
+                product_id=product.id, sku_code=generate_sku(product.name, None, None)))
 
         db.session.commit()
         flash(f'Product "{product.name}" created with {product.variants.count()} variant(s).', 'success')
@@ -92,6 +90,21 @@ def edit_product(id):
         product.cost_price = float(request.form.get('cost_price', 0))
         product.coach_price = float(request.form.get('coach_price', 0))
         product.mrp = float(request.form.get('mrp', 0))
+
+        # Handle image upload
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename and allowed_file(file.filename):
+                # Delete old image
+                if product.image_path:
+                    delete_product_image(product.image_path)
+                product.image_path = save_product_image(file)
+
+        # Handle image removal
+        if request.form.get('remove_image') == '1' and product.image_path:
+            delete_product_image(product.image_path)
+            product.image_path = None
+
         db.session.commit()
         flash(f'Product "{product.name}" updated.', 'success')
         return redirect(url_for('products.list_products'))

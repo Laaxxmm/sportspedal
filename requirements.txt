@@ -6,5 +6,6 @@ fpdf2
 num2words
 openpyxl
 pandas
+Pillow
 python-dotenv
 gunicorn

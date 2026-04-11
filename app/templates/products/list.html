@@ -12,6 +12,7 @@
             <thead class="table-light">
                 <tr>
                     <th></th>
+                    <th style="width:50px">Photo</th>
                     <th>Name</th>
                     <th>Category</th>
                     <th>Cost Price</th>
@@ -30,6 +31,15 @@
                         <i class="bi bi-chevron-down"></i>
                     </button>
                 </td>
+                <td>
+                    {% if product.image_url %}
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}" style="width:40px; height:40px; object-fit:cover; border-radius:6px;">
+                    {% else %}
+                    <div style="width:40px; height:40px; background:var(--sp-gray-100); border-radius:6px; display:flex; align-items:center; justify-content:center;">
+                        <i class="bi bi-image text-muted" style="font-size:0.9rem;"></i>
+                    </div>
+                    {% endif %}
+                </td>
                 <td><strong>{{ product.name }}</strong></td>
                 <td><span class="badge bg-secondary">{{ product.category }}</span></td>
                 <td>{{ "%.2f"|format(product.cost_price) }}</td>
@@ -46,7 +56,7 @@
                 </td>
             </tr>
             <tr class="collapse" id="variants-{{ product.id }}">
-                <td colspan="9" class="bg-light p-3">
+                <td colspan="10" class="bg-light p-3">
                     <table class="table table-sm mb-0">
                         <thead><tr><th>SKU</th><th>Color</th><th>Size</th><th>Cost Override</th><th>Coach Override</th><th>MRP Override</th></tr></thead>
                         <tbody>
@@ -65,7 +75,7 @@
                 </td>
             </tr>
             {% else %}
-            <tr><td colspan="9" class="text-center text-muted py-4">No products yet. <a href="{{ url_for('products.new_product') }}">Add your first product</a></td></tr>
+            <tr><td colspan="10" class="text-center text-muted py-4">No products yet. <a href="{{ url_for('products.new_product') }}">Add your first product</a></td></tr>
             {% endfor %}
             </tbody>
         </table>

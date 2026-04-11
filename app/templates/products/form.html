@@ -5,7 +5,7 @@
 
 <div class="card">
     <div class="card-body">
-        <form method="POST" action="{{ url_for('products.edit_product', id=product.id) if product else url_for('products.new_product') }}">
+        <form method="POST" action="{{ url_for('products.edit_product', id=product.id) if product else url_for('products.new_product') }}" enctype="multipart/form-data">
             <div class="row mb-3">
                 <div class="col-md-4">
                     <label class="form-label">Product Name</label>
@@ -41,6 +41,38 @@
                 <div class="col-md-3">
                     <label class="form-label">MRP (public price)</label>
                     <input type="number" name="mrp" class="form-control" step="0.01" value="{{ product.mrp if product else 0 }}">
+                </div>
+            </div>
+
+            <!-- Product Image -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Product Photo</label>
+                    <div class="d-flex align-items-start gap-3">
+                        <!-- Preview -->
+                        <div id="image-preview" class="border rounded d-flex align-items-center justify-content-center"
+                             style="width: 120px; height: 120px; min-width: 120px; background: var(--sp-gray-50); overflow: hidden;">
+                            {% if product and product.image_url %}
+                            <img src="{{ product.image_url }}" alt="{{ product.name }}" style="max-width: 100%; max-height: 100%; object-fit: cover;">
+                            {% else %}
+                            <i class="bi bi-image text-muted" style="font-size: 2.5rem;"></i>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <input type="file" name="image" id="image-input" class="form-control form-control-sm mb-2"
+                                   accept="image/png,image/jpeg,image/jpg,image/webp,image/gif" capture="environment">
+                            <small class="text-muted d-block">Upload or take a photo. Auto-converted to WebP thumbnail.</small>
+                            <small class="text-muted">Max 2MB. Formats: JPG, PNG, WebP, GIF</small>
+                            {% if product and product.image_path %}
+                            <div class="mt-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="remove_image" value="1" id="remove-img">
+                                    <label class="form-check-label text-danger small" for="remove-img">Remove current photo</label>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -88,18 +120,14 @@
                 <label class="form-label">Color</label>
                 <select name="color" class="form-select form-select-sm">
                     <option value="">None</option>
-                    {% for c in colors %}
-                    <option value="{{ c }}">{{ c }}</option>
-                    {% endfor %}
+                    {% for c in colors %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
                 </select>
             </div>
             <div class="col-auto">
                 <label class="form-label">Size</label>
                 <select name="size" class="form-select form-select-sm">
                     <option value="">None</option>
-                    {% for s in sizes %}
-                    <option value="{{ s }}">{{ s }}</option>
-                    {% endfor %}
+                    {% for s in sizes %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
                 </select>
             </div>
             <div class="col-auto">
@@ -123,4 +151,21 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Live image preview
+document.getElementById('image-input').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const preview = document.getElementById('image-preview');
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 100%; object-fit: cover;">`;
+        };
+        reader.readAsDataURL(file);
+    }
+});
+</script>
 {% endblock %}

@@ -78,7 +78,9 @@
             <table class="table table-sm" id="items-table">
                 <thead>
                     <tr>
-                        <th style="width:35%">Product / Variant</th>
+                        <th>Product</th>
+                        <th>Color</th>
+                        <th>Size</th>
                         <th>Stock</th>
                         <th>Qty</th>
                         <th>Unit Price</th>
@@ -91,14 +93,14 @@
                 <tbody id="items-body"></tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="4" class="text-end"><strong>Subtotal:</strong></td>
+                        <td colspan="6" class="text-end"><strong>Subtotal:</strong></td>
                         <td></td>
                         <td id="total-gst"><strong>0.00</strong></td>
                         <td id="subtotal"><strong>0.00</strong></td>
                         <td></td>
                     </tr>
                     <tr>
-                        <td colspan="6" class="text-end"><strong>Grand Total (incl. transport - discount):</strong></td>
+                        <td colspan="8" class="text-end"><strong>Grand Total (incl. transport - discount):</strong></td>
                         <td id="grand-total"><strong>0.00</strong></td>
                         <td></td>
                     </tr>
@@ -163,20 +165,27 @@
 {% block extra_js %}
 <script>
 const stockMap = {{ stock_map|tojson }};
-const variantData = {
+
+// Product catalog: nested structure for cascading selection
+const products = [
     {% for v, p in variants %}
-    "{{ v.id }}": {cost: {{ v.effective_cost }}, coach: {{ v.effective_coach_price }}, mrp: {{ v.effective_mrp }}, gst: {{ p.gst_percent }}, category: "{{ p.category }}", productName: "{{ p.name }}"},
+    {vid: {{ v.id }}, pid: {{ p.id }}, name: "{{ p.name }}", category: "{{ p.category }}",
+     color: "{{ v.color or '' }}", size: "{{ v.size or '' }}", sku: "{{ v.sku_code }}",
+     cost: {{ v.effective_cost }}, coach: {{ v.effective_coach_price }}, mrp: {{ v.effective_mrp }},
+     gst: {{ p.gst_percent }}, stock: {{ stock_map.get(v.id, 0) }},
+     image: "{{ p.image_url or '' }}"},
     {% endfor %}
-};
+];
+
 const packagePrices = {
     {% for pkg in packages %}
     "{{ pkg.skate_product.name }}": {coach: {{ pkg.coach_price }}, public: {{ pkg.public_price }}, name: "{{ pkg.name }}"},
     {% endfor %}
 };
 
-const variantOptions = `<option value="">Select...</option>
-{% for v, p in variants %}{% if stock_map.get(v.id, 0) > 0 %}<option value="{{ v.id }}">{{ p.name }} - {{ v.color or '' }} {{ v.size or '' }} ({{ v.sku_code }}) [Stock: {{ stock_map.get(v.id, 0) }}]</option>
-{% endif %}{% endfor %}`;
+// Get unique product names (with stock > 0)
+const productNames = [...new Set(products.filter(p => p.stock > 0).map(p => p.name))];
+const productOptions = '<option value="">Select Product...</option>' + productNames.map(n => `<option value="${n}">${n}</option>`).join('');
 
 function getCustomerType() {
     const sel = document.getElementById('customer-select');
@@ -184,16 +193,33 @@ function getCustomerType() {
     return opt ? (opt.dataset.type || 'public') : 'public';
 }
 
+function getColorsForProduct(name) {
+    return [...new Set(products.filter(p => p.name === name && p.stock > 0 && p.color).map(p => p.color))];
+}
+
+function getSizesForProduct(name, color) {
+    return [...new Set(products.filter(p => p.name === name && p.stock > 0 && (p.color === color || (!p.color && !color)) && p.size).map(p => p.size))];
+}
+
+function findVariant(name, color, size) {
+    return products.find(p => p.name === name && (p.color || '') === (color || '') && (p.size || '') === (size || ''));
+}
+
 function newRow() {
     return `<tr class="item-row">
-        <td><select name="variant_id[]" class="form-select form-select-sm variant-select" required>${variantOptions}</select></td>
+        <td><select class="form-select form-select-sm product-select" required>${productOptions}</select></td>
+        <td><select class="form-select form-select-sm color-select"><option value="">-</option></select></td>
+        <td><select class="form-select form-select-sm size-select"><option value="">-</option></select></td>
         <td class="stock-cell">-</td>
         <td><input type="number" name="qty[]" class="form-control form-control-sm qty" value="1" min="1"></td>
         <td><input type="number" name="unit_price[]" class="form-control form-control-sm unit-price" step="0.01" value="0"></td>
-        <td><input type="number" name="gst_percent[]" class="form-control form-control-sm gst-pct" step="0.1" value="12"></td>
+        <td><input type="number" name="gst_percent[]" class="form-control form-control-sm gst-pct" step="0.1" value="0"></td>
         <td class="gst-amt">0.00</td>
         <td class="row-total">0.00</td>
-        <td><button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-trash"></i></button></td>
+        <td>
+            <input type="hidden" name="variant_id[]" class="variant-id-hidden" value="">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-trash"></i></button>
+        </td>
     </tr>`;
 }
 
@@ -201,6 +227,44 @@ document.getElementById('add-row').addEventListener('click', () => {
     document.getElementById('items-body').insertAdjacentHTML('beforeend', newRow());
     bindEvents();
 });
+
+function updateVariantSelection(row) {
+    const name = row.querySelector('.product-select').value;
+    const color = row.querySelector('.color-select').value;
+    const size = row.querySelector('.size-select').value;
+    const hiddenInput = row.querySelector('.variant-id-hidden');
+    const stockCell = row.querySelector('.stock-cell');
+
+    if (!name) {
+        hiddenInput.value = '';
+        stockCell.textContent = '-';
+        return;
+    }
+
+    // Find matching variant
+    const v = findVariant(name, color, size);
+    if (v) {
+        hiddenInput.value = v.vid;
+        stockCell.textContent = v.stock;
+        const custType = getCustomerType();
+        row.querySelector('.unit-price').value = custType === 'coach' ? v.coach : v.mrp;
+        row.querySelector('.gst-pct').value = v.gst;
+    } else {
+        // Try without size/color for products like bags
+        const simple = products.find(p => p.name === name && !p.color && !p.size && p.stock > 0);
+        if (simple) {
+            hiddenInput.value = simple.vid;
+            stockCell.textContent = simple.stock;
+            const custType = getCustomerType();
+            row.querySelector('.unit-price').value = custType === 'coach' ? simple.coach : simple.mrp;
+            row.querySelector('.gst-pct').value = simple.gst;
+        } else {
+            hiddenInput.value = '';
+            stockCell.textContent = '-';
+        }
+    }
+    recalc();
+}
 
 function recalc() {
     let totalGst = 0, subtotal = 0;
@@ -227,18 +291,17 @@ function recalc() {
 
 function checkPackage() {
     const categories = {};
-    document.querySelectorAll('.variant-select').forEach(sel => {
-        const vid = sel.value;
-        if (vid && variantData[vid]) {
-            const cat = variantData[vid].category;
-            if (!categories[cat]) categories[cat] = variantData[vid].productName;
+    document.querySelectorAll('.item-row').forEach(row => {
+        const vid = row.querySelector('.variant-id-hidden').value;
+        const v = products.find(p => p.vid == vid);
+        if (v) {
+            if (!categories[v.category]) categories[v.category] = v.name;
         }
     });
     const hasAll = categories['skates'] && categories['helmet'] && categories['guards'] && categories['bag'];
     const infoDiv = document.getElementById('package-info');
     if (hasAll) {
-        const skateName = categories['skates'];
-        const pkg = packagePrices[skateName];
+        const pkg = packagePrices[categories['skates']];
         if (pkg) {
             const custType = getCustomerType();
             const price = custType === 'coach' ? pkg.coach : pkg.public;
@@ -251,20 +314,52 @@ function checkPackage() {
 }
 
 function bindEvents() {
-    document.querySelectorAll('.variant-select').forEach(sel => {
+    document.querySelectorAll('.product-select').forEach(sel => {
         sel.onchange = function() {
-            const vid = this.value;
             const row = this.closest('tr');
-            if (vid && variantData[vid]) {
-                const d = variantData[vid];
-                const custType = getCustomerType();
-                row.querySelector('.unit-price').value = custType === 'coach' ? d.coach : d.mrp;
-                row.querySelector('.gst-pct').value = d.gst;
-                row.querySelector('.stock-cell').textContent = stockMap[vid] || 0;
+            const name = this.value;
+            const colorSel = row.querySelector('.color-select');
+            const sizeSel = row.querySelector('.size-select');
+
+            // Populate colors
+            const colors = getColorsForProduct(name);
+            if (colors.length > 0) {
+                colorSel.innerHTML = '<option value="">Select Color...</option>' + colors.map(c => `<option value="${c}">${c}</option>`).join('');
+                colorSel.disabled = false;
+            } else {
+                colorSel.innerHTML = '<option value="">-</option>';
+                colorSel.disabled = true;
             }
-            recalc();
+            sizeSel.innerHTML = '<option value="">-</option>';
+            sizeSel.disabled = true;
+            updateVariantSelection(row);
         };
     });
+
+    document.querySelectorAll('.color-select').forEach(sel => {
+        sel.onchange = function() {
+            const row = this.closest('tr');
+            const name = row.querySelector('.product-select').value;
+            const color = this.value;
+            const sizeSel = row.querySelector('.size-select');
+
+            // Populate sizes
+            const sizes = getSizesForProduct(name, color);
+            if (sizes.length > 0) {
+                sizeSel.innerHTML = '<option value="">Select Size...</option>' + sizes.map(s => `<option value="${s}">${s}</option>`).join('');
+                sizeSel.disabled = false;
+            } else {
+                sizeSel.innerHTML = '<option value="">-</option>';
+                sizeSel.disabled = true;
+            }
+            updateVariantSelection(row);
+        };
+    });
+
+    document.querySelectorAll('.size-select').forEach(sel => {
+        sel.onchange = function() { updateVariantSelection(this.closest('tr')); };
+    });
+
     document.querySelectorAll('.qty, .unit-price, .gst-pct').forEach(el => { el.oninput = recalc; });
     document.querySelectorAll('.remove-row').forEach(btn => {
         btn.onclick = function() { this.closest('tr').remove(); recalc(); };
@@ -272,8 +367,9 @@ function bindEvents() {
 }
 
 document.getElementById('customer-select').addEventListener('change', function() {
-    document.querySelectorAll('.variant-select').forEach(sel => {
-        if (sel.value) sel.dispatchEvent(new Event('change'));
+    // Re-price all rows when customer type changes
+    document.querySelectorAll('.item-row').forEach(row => {
+        updateVariantSelection(row);
     });
 });
 document.getElementById('transport-charge').addEventListener('input', recalc);
@@ -313,8 +409,6 @@ document.getElementById('save-new-customer').addEventListener('click', function(
             sel.add(opt);
             sel.value = data.id;
             sel.dispatchEvent(new Event('change'));
-
-            // Close modal and reset
             bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
             document.getElementById('new-cust-name').value = '';
             document.getElementById('new-cust-phone').value = '';
