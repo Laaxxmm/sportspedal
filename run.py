@@ -159,29 +159,37 @@ def seed_and_import():
     print(f"=== Login: admin / admin123 ===")
 
 
-try:
-    with app.app_context():
+with app.app_context():
+    try:
         db.create_all()
-        if Product.query.count() == 0:
+        # Check if schema is current by testing a new column
+        try:
+            User.query.count()
+            if Product.query.count() == 0:
+                seed_and_import()
+            elif User.query.count() == 0:
+                print("=== Existing DB, creating superadmin ===")
+                loc = Location.query.first()
+                if not loc:
+                    loc = Location(state='Karnataka', district='Bengaluru Urban', state_code='29')
+                    db.session.add(loc)
+                    db.session.flush()
+                admin = User(username='admin', full_name='Super Admin', role='superadmin')
+                admin.set_password('admin123')
+                db.session.add(admin)
+                for key in PERMISSION_KEYS:
+                    db.session.add(AdminPermission(user_id=admin.id, permission_key=key, is_granted=True))
+                db.session.commit()
+                print("  Superadmin created: admin / admin123")
+        except Exception:
+            # Schema mismatch -- drop all and recreate fresh
+            print("=== Schema mismatch detected, rebuilding database ===")
+            db.session.rollback()
+            db.drop_all()
+            db.create_all()
             seed_and_import()
-        elif User.query.count() == 0:
-            print("=== Existing DB detected, creating superadmin user ===")
-            loc = Location.query.first()
-            if not loc:
-                loc = Location(state='Karnataka', district='Bengaluru Urban', state_code='29')
-                db.session.add(loc)
-                db.session.flush()
-            admin = User(username='admin', full_name='Super Admin', role='superadmin')
-            admin.set_password('admin123')
-            db.session.add(admin)
-            for key in PERMISSION_KEYS:
-                db.session.add(AdminPermission(user_id=admin.id, permission_key=key, is_granted=True))
-            PurchaseOrder.query.filter_by(location_id=None).update({'location_id': loc.id})
-            SaleOrder.query.filter_by(location_id=None).update({'location_id': loc.id})
-            db.session.commit()
-            print("  Superadmin created: admin / admin123")
-except Exception as e:
-    print(f"DB init error (will retry on first request): {e}")
+    except Exception as e:
+        print(f"DB init error: {e}")
 
 if __name__ == '__main__':
     app.run(debug=True, port=int(os.environ.get('PORT', 5000)), use_reloader=False)
