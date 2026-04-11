@@ -162,6 +162,24 @@ with app.app_context():
     db.create_all()
     if Product.query.count() == 0:
         seed_and_import()
+    elif User.query.count() == 0:
+        # Existing DB from pre-auth era -- just create superadmin + location
+        print("=== Existing DB detected, creating superadmin user ===")
+        loc = Location.query.first()
+        if not loc:
+            loc = Location(state='Karnataka', district='Bengaluru Urban', state_code='29')
+            db.session.add(loc)
+            db.session.flush()
+        admin = User(username='admin', full_name='Super Admin', role='superadmin')
+        admin.set_password('admin123')
+        db.session.add(admin)
+        for key in PERMISSION_KEYS:
+            db.session.add(AdminPermission(user_id=admin.id, permission_key=key, is_granted=True))
+        # Set location_id on existing PurchaseOrders and SaleOrders
+        PurchaseOrder.query.filter_by(location_id=None).update({'location_id': loc.id})
+        SaleOrder.query.filter_by(location_id=None).update({'location_id': loc.id})
+        db.session.commit()
+        print("  Superadmin created: admin / admin123")
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000, use_reloader=False)
