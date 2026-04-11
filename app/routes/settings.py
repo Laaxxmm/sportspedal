@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask_login import login_required, current_user
 from app import db
 from app.models import BusinessProfile, PackagePrice
 
@@ -6,6 +7,7 @@ bp = Blueprint('settings', __name__)
 
 
 @bp.route('/', methods=['GET', 'POST'])
+@login_required
 def business_settings():
     profile = BusinessProfile.query.first()
     if not profile:

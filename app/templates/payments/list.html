@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Supplier Payments - Sportspedal{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Supplier Payments</h2>
+    <a href="{{ url_for('payments.new_payment') }}" class="btn btn-primary"><i class="bi bi-cash-stack"></i> Record Payment</a>
+</div>
+
+<!-- Running Balance Summary -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="kpi-card kpi-rose">
+            <div class="kpi-icon"><i class="bi bi-cart-fill"></i></div>
+            <div class="kpi-label">Total Owed</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(overall.owed) }}</div>
+            <div class="kpi-sub">Total purchase cost (incl GST)</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi-card kpi-emerald">
+            <div class="kpi-icon"><i class="bi bi-cash-coin"></i></div>
+            <div class="kpi-label">Total Paid</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(overall.paid) }}</div>
+            <div class="kpi-sub">Payments made so far</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi-card {{ 'kpi-amber' if overall.balance > 0 else 'kpi-emerald' }}">
+            <div class="kpi-icon"><i class="bi bi-wallet2"></i></div>
+            <div class="kpi-label">Balance Due</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(overall.balance) }}</div>
+            <div class="kpi-sub">{{ 'Still payable' if overall.balance > 0 else 'Fully paid' }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Per-Supplier Balance -->
+{% if suppliers|length > 1 %}
+<div class="card mb-4">
+    <div class="card-header"><strong>Per Supplier</strong></div>
+    <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+            <thead class="table-light">
+                <tr><th>Supplier</th><th class="text-end">Owed</th><th class="text-end">Paid</th><th class="text-end">Balance</th></tr>
+            </thead>
+            <tbody>
+            {% for s in suppliers %}
+            {% set b = balances[s.id] %}
+            <tr>
+                <td><strong>{{ s.name }}</strong></td>
+                <td class="text-end">Rs.{{ "{:,.2f}".format(b.owed) }}</td>
+                <td class="text-end text-success">Rs.{{ "{:,.2f}".format(b.paid) }}</td>
+                <td class="text-end {{ 'text-danger fw-bold' if b.balance > 0 else 'text-success' }}">Rs.{{ "{:,.2f}".format(b.balance) }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Payment History -->
+<div class="card">
+    <div class="card-header"><strong>Payment History</strong></div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr><th>Date</th><th>Supplier</th><th>Mode</th><th>Reference</th><th class="text-end">Amount</th><th>Notes</th></tr>
+            </thead>
+            <tbody>
+            {% for p in payments %}
+            <tr>
+                <td>{{ p.payment_date }}</td>
+                <td>{{ p.supplier.name }}</td>
+                <td><span class="badge bg-secondary">{{ p.payment_mode or '-' }}</span></td>
+                <td>{{ p.reference_number or '-' }}</td>
+                <td class="text-end fw-bold text-success">Rs.{{ "{:,.2f}".format(p.amount) }}</td>
+                <td>{{ p.notes or '-' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-muted py-4">No payments recorded yet</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}New Transfer - Sportspedal{% endblock %}
+{% block content %}
+<h2 class="mb-4">New Stock Transfer</h2>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST">
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">From Location *</label>
+                    <select name="from_location_id" class="form-select" id="from-location" required>
+                        <option value="">Select source...</option>
+                        {% for l in locations %}
+                        <option value="{{ l.id }}">{{ l.display_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">To Location *</label>
+                    <select name="to_location_id" class="form-select" required>
+                        <option value="">Select destination...</option>
+                        {% for l in locations %}
+                        <option value="{{ l.id }}">{{ l.display_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Transfer Date</label>
+                    <input type="date" name="transfer_date" class="form-control" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Notes</label>
+                    <input type="text" name="notes" class="form-control">
+                </div>
+            </div>
+
+            <hr>
+            <h5>Items to Transfer</h5>
+            <table class="table table-sm" id="items-table">
+                <thead>
+                    <tr>
+                        <th style="width:45%">Product / Variant</th>
+                        <th>Available</th>
+                        <th>Transfer Qty</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="items-body"></tbody>
+            </table>
+            <button type="button" class="btn btn-sm btn-outline-success mb-3" id="add-row"><i class="bi bi-plus"></i> Add Item</button>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Create Transfer</button>
+                <a href="{{ url_for('transfers.list_transfers') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const variantOptions = `<option value="">Select...</option>
+{% for v, p in variants %}<option value="{{ v.id }}">{{ p.name }} - {{ v.color or '' }} {{ v.size or '' }} ({{ v.sku_code }})</option>
+{% endfor %}`;
+
+function newRow() {
+    return `<tr class="item-row">
+        <td><select name="variant_id[]" class="form-select form-select-sm" required>${variantOptions}</select></td>
+        <td class="stock-cell">-</td>
+        <td><input type="number" name="qty[]" class="form-control form-control-sm" value="1" min="1"></td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-trash"></i></button></td>
+    </tr>`;
+}
+
+document.getElementById('add-row').addEventListener('click', () => {
+    document.getElementById('items-body').insertAdjacentHTML('beforeend', newRow());
+    bindEvents();
+});
+
+function bindEvents() {
+    document.querySelectorAll('.remove-row').forEach(btn => {
+        btn.onclick = function() { this.closest('tr').remove(); };
+    });
+    document.querySelectorAll('.item-row select').forEach(sel => {
+        sel.onchange = function() {
+            const vid = this.value;
+            const locId = document.getElementById('from-location').value;
+            const cell = this.closest('tr').querySelector('.stock-cell');
+            if (vid && locId) {
+                fetch(`/api/stock?variant_id=${vid}&location_id=${locId}`)
+                    .then(r => r.json())
+                    .then(d => { cell.textContent = d.stock; });
+            } else {
+                cell.textContent = '-';
+            }
+        };
+    });
+}
+
+document.getElementById('from-location').addEventListener('change', function() {
+    document.querySelectorAll('.item-row select').forEach(sel => {
+        if (sel.value) sel.dispatchEvent(new Event('change'));
+    });
+});
+
+bindEvents();
+document.getElementById('add-row').click();
+</script>
+{% endblock %}

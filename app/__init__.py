@@ -1,10 +1,12 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_login import LoginManager
 import os
 
 db = SQLAlchemy()
 migrate = Migrate()
+login_manager = LoginManager()
 
 
 def create_app():
@@ -16,6 +18,26 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
 
+    login_manager.init_app(app)
+    login_manager.login_view = 'auth.login'
+    login_manager.login_message_category = 'warning'
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        from app.models import User
+        return User.query.get(int(user_id))
+
+    # Context processor to inject current_user permissions into templates
+    @app.context_processor
+    def inject_permissions():
+        from flask_login import current_user
+        from app.models import PERMISSION_KEYS
+        return {
+            'PERMISSION_KEYS': PERMISSION_KEYS,
+        }
+
+    # Register blueprints
+    from app.routes.auth import bp as auth_bp
     from app.routes.dashboard import bp as dashboard_bp
     from app.routes.products import bp as products_bp
     from app.routes.purchases import bp as purchases_bp
@@ -24,7 +46,12 @@ def create_app():
     from app.routes.suppliers import bp as suppliers_bp
     from app.routes.inventory import bp as inventory_bp
     from app.routes.settings import bp as settings_bp
+    from app.routes.api import bp as api_bp
+    from app.routes.users import bp as users_bp
+    from app.routes.transfers import bp as transfers_bp
+    from app.routes.payments import bp as payments_bp
 
+    app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(products_bp, url_prefix='/products')
     app.register_blueprint(purchases_bp, url_prefix='/purchases')
@@ -33,5 +60,9 @@ def create_app():
     app.register_blueprint(suppliers_bp, url_prefix='/suppliers')
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
     app.register_blueprint(settings_bp, url_prefix='/settings')
+    app.register_blueprint(api_bp)
+    app.register_blueprint(users_bp, url_prefix='/users')
+    app.register_blueprint(transfers_bp, url_prefix='/transfers')
+    app.register_blueprint(payments_bp, url_prefix='/payments')
 
     return app

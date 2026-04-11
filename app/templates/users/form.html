@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if user else 'New' }} User - Sportspedal{% endblock %}
+{% block content %}
+<h2 class="mb-4">{{ 'Edit' if user else 'New' }} User</h2>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST">
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">Full Name *</label>
+                    <input type="text" name="full_name" class="form-control" value="{{ user.full_name if user else '' }}" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Username *</label>
+                    <input type="text" name="username" class="form-control" value="{{ user.username if user else '' }}" {{ 'readonly' if user }} required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">{{ 'New Password (leave blank to keep)' if user else 'Password *' }}</label>
+                    <input type="password" name="password" class="form-control" {{ '' if user else 'required' }}>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Role</label>
+                    <select name="role" class="form-select" {{ 'disabled' if user and user.is_superadmin }}>
+                        <option value="admin" {{ 'selected' if not user or (user and user.role == 'admin') }}>Admin</option>
+                        <option value="superadmin" {{ 'selected' if user and user.is_superadmin }}>Superadmin</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">Phone</label>
+                    <input type="text" name="phone" class="form-control" value="{{ user.phone if user else '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" class="form-control" value="{{ user.email if user else '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">State</label>
+                    <select name="state" class="form-select" id="state-select">
+                        <option value="">Select State...</option>
+                        {% for s in states %}
+                        <option value="{{ s }}" {{ 'selected' if user and user.location and user.location.state == s }}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">District</label>
+                    <select name="district" class="form-select" id="district-select">
+                        <option value="">Select District...</option>
+                        {% if user and user.location %}
+                        <option value="{{ user.location.district }}" selected>{{ user.location.district }}</option>
+                        {% endif %}
+                    </select>
+                </div>
+            </div>
+
+            {% if not user or (user and not user.is_superadmin) %}
+            <hr>
+            <h5 class="mb-3">Permissions</h5>
+            <p class="text-muted small">Configure which pages and KPI cards this user can access. Mandatory permissions are always enabled.</p>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="text-muted mb-2">Page Access</h6>
+                    {% for key, label in permission_keys.items() %}
+                    {% if not key.startswith('kpi_') %}
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="perm_{{ key }}" value="1"
+                               id="perm-{{ key }}"
+                               {{ 'checked' if (user_perms is defined and user_perms.get(key, False)) or (user_perms is not defined and key in mandatory) }}
+                               {{ 'disabled' if key in mandatory }}>
+                        <label class="form-check-label" for="perm-{{ key }}">
+                            {{ label }}
+                            {% if key in mandatory %}<span class="badge bg-secondary ms-1">Mandatory</span>{% endif %}
+                        </label>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <h6 class="text-muted mb-2">Dashboard KPI Cards</h6>
+                    {% for key, label in permission_keys.items() %}
+                    {% if key.startswith('kpi_') %}
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="perm_{{ key }}" value="1"
+                               id="perm-{{ key }}"
+                               {{ 'checked' if (user_perms is defined and user_perms.get(key, False)) or (user_perms is not defined and key in mandatory) }}
+                               {{ 'disabled' if key in mandatory }}>
+                        <label class="form-check-label" for="perm-{{ key }}">
+                            {{ label }}
+                            {% if key in mandatory %}<span class="badge bg-secondary ms-1">Mandatory</span>{% endif %}
+                        </label>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">{{ 'Update' if user else 'Create' }} User</button>
+                <a href="{{ url_for('users.list_users') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('state-select').addEventListener('change', function() {
+    const state = this.value;
+    const districtSelect = document.getElementById('district-select');
+    districtSelect.innerHTML = '<option value="">Loading...</option>';
+    if (!state) { districtSelect.innerHTML = '<option value="">Select District...</option>'; return; }
+    fetch(`/api/districts?state=${encodeURIComponent(state)}`)
+        .then(r => r.json())
+        .then(districts => {
+            districtSelect.innerHTML = '<option value="">Select District...</option>';
+            districts.forEach(d => {
+                districtSelect.innerHTML += `<option value="${d}">${d}</option>`;
+            });
+        });
+});
+{% if user and user.location %}
+// Pre-load districts for existing user
+document.getElementById('state-select').dispatchEvent(new Event('change'));
+setTimeout(() => { document.getElementById('district-select').value = '{{ user.location.district }}'; }, 500);
+{% endif %}
+</script>
+{% endblock %}

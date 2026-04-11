@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask_login import login_required, current_user
 from app import db
 from app.models import Customer
 
@@ -6,12 +7,14 @@ bp = Blueprint('customers', __name__)
 
 
 @bp.route('/')
+@login_required
 def list_customers():
     customers = Customer.query.order_by(Customer.name).all()
     return render_template('customers/list.html', customers=customers)
 
 
 @bp.route('/new', methods=['GET', 'POST'])
+@login_required
 def new_customer():
     if request.method == 'POST':
         customer = Customer(
@@ -33,6 +36,7 @@ def new_customer():
 
 
 @bp.route('/quick-add', methods=['POST'])
+@login_required
 def quick_add():
     """AJAX endpoint to add a customer from the sales form."""
     name = request.form.get('name', '').strip()
@@ -51,6 +55,7 @@ def quick_add():
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
 def edit_customer(id):
     customer = Customer.query.get_or_404(id)
     if request.method == 'POST':

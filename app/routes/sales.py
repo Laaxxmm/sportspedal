@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask_login import login_required, current_user
 from app import db
 from app.models import SaleOrder, SaleItem, Customer, ProductVariant, Product, BusinessProfile, PackagePrice
 from app.services.stock import get_stock_map
@@ -61,12 +62,14 @@ def detect_package(items_data, customer_type):
 
 
 @bp.route('/')
+@login_required
 def list_sales():
     sales = SaleOrder.query.order_by(SaleOrder.sale_date.desc()).all()
     return render_template('sales/list.html', sales=sales)
 
 
 @bp.route('/download')
+@login_required
 def download_sales():
     from app.services.excel_export import export_sales
     sales = SaleOrder.query.order_by(SaleOrder.sale_date.desc()).all()
@@ -74,6 +77,7 @@ def download_sales():
 
 
 @bp.route('/new', methods=['GET', 'POST'])
+@login_required
 def new_sale():
     if request.method == 'POST':
         customer = Customer.query.get(int(request.form['customer_id']))
@@ -83,6 +87,7 @@ def new_sale():
             customer_id=customer.id,
             sale_date=request.form.get('sale_date', date.today().isoformat()),
             status=request.form.get('status', 'confirmed'),
+            payment_status=request.form.get('payment_status', 'paid'),
             transport_mode=request.form.get('transport_mode', ''),
             transport_charge=float(request.form.get('transport_charge', 0)),
             discount_amount=float(request.form.get('discount_amount', 0)),
@@ -167,6 +172,7 @@ def new_sale():
 
 
 @bp.route('/<int:id>')
+@login_required
 def view_sale(id):
     sale = SaleOrder.query.get_or_404(id)
     profile = BusinessProfile.query.first()
@@ -174,6 +180,7 @@ def view_sale(id):
 
 
 @bp.route('/<int:id>/invoice')
+@login_required
 def download_invoice(id):
     from app.services.invoice_pdf import generate_invoice
     sale = SaleOrder.query.get_or_404(id)
@@ -182,6 +189,7 @@ def download_invoice(id):
 
 
 @bp.route('/<int:id>/challan')
+@login_required
 def download_challan(id):
     from app.services.challan_pdf import generate_challan
     sale = SaleOrder.query.get_or_404(id)

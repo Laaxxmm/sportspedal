@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask_login import login_required, current_user
 from app import db
 from app.models import PurchaseOrder, PurchaseItem, Supplier, ProductVariant, Product
 
@@ -6,12 +7,14 @@ bp = Blueprint('purchases', __name__)
 
 
 @bp.route('/')
+@login_required
 def list_purchases():
     purchases = PurchaseOrder.query.order_by(PurchaseOrder.order_date.desc()).all()
     return render_template('purchases/list.html', purchases=purchases)
 
 
 @bp.route('/download')
+@login_required
 def download_purchases():
     from app.services.excel_export import export_purchases
     purchases = PurchaseOrder.query.order_by(PurchaseOrder.order_date.desc()).all()
@@ -19,6 +22,7 @@ def download_purchases():
 
 
 @bp.route('/new', methods=['GET', 'POST'])
+@login_required
 def new_purchase():
     if request.method == 'POST':
         po = PurchaseOrder(
@@ -74,12 +78,14 @@ def new_purchase():
 
 
 @bp.route('/<int:id>')
+@login_required
 def view_purchase(id):
     po = PurchaseOrder.query.get_or_404(id)
     return render_template('purchases/detail.html', purchase=po)
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
 def edit_purchase(id):
     po = PurchaseOrder.query.get_or_404(id)
     if request.method == 'POST':

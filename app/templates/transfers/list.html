@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Stock Transfers - Sportspedal{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Stock Transfers</h2>
+    {% if current_user.is_superadmin %}
+    <a href="{{ url_for('transfers.new_transfer') }}" class="btn btn-primary"><i class="bi bi-arrow-left-right"></i> New Transfer</a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr><th>Transfer #</th><th>Date</th><th>From</th><th>To</th><th>Items</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+            {% for t in transfers %}
+            <tr>
+                <td><strong>{{ t.transfer_number }}</strong></td>
+                <td>{{ t.transfer_date }}</td>
+                <td>{{ t.from_location.display_name }}</td>
+                <td>{{ t.to_location.display_name }}</td>
+                <td>{{ t.items.count() }} items</td>
+                <td>
+                    <span class="badge bg-{{ 'success' if t.status == 'completed' else ('info' if t.status == 'in_transit' else ('secondary' if t.status == 'pending' else 'danger')) }}">
+                        {{ t.status }}
+                    </span>
+                </td>
+                <td>
+                    <a href="{{ url_for('transfers.view_transfer', id=t.id) }}" class="btn btn-sm btn-outline-info">View</a>
+                    {% if t.status == 'pending' and current_user.is_superadmin %}
+                    <form method="POST" action="{{ url_for('transfers.complete_transfer', id=t.id) }}" class="d-inline">
+                        <button class="btn btn-sm btn-success">Complete</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center text-muted py-4">No transfers yet</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

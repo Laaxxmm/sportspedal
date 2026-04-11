@@ -3,30 +3,78 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>Customers</h2>
-    <a href="{{ url_for('customers.new_customer') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Customer</a>
+    <a href="{{ url_for('customers.new_customer') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add Customer</a>
+</div>
+
+<!-- Search -->
+<div class="card mb-3">
+    <div class="card-body py-2 px-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="search-input" placeholder="Search customer name, phone, city...">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select form-select-sm" id="filter-type">
+                    <option value="">All Types</option>
+                    <option value="coach">Coach</option>
+                    <option value="public">Public</option>
+                </select>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="card">
     <div class="card-body p-0">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0" id="cust-table">
             <thead class="table-light">
-                <tr><th>Name</th><th>Type</th><th>Phone</th><th>City</th><th>State</th><th>Actions</th></tr>
+                <tr><th>Name</th><th>Type</th><th>Phone</th><th>City</th><th>State</th><th>Orders</th><th>Actions</th></tr>
             </thead>
             <tbody>
             {% for c in customers %}
-            <tr>
+            <tr data-type="{{ c.customer_type }}">
                 <td><strong>{{ c.name }}</strong></td>
                 <td><span class="badge bg-{{ 'primary' if c.customer_type == 'coach' else 'secondary' }}">{{ c.customer_type }}</span></td>
                 <td>{{ c.phone or '-' }}</td>
                 <td>{{ c.city or '-' }}</td>
                 <td>{{ c.state or '-' }}</td>
-                <td><a href="{{ url_for('customers.edit_customer', id=c.id) }}" class="btn btn-sm btn-outline-primary">Edit</a></td>
+                <td>
+                    {% set order_count = c.sale_orders.count() %}
+                    {% if order_count > 0 %}
+                    <a href="{{ url_for('sales.list_sales') }}?search={{ c.name }}" class="badge bg-info text-decoration-none">{{ order_count }} orders</a>
+                    {% else %}
+                    <span class="text-muted">0</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('customers.edit_customer', id=c.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                </td>
             </tr>
             {% else %}
-            <tr><td colspan="6" class="text-center text-muted py-4">No customers yet</td></tr>
+            <tr><td colspan="7" class="text-center text-muted py-4">No customers yet</td></tr>
             {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterTable() {
+    const search = document.getElementById('search-input').value.toLowerCase();
+    const type = document.getElementById('filter-type').value;
+    document.querySelectorAll('#cust-table tbody tr').forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const matchSearch = !search || text.includes(search);
+        const matchType = !type || row.dataset.type === type;
+        row.style.display = (matchSearch && matchType) ? '' : 'none';
+    });
+}
+document.getElementById('search-input').addEventListener('input', filterTable);
+document.getElementById('filter-type').addEventListener('change', filterTable);
+</script>
 {% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Transfer {{ transfer.transfer_number }} - Sportspedal{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Transfer {{ transfer.transfer_number }}</h2>
+    <div>
+        {% if transfer.status == 'pending' and current_user.is_superadmin %}
+        <form method="POST" action="{{ url_for('transfers.complete_transfer', id=transfer.id) }}" class="d-inline">
+            <button class="btn btn-success"><i class="bi bi-check-circle"></i> Mark Completed</button>
+        </form>
+        <form method="POST" action="{{ url_for('transfers.cancel_transfer', id=transfer.id) }}" class="d-inline">
+            <button class="btn btn-outline-danger">Cancel Transfer</button>
+        </form>
+        {% endif %}
+        <a href="{{ url_for('transfers.list_transfers') }}" class="btn btn-outline-secondary">Back</a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <p><strong>From:</strong> {{ transfer.from_location.display_name }}</p>
+                <p><strong>To:</strong> {{ transfer.to_location.display_name }}</p>
+                <p><strong>Date:</strong> {{ transfer.transfer_date }}</p>
+                <p><strong>Status:</strong>
+                    <span class="badge bg-{{ 'success' if transfer.status == 'completed' else ('info' if transfer.status == 'in_transit' else 'secondary') }}">
+                        {{ transfer.status }}
+                    </span>
+                </p>
+                {% if transfer.notes %}<p><strong>Notes:</strong> {{ transfer.notes }}</p>{% endif %}
+                {% if transfer.creator %}<p><strong>Created by:</strong> {{ transfer.creator.full_name }}</p>{% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><strong>Transfer Items</strong></div>
+    <div class="card-body p-0">
+        <table class="table mb-0">
+            <thead class="table-light">
+                <tr><th>#</th><th>Product</th><th>SKU</th><th class="text-center">Quantity</th></tr>
+            </thead>
+            <tbody>
+            {% for item in transfer.items %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ item.variant.display_name }}</td>
+                <td><code>{{ item.variant.sku_code }}</code></td>
+                <td class="text-center"><strong>{{ item.quantity }}</strong></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+            <tfoot class="table-light">
+                <tr>
+                    <td colspan="3" class="text-end"><strong>Total Items:</strong></td>
+                    <td class="text-center"><strong>{{ transfer.items.count() }}</strong></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% endblock %}

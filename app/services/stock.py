@@ -1,45 +1,69 @@
 from app import db
-from app.models import ProductVariant, Product, PurchaseItem, PurchaseOrder, SaleItem
+from app.models import (ProductVariant, Product, PurchaseItem, PurchaseOrder,
+                        SaleItem, SaleOrder, StockTransferItem, StockTransfer)
 from sqlalchemy import func
 
 
-def get_stock_map():
-    """Returns dict of {variant_id: current_stock}."""
-    inward = dict(
-        db.session.query(PurchaseItem.variant_id, func.sum(PurchaseItem.quantity_received))
-        .join(PurchaseOrder)
-        .filter(PurchaseOrder.status == 'delivered')
-        .group_by(PurchaseItem.variant_id)
-        .all()
-    )
-    outward = dict(
-        db.session.query(SaleItem.variant_id, func.sum(SaleItem.quantity))
-        .group_by(SaleItem.variant_id)
-        .all()
-    )
+def get_stock_map(location_id=None):
+    """Returns dict of {variant_id: current_stock}. If location_id is given, scoped to that location."""
+    # Inward from purchases
+    inward_q = (db.session.query(PurchaseItem.variant_id, func.sum(PurchaseItem.quantity_received))
+                .join(PurchaseOrder)
+                .filter(PurchaseOrder.status == 'delivered'))
+    if location_id:
+        inward_q = inward_q.filter(PurchaseOrder.location_id == location_id)
+    inward = dict(inward_q.group_by(PurchaseItem.variant_id).all())
+
+    # Outward from sales
+    outward_q = db.session.query(SaleItem.variant_id, func.sum(SaleItem.quantity)).join(SaleOrder)
+    if location_id:
+        outward_q = outward_q.filter(SaleOrder.location_id == location_id)
+    outward = dict(outward_q.group_by(SaleItem.variant_id).all())
+
+    # Transfers in (completed transfers TO this location)
+    transfers_in = {}
+    transfers_out = {}
+    if location_id:
+        tin = dict(
+            db.session.query(StockTransferItem.variant_id, func.sum(StockTransferItem.quantity))
+            .join(StockTransfer)
+            .filter(StockTransfer.to_location_id == location_id, StockTransfer.status == 'completed')
+            .group_by(StockTransferItem.variant_id).all()
+        )
+        transfers_in = tin
+
+        tout = dict(
+            db.session.query(StockTransferItem.variant_id, func.sum(StockTransferItem.quantity))
+            .join(StockTransfer)
+            .filter(StockTransfer.from_location_id == location_id,
+                    StockTransfer.status.in_(['completed', 'in_transit']))
+            .group_by(StockTransferItem.variant_id).all()
+        )
+        transfers_out = tout
+
     all_variants = ProductVariant.query.filter_by(is_active=True).all()
     stock = {}
     for v in all_variants:
-        stock[v.id] = (inward.get(v.id, 0) or 0) - (outward.get(v.id, 0) or 0)
+        s = (inward.get(v.id, 0) or 0) + (transfers_in.get(v.id, 0) or 0) \
+            - (outward.get(v.id, 0) or 0) - (transfers_out.get(v.id, 0) or 0)
+        stock[v.id] = s
     return stock
 
 
-def get_inventory_data():
+def get_inventory_data(location_id=None):
     """Returns list of dicts with full inventory details per variant."""
-    stock_map = get_stock_map()
+    stock_map = get_stock_map(location_id)
 
-    inward_map = dict(
-        db.session.query(PurchaseItem.variant_id, func.sum(PurchaseItem.quantity_received))
-        .join(PurchaseOrder)
-        .filter(PurchaseOrder.status == 'delivered')
-        .group_by(PurchaseItem.variant_id)
-        .all()
-    )
-    outward_map = dict(
-        db.session.query(SaleItem.variant_id, func.sum(SaleItem.quantity))
-        .group_by(SaleItem.variant_id)
-        .all()
-    )
+    inward_q = (db.session.query(PurchaseItem.variant_id, func.sum(PurchaseItem.quantity_received))
+                .join(PurchaseOrder).filter(PurchaseOrder.status == 'delivered'))
+    if location_id:
+        inward_q = inward_q.filter(PurchaseOrder.location_id == location_id)
+    inward_map = dict(inward_q.group_by(PurchaseItem.variant_id).all())
+
+    outward_q = db.session.query(SaleItem.variant_id, func.sum(SaleItem.quantity)).join(SaleOrder)
+    if location_id:
+        outward_q = outward_q.filter(SaleOrder.location_id == location_id)
+    outward_map = dict(outward_q.group_by(SaleItem.variant_id).all())
 
     variants = (db.session.query(ProductVariant, Product)
                 .join(Product)
@@ -66,3 +90,17 @@ def get_inventory_data():
             'stock_value': stock * (variant.effective_cost or 0),
         })
     return result
+
+
+def get_active_states():
+    """Return list of states that have at least one location with stock or activity."""
+    from app.models import Location
+    locations = Location.query.filter_by(is_active=True).order_by(Location.state).all()
+    states = sorted(set(l.state for l in locations))
+    return states
+
+
+def get_locations_for_state(state):
+    """Return locations for a given state."""
+    from app.models import Location
+    return Location.query.filter_by(state=state, is_active=True).order_by(Location.district).all()

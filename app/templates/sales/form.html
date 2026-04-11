@@ -25,12 +25,20 @@
                     <label class="form-label">Date</label>
                     <input type="date" name="sale_date" class="form-control" value="{{ sale.sale_date if sale else '' }}" required>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <label class="form-label">Status</label>
                     <select name="status" class="form-select">
                         {% for st in ['confirmed', 'dispatched', 'delivered'] %}
                         <option value="{{ st }}">{{ st|title }}</option>
                         {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">Payment</label>
+                    <select name="payment_status" class="form-select">
+                        <option value="paid">Paid</option>
+                        <option value="pending">Pending</option>
+                        <option value="partial">Partial</option>
                     </select>
                 </div>
                 <div class="col-md-2">

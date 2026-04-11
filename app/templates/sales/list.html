@@ -4,31 +4,74 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>Sales</h2>
     <div>
-        <a href="{{ url_for('sales.download_sales') }}" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel"></i> Download Excel</a>
-        <a href="{{ url_for('sales.new_sale') }}" class="btn btn-success"><i class="bi bi-plus-lg"></i> New Sale</a>
+        <a href="{{ url_for('sales.download_sales') }}" class="btn btn-outline-success btn-sm"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+        <a href="{{ url_for('sales.new_sale') }}" class="btn btn-success btn-sm"><i class="bi bi-plus-lg"></i> New Sale</a>
+    </div>
+</div>
+
+<!-- Search & Filters -->
+<div class="card mb-3">
+    <div class="card-body py-2 px-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="search-input" placeholder="Search customer, invoice...">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select form-select-sm" id="filter-type">
+                    <option value="">All Types</option>
+                    <option value="coach">Coach</option>
+                    <option value="public">Public</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select form-select-sm" id="filter-status">
+                    <option value="">All Status</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="dispatched">Dispatched</option>
+                    <option value="delivered">Delivered</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select form-select-sm" id="filter-payment">
+                    <option value="">All Payments</option>
+                    <option value="paid">Paid</option>
+                    <option value="pending">Pending</option>
+                    <option value="partial">Partial</option>
+                </select>
+            </div>
+            <div class="col-md-2 text-end">
+                <button class="btn btn-sm btn-outline-secondary" onclick="clearFilters()">Clear</button>
+            </div>
+        </div>
     </div>
 </div>
 
 <div class="card">
     <div class="card-body p-0">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0" id="sales-table">
             <thead class="table-light">
-                <tr><th>Date</th><th>Invoice #</th><th>Customer</th><th>Type</th><th>Package</th><th>Status</th><th>Total</th><th>Actions</th></tr>
+                <tr><th>Date</th><th>Invoice #</th><th>Customer</th><th>Type</th><th>Payment</th><th>Status</th><th class="text-end">Total</th><th>Actions</th></tr>
             </thead>
             <tbody>
             {% for sale in sales %}
-            <tr>
+            <tr data-type="{{ sale.customer.customer_type }}" data-status="{{ sale.status }}" data-payment="{{ sale.payment_status or 'paid' }}">
                 <td>{{ sale.sale_date }}</td>
-                <td>{{ sale.invoice_number }}</td>
+                <td><code>{{ sale.invoice_number }}</code></td>
                 <td>{{ sale.customer.name }}</td>
-                <td><span class="badge badge-{{ sale.customer.customer_type }} bg-{{ 'primary' if sale.customer.customer_type == 'coach' else 'secondary' }}">{{ sale.customer.customer_type }}</span></td>
-                <td>{% if sale.is_package %}<span class="badge bg-success">{{ sale.package_type }}</span>{% else %}-{% endif %}</td>
+                <td><span class="badge bg-{{ 'primary' if sale.customer.customer_type == 'coach' else 'secondary' }}">{{ sale.customer.customer_type }}</span></td>
+                <td>
+                    {% set ps = sale.payment_status or 'paid' %}
+                    <span class="badge bg-{{ 'success' if ps == 'paid' else ('danger' if ps == 'pending' else 'warning') }}">{{ ps }}</span>
+                </td>
                 <td><span class="badge bg-{{ 'success' if sale.status == 'delivered' else ('info' if sale.status == 'dispatched' else 'secondary') }}">{{ sale.status }}</span></td>
-                <td>{{ "%.2f"|format(sale.grand_total) }}</td>
+                <td class="text-end fw-semibold">Rs.{{ "{:,.0f}".format(sale.grand_total) }}</td>
                 <td>
                     <a href="{{ url_for('sales.view_sale', id=sale.id) }}" class="btn btn-sm btn-outline-info">View</a>
-                    <a href="{{ url_for('sales.download_invoice', id=sale.id) }}" class="btn btn-sm btn-outline-danger" title="Download Invoice"><i class="bi bi-file-pdf"></i></a>
-                    <a href="{{ url_for('sales.download_challan', id=sale.id) }}" class="btn btn-sm btn-outline-warning" title="Download Challan"><i class="bi bi-truck"></i></a>
+                    <a href="{{ url_for('sales.download_invoice', id=sale.id) }}" class="btn btn-sm btn-outline-danger" title="Invoice"><i class="bi bi-file-pdf"></i></a>
+                    <a href="{{ url_for('sales.download_challan', id=sale.id) }}" class="btn btn-sm btn-outline-warning" title="Challan"><i class="bi bi-truck"></i></a>
                 </td>
             </tr>
             {% else %}
@@ -38,4 +81,37 @@
         </table>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterTable() {
+    const search = document.getElementById('search-input').value.toLowerCase();
+    const type = document.getElementById('filter-type').value;
+    const status = document.getElementById('filter-status').value;
+    const payment = document.getElementById('filter-payment').value;
+
+    document.querySelectorAll('#sales-table tbody tr').forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const matchSearch = !search || text.includes(search);
+        const matchType = !type || row.dataset.type === type;
+        const matchStatus = !status || row.dataset.status === status;
+        const matchPayment = !payment || row.dataset.payment === payment;
+        row.style.display = (matchSearch && matchType && matchStatus && matchPayment) ? '' : 'none';
+    });
+}
+
+function clearFilters() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('filter-type').value = '';
+    document.getElementById('filter-status').value = '';
+    document.getElementById('filter-payment').value = '';
+    filterTable();
+}
+
+document.getElementById('search-input').addEventListener('input', filterTable);
+document.getElementById('filter-type').addEventListener('change', filterTable);
+document.getElementById('filter-status').addEventListener('change', filterTable);
+document.getElementById('filter-payment').addEventListener('change', filterTable);
+</script>
 {% endblock %}

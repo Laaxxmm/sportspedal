@@ -2,23 +2,50 @@ from datetime import date
 from app import create_app, db
 from app.models import (Product, ProductVariant, Supplier, PackagePrice,
                         BusinessProfile, Customer, PurchaseOrder, PurchaseItem,
-                        SaleOrder, SaleItem)
+                        SaleOrder, SaleItem, User, Location, AdminPermission,
+                        PERMISSION_KEYS, MANDATORY_PERMISSIONS)
 
 app = create_app()
 
 
 def seed_and_import():
-    """Seed products + import all existing purchase/sales data on first run."""
+    """Seed products, users, locations + import all existing purchase/sales data on first run."""
     from seed import PRODUCTS, PACKAGES
     from import_data import PURCHASE_ORDERS, CUSTOMER_SALES
     from app.routes.products import generate_sku
+    from app.data.india_locations import INDIA_STATES_DISTRICTS
 
-    print("=== First run: seeding products ===")
+    # === Create default location (Bangalore) ===
+    print("=== Seeding locations ===")
+    bangalore = Location(state='Karnataka', district='Bengaluru Urban', state_code='29')
+    db.session.add(bangalore)
+    db.session.flush()
+    print(f"  Default location: {bangalore.display_name} (id={bangalore.id})")
+
+    # === Create superadmin user ===
+    print("=== Creating superadmin ===")
+    admin = User(
+        username='admin',
+        full_name='Super Admin',
+        role='superadmin',
+        location_id=None,
+    )
+    admin.set_password('admin123')
+    db.session.add(admin)
+    db.session.flush()
+    # Grant all permissions to superadmin
+    for key in PERMISSION_KEYS:
+        db.session.add(AdminPermission(user_id=admin.id, permission_key=key, is_granted=True))
+    print(f"  Superadmin: admin / admin123")
+
+    # === Business profile ===
     profile = BusinessProfile(id=1, name='Sportspedal', city='Bangalore', state='Karnataka', state_code='29')
     db.session.add(profile)
     supplier = Supplier(name='True Spin', address='India')
     db.session.add(supplier)
 
+    # === Seed products ===
+    print("=== Seeding products ===")
     for name, category, cost, coach, mrp, gst, colors, sizes in PRODUCTS:
         product = Product(name=name, category=category, cost_price=cost, coach_price=coach, mrp=mrp, gst_percent=gst)
         db.session.add(product)
@@ -41,14 +68,14 @@ def seed_and_import():
     db.session.flush()
     print(f"  Products: {Product.query.count()}, Variants: {ProductVariant.query.count()}")
 
-    # === Import purchases ===
+    # === Import purchases (all to Bangalore) ===
     print("=== Importing purchases ===")
     supplier = Supplier.query.first()
     for po_data in PURCHASE_ORDERS:
         po = PurchaseOrder(
             order_number=po_data['number'], supplier_id=supplier.id,
             order_date=po_data['date'], transporter=po_data['transporter'],
-            status='delivered', location='Bangalore', notes=po_data['notes'],
+            status='delivered', location_id=bangalore.id, notes=po_data['notes'],
         )
         db.session.add(po)
         db.session.flush()
@@ -76,13 +103,13 @@ def seed_and_import():
         print(f"  {po_data['number']}: {po_data['notes']}")
     db.session.flush()
 
-    # === Import customer sales (0% GST as per user) ===
+    # === Import customer sales (all to Bangalore, 0% GST) ===
     print("=== Importing sales ===")
     sold_tracker = {}
     for idx, sale_data in enumerate(CUSTOMER_SALES):
         customer = Customer(
             name=sale_data['name'], customer_type=sale_data['type'],
-            city='Bangalore', state='Karnataka',
+            city='Bangalore', state='Karnataka', location_id=bangalore.id,
         )
         db.session.add(customer)
         db.session.flush()
@@ -92,7 +119,8 @@ def seed_and_import():
             challan_number=f"DC/2025-26/{idx+1:03d}",
             customer_id=customer.id,
             sale_date=date(2026, 3, 25 + idx // 4),
-            status='delivered',
+            status='delivered', payment_status='paid',
+            location_id=bangalore.id,
         )
         db.session.add(sale)
         db.session.flush()
@@ -101,7 +129,6 @@ def seed_and_import():
             product = Product.query.filter_by(name=product_name, is_active=True).first()
             if not product:
                 continue
-            # For skates, pick variant with remaining stock
             if product.category == 'skates':
                 variants = ProductVariant.query.filter_by(product_id=product.id, is_active=True).all()
                 variant = None
@@ -115,11 +142,8 @@ def seed_and_import():
                     variant = variants[0] if variants else None
             else:
                 variant = ProductVariant.query.filter_by(product_id=product.id, is_active=True).first()
-
             if not variant:
                 continue
-
-            # No GST collected on these sales
             db.session.add(SaleItem(
                 sale_order_id=sale.id, variant_id=variant.id,
                 quantity=qty, unit_price=sell_price,
@@ -127,14 +151,13 @@ def seed_and_import():
                 total_amount=sell_price * qty,
             ))
             sold_tracker[variant.id] = sold_tracker.get(variant.id, 0) + qty
-
         print(f"  Sale {idx+1}: {sale_data['name']}")
 
     db.session.commit()
     print(f"=== Done: {PurchaseOrder.query.count()} purchases, {SaleOrder.query.count()} sales, {Customer.query.count()} customers ===")
+    print(f"=== Login: admin / admin123 ===")
 
 
-# Auto-create tables and seed on first run
 with app.app_context():
     db.create_all()
     if Product.query.count() == 0:

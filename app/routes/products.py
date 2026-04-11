@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask_login import login_required
 from app import db
 from app.models import Product, ProductVariant
 
@@ -22,12 +23,14 @@ def generate_sku(product_name, color, size):
 
 
 @bp.route('/')
+@login_required
 def list_products():
     products = Product.query.filter_by(is_active=True).order_by(Product.category, Product.name).all()
     return render_template('products/list.html', products=products)
 
 
 @bp.route('/new', methods=['GET', 'POST'])
+@login_required
 def new_product():
     if request.method == 'POST':
         product = Product(
@@ -78,6 +81,7 @@ def new_product():
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
 def edit_product(id):
     product = Product.query.get_or_404(id)
     if request.method == 'POST':
@@ -96,6 +100,7 @@ def edit_product(id):
 
 
 @bp.route('/<int:id>/add-variant', methods=['POST'])
+@login_required
 def add_variant(id):
     product = Product.query.get_or_404(id)
     color = request.form.get('color') or None
@@ -115,6 +120,7 @@ def add_variant(id):
 
 
 @bp.route('/<int:id>/delete', methods=['POST'])
+@login_required
 def delete_product(id):
     product = Product.query.get_or_404(id)
     product.is_active = False
