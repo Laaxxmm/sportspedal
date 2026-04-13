@@ -21,10 +21,25 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Role</label>
-                    <select name="role" class="form-select" {{ 'disabled' if user and user.is_superadmin }}>
+                    <select name="role" class="form-select" id="role-select" {{ 'disabled' if user and user.is_superadmin }}>
                         <option value="admin" {{ 'selected' if not user or (user and user.role == 'admin') }}>Admin</option>
+                        <option value="supplier" {{ 'selected' if user and user.role == 'supplier' }}>Supplier (view-only)</option>
                         <option value="superadmin" {{ 'selected' if user and user.is_superadmin }}>Superadmin</option>
                     </select>
+                </div>
+            </div>
+
+            <!-- Supplier link (shown when role=supplier) -->
+            <div class="row mb-3" id="supplier-row" style="display:none;">
+                <div class="col-md-6">
+                    <label class="form-label">Link to Supplier *</label>
+                    <select name="supplier_id" class="form-select">
+                        <option value="">Select Supplier...</option>
+                        {% for s in suppliers %}
+                        <option value="{{ s.id }}" {{ 'selected' if user and user.supplier_id == s.id }}>{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">This user will see data for the selected supplier only</small>
                 </div>
             </div>
 
@@ -126,9 +141,17 @@ document.getElementById('state-select').addEventListener('change', function() {
         });
 });
 {% if user and user.location %}
-// Pre-load districts for existing user
 document.getElementById('state-select').dispatchEvent(new Event('change'));
 setTimeout(() => { document.getElementById('district-select').value = '{{ user.location.district }}'; }, 500);
 {% endif %}
+
+// Show/hide supplier row based on role
+const roleSelect = document.getElementById('role-select');
+const supplierRow = document.getElementById('supplier-row');
+function toggleSupplierRow() {
+    supplierRow.style.display = roleSelect.value === 'supplier' ? '' : 'none';
+}
+roleSelect.addEventListener('change', toggleSupplierRow);
+toggleSupplierRow();
 </script>
 {% endblock %}

@@ -10,6 +10,8 @@ bp = Blueprint('auth', __name__, url_prefix='/auth')
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
+        if current_user.is_supplier_user:
+            return redirect(url_for('supplier_portal.portal_dashboard'))
         return redirect(url_for('dashboard.index'))
 
     if request.method == 'POST':
@@ -23,6 +25,8 @@ def login():
             login_user(user, remember=request.form.get('remember'))
             next_page = request.args.get('next')
             flash(f'Welcome, {user.full_name}!', 'success')
+            if user.is_supplier_user:
+                return redirect(url_for('supplier_portal.portal_dashboard'))
             return redirect(next_page or url_for('dashboard.index'))
         else:
             flash('Invalid username or password.', 'danger')

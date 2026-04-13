@@ -56,6 +56,7 @@ def create_app():
     from app.routes.users import bp as users_bp
     from app.routes.transfers import bp as transfers_bp
     from app.routes.payments import bp as payments_bp
+    from app.routes.supplier_portal import bp as supplier_portal_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -70,5 +71,6 @@ def create_app():
     app.register_blueprint(users_bp, url_prefix='/users')
     app.register_blueprint(transfers_bp, url_prefix='/transfers')
     app.register_blueprint(payments_bp, url_prefix='/payments')
+    app.register_blueprint(supplier_portal_bp)
 
     return app

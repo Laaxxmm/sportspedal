@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% block title %}Supplier Portal - {{ supplier.name if supplier else 'Sportspedal' }}{% endblock %}
+{% block content %}
+
+{% if not supplier %}
+<div class="alert alert-warning">No supplier linked to your account.</div>
+{% else %}
+
+<!-- Header -->
+<div class="dash-header">
+    <div>
+        <h2><i class="bi bi-truck"></i> {{ supplier.name }} - Supplier Portal</h2>
+        <div class="dash-date">View-only access</div>
+    </div>
+</div>
+
+<!-- Row 1: Account Summary -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="kpi-card kpi-blue">
+            <div class="kpi-icon"><i class="bi bi-box-seam"></i></div>
+            <div class="kpi-label">Total Units Sent</div>
+            <div class="kpi-value">{{ "{:,.0f}".format(total_units) }}</div>
+            <div class="kpi-sub">across {{ orders|length }} orders</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="kpi-card kpi-rose">
+            <div class="kpi-icon"><i class="bi bi-receipt"></i></div>
+            <div class="kpi-label">Total Invoice Value</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(total_cost) }}</div>
+            <div class="kpi-sub">incl GST Rs.{{ "{:,.0f}".format(total_gst) }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="kpi-card kpi-emerald">
+            <div class="kpi-icon"><i class="bi bi-cash-coin"></i></div>
+            <div class="kpi-label">Payments Received</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(total_paid) }}</div>
+            <div class="kpi-sub">{{ payments|length }} payments</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="kpi-card {{ 'kpi-amber' if balance > 0 else 'kpi-emerald' }}">
+            <div class="kpi-icon"><i class="bi bi-wallet2"></i></div>
+            <div class="kpi-label">Balance Due</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(balance) }}</div>
+            <div class="kpi-sub">{{ 'pending' if balance > 0 else 'settled' }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 2: Product Summary - What was sent vs current stock -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="detail-card">
+            <div class="detail-header"><span><i class="bi bi-box-seam-fill"></i> Product Summary</span></div>
+            <div class="detail-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width:40px"></th>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th class="text-center">Total Sent</th>
+                            <th class="text-center">Sold</th>
+                            <th class="text-center">In Stock</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for p in product_summary %}
+                    <tr>
+                        <td>
+                            {% if p.image_url %}
+                            <img src="{{ p.image_url }}" style="width:32px;height:32px;object-fit:cover;border-radius:6px;">
+                            {% else %}
+                            <div style="width:32px;height:32px;background:var(--sp-gray-100);border-radius:6px;display:flex;align-items:center;justify-content:center;"><i class="bi bi-image text-muted" style="font-size:0.7rem;"></i></div>
+                            {% endif %}
+                        </td>
+                        <td><strong>{{ p.name }}</strong></td>
+                        <td><span class="badge bg-secondary">{{ p.category }}</span></td>
+                        <td class="text-center">{{ p.total_sent }}</td>
+                        <td class="text-center">{{ p.total_sold }}</td>
+                        <td class="text-center">
+                            {% if p.total_stock <= 0 %}
+                            <span class="badge" style="background:var(--sp-rose);">0</span>
+                            {% elif p.total_stock < 3 %}
+                            <span class="badge" style="background:var(--sp-amber);">{{ p.total_stock }}</span>
+                            {% else %}
+                            <strong>{{ p.total_stock }}</strong>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p.total_stock <= 0 and p.total_sent > 0 %}
+                            <span class="badge" style="background:var(--sp-rose);"><i class="bi bi-arrow-repeat"></i> Needs Restock</span>
+                            {% elif p.total_stock < 3 and p.total_sent > 0 %}
+                            <span class="badge" style="background:var(--sp-amber);">Low Stock</span>
+                            {% elif p.total_sent == 0 %}
+                            <span class="text-muted">Not sent yet</span>
+                            {% else %}
+                            <span class="badge" style="background:var(--sp-emerald);">OK</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 3: Restock Needed -->
+{% if restock_needed %}
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="detail-card" style="border-left: 4px solid var(--sp-rose);">
+            <div class="detail-header" style="background:var(--sp-rose-light);color:#991b1b;">
+                <span><i class="bi bi-exclamation-octagon-fill"></i> Restock Required - {{ restock_needed|length }} items at zero stock</span>
+            </div>
+            <div class="detail-body">
+                <table class="table">
+                    <thead><tr><th>Product</th><th>Color</th><th>Size</th><th>SKU</th><th class="text-center">Previously Sent</th><th class="text-center">All Sold</th></tr></thead>
+                    <tbody>
+                    {% for item in restock_needed %}
+                    <tr style="background:var(--sp-rose-light);">
+                        <td><strong>{{ item.product_name }}</strong></td>
+                        <td>{{ item.color }}</td><td>{{ item.size }}</td>
+                        <td><code>{{ item.sku }}</code></td>
+                        <td class="text-center">{{ item.inward }}</td>
+                        <td class="text-center">{{ item.outward }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Row 4: Stock by Location -->
+{% if location_stock %}
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="detail-card">
+            <div class="detail-header"><span><i class="bi bi-geo-alt-fill"></i> Stock by Location</span></div>
+            <div class="detail-body">
+                {% for loc_data in location_stock %}
+                <div class="p-3 {% if not loop.last %}border-bottom{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong><i class="bi bi-pin-map"></i> {{ loc_data.location.display_name }}</strong>
+                        <span>{{ loc_data.stock }} units (Rs.{{ "{:,.0f}".format(loc_data.value) }})</span>
+                    </div>
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>Product</th><th>Color</th><th>Size</th><th class="text-center">Inward</th><th class="text-center">Sold</th><th class="text-center">Stock</th></tr></thead>
+                        <tbody>
+                        {% for item in loc_data.stock_items %}
+                        <tr class="{{ 'stock-zero' if item.stock <= 0 else '' }}">
+                            <td>{{ item.product_name }}</td><td>{{ item.color }}</td><td>{{ item.size }}</td>
+                            <td class="text-center">{{ item.inward }}</td>
+                            <td class="text-center">{{ item.outward }}</td>
+                            <td class="text-center"><strong>{{ item.stock }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Row 5: Order History -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="detail-card">
+            <div class="detail-header"><span><i class="bi bi-clock-history"></i> Order History</span></div>
+            <div class="detail-body">
+                <table class="table">
+                    <thead><tr><th>Date</th><th>Order #</th><th>Location</th><th>Transporter</th><th>Status</th><th class="text-end">Amount</th></tr></thead>
+                    <tbody>
+                    {% for po in orders %}
+                    <tr>
+                        <td>{{ po.order_date }}</td>
+                        <td><strong>{{ po.order_number or po.id }}</strong></td>
+                        <td>{{ po.location.display_name if po.location else '-' }}</td>
+                        <td>{{ po.transporter or '-' }}</td>
+                        <td><span class="badge badge-{{ po.status }}">{{ po.status }}</span></td>
+                        <td class="text-end fw-semibold">Rs.{{ "{:,.0f}".format(po.total_amount) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="text-center py-3 text-muted">No orders yet</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 6: Payment History -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="detail-card">
+            <div class="detail-header">
+                <span><i class="bi bi-cash-stack"></i> Payment History</span>
+                <span class="badge bg-{{ 'danger' if balance > 0 else 'success' }}">Balance: Rs.{{ "{:,.0f}".format(balance) }}</span>
+            </div>
+            <div class="detail-body">
+                <table class="table">
+                    <thead><tr><th>Date</th><th>Mode</th><th>Reference</th><th class="text-end">Amount</th><th>Notes</th></tr></thead>
+                    <tbody>
+                    {% for p in payments %}
+                    <tr>
+                        <td>{{ p.payment_date }}</td>
+                        <td><span class="badge bg-secondary">{{ p.payment_mode or '-' }}</span></td>
+                        <td>{{ p.reference_number or '-' }}</td>
+                        <td class="text-end fw-bold text-success">Rs.{{ "{:,.2f}".format(p.amount) }}</td>
+                        <td>{{ p.notes or '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="text-center py-3 text-muted">No payments recorded yet</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endif %}
+{% endblock %}

@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required
 from app import db
-from app.models import User, Location, AdminPermission, PERMISSION_KEYS, MANDATORY_PERMISSIONS
+from app.models import User, Location, Supplier, AdminPermission, PERMISSION_KEYS, MANDATORY_PERMISSIONS
 from app.decorators import superadmin_required
 from app.data.india_locations import INDIA_STATES_DISTRICTS, STATES
 
@@ -38,13 +38,19 @@ def new_user():
                 db.session.add(location)
                 db.session.flush()
 
+        role = request.form.get('role', 'admin')
+        supplier_id_val = None
+        if role == 'supplier':
+            supplier_id_val = request.form.get('supplier_id', type=int)
+
         user = User(
             username=username,
             full_name=request.form['full_name'].strip(),
             email=request.form.get('email', ''),
             phone=request.form.get('phone', ''),
-            role=request.form.get('role', 'admin'),
+            role=role,
             location_id=location.id if location else None,
+            supplier_id=supplier_id_val,
         )
         user.set_password(request.form['password'])
         db.session.add(user)
@@ -60,7 +66,8 @@ def new_user():
         flash(f'User "{user.full_name}" created.', 'success')
         return redirect(url_for('users.list_users'))
 
-    return render_template('users/form.html', user=None, states=STATES,
+    suppliers = Supplier.query.all()
+    return render_template('users/form.html', user=None, states=STATES, suppliers=suppliers,
                            permission_keys=PERMISSION_KEYS, mandatory=MANDATORY_PERMISSIONS)
 
 
@@ -103,7 +110,8 @@ def edit_user(id):
 
     # Get current permissions
     user_perms = {p.permission_key: p.is_granted for p in user.permissions}
-    return render_template('users/form.html', user=user, states=STATES,
+    suppliers = Supplier.query.all()
+    return render_template('users/form.html', user=user, states=STATES, suppliers=suppliers,
                            permission_keys=PERMISSION_KEYS, mandatory=MANDATORY_PERMISSIONS,
                            user_perms=user_perms)
 

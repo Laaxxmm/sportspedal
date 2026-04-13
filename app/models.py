@@ -13,14 +13,16 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     full_name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120))
-    role = db.Column(db.String(20), nullable=False, default='admin')  # superadmin | admin
+    role = db.Column(db.String(20), nullable=False, default='admin')  # superadmin | admin | supplier
     location_id = db.Column(db.Integer, db.ForeignKey('location.id'), nullable=True)
+    supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)
     phone = db.Column(db.String(20))
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
 
     location = db.relationship('Location', backref='users')
+    supplier_link = db.relationship('Supplier', backref='users')
     permissions = db.relationship('AdminPermission', backref='user', lazy='dynamic', cascade='all, delete-orphan')
 
     def set_password(self, password):
@@ -32,6 +34,10 @@ class User(UserMixin, db.Model):
     @property
     def is_superadmin(self):
         return self.role == 'superadmin'
+
+    @property
+    def is_supplier_user(self):
+        return self.role == 'supplier'
 
     def has_permission(self, key):
         if self.is_superadmin:

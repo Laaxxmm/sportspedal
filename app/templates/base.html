@@ -20,6 +20,13 @@
 
         <div class="nav-section">
             <ul class="nav flex-column">
+                {% if current_user.is_supplier_user %}
+                <li class="nav-item">
+                    <a class="nav-link active" href="{{ url_for('supplier_portal.portal_dashboard') }}" title="Supplier Portal">
+                        <i class="bi bi-speedometer2"></i> <span class="nav-text">My Portal</span>
+                    </a>
+                </li>
+                {% else %}
                 <li class="nav-item">
                     <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{{ url_for('dashboard.index') }}" title="Dashboard">
                         <i class="bi bi-grid-1x2-fill"></i> <span class="nav-text">Dashboard</span>
@@ -72,6 +79,7 @@
                     </a>
                 </li>
                 {% endif %}
+                {% endif %}{# end of not supplier_user #}
             </ul>
         </div>
 

@@ -44,6 +44,13 @@ def seed_and_import():
     db.session.add(profile)
     supplier = Supplier(name='True Spin', address='India')
     db.session.add(supplier)
+    db.session.flush()
+
+    # Create supplier user for True Spin
+    sup_user = User(username='truespin', full_name='True Spin', role='supplier', supplier_id=supplier.id)
+    sup_user.set_password('truespin123')
+    db.session.add(sup_user)
+    print(f"  Supplier user: truespin / truespin123")
 
     # === Seed products ===
     print("=== Seeding products ===")
