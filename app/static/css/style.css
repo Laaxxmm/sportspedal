@@ -234,35 +234,45 @@ body { background: var(--bg); color: var(--text-primary); margin: 0; }
 .kpi-amber .kpi-icon { background: rgba(255,181,71,0.15); color: var(--accent-amber); }
 .kpi-amber .kpi-value { color: #d97706; }
 
-/* ===== Money Flow Card (Gradient) ===== */
+/* ===== Money Flow Card ===== */
 .money-flow-card {
-    background: var(--gradient-1);
+    background: var(--white);
     border-radius: var(--radius);
-    border: none !important;
-    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border) !important;
+    box-shadow: var(--shadow-card);
     color: var(--text-primary);
 }
 .money-flow-card .flow-item {
     text-align: center;
-    padding: 8px 0;
+    padding: 16px 8px;
+    position: relative;
+}
+.money-flow-card .flow-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 20%;
+    height: 60%;
+    width: 1px;
+    background: var(--border);
 }
 .money-flow-card .flow-label {
     font-size: 0.68rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: rgba(26,29,46,0.5);
+    color: var(--text-muted);
     font-weight: 600;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 .money-flow-card .flow-value {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     font-weight: 800;
     letter-spacing: -0.02em;
 }
 .money-flow-card .flow-sub {
     font-size: 0.72rem;
-    color: rgba(26,29,46,0.45);
-    margin-top: 2px;
+    color: var(--text-muted);
+    margin-top: 4px;
 }
 
 /* ===== Split Cards ===== */
