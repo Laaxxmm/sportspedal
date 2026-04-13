@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Edit Sale {{ sale.invoice_number }} - Sportspedal{% endblock %}
+{% block content %}
+<h2 class="mb-4">Edit Sale {{ sale.invoice_number }}</h2>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" id="sale-form">
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">Customer</label>
+                    <select name="customer_id" class="form-select" disabled>
+                        <option selected>{{ sale.customer.name }} ({{ sale.customer.customer_type }})</option>
+                    </select>
+                    <input type="hidden" name="customer_id" value="{{ sale.customer_id }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Date</label>
+                    <input type="date" name="sale_date" class="form-control" value="{{ sale.sale_date }}" required>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        {% for st in ['confirmed', 'dispatched', 'delivered'] %}
+                        <option value="{{ st }}" {{ 'selected' if sale.status == st }}>{{ st|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">Payment</label>
+                    <select name="payment_status" class="form-select">
+                        {% for ps in ['paid', 'pending', 'partial'] %}
+                        <option value="{{ ps }}" {{ 'selected' if sale.payment_status == ps }}>{{ ps|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Transport Mode</label>
+                    <input type="text" name="transport_mode" class="form-control" value="{{ sale.transport_mode or '' }}">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">Transport</label>
+                    <input type="number" name="transport_charge" class="form-control" step="0.01" value="{{ sale.transport_charge or 0 }}" id="transport-charge">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">Discount</label>
+                    <input type="number" name="discount_amount" class="form-control" step="0.01" value="{{ sale.discount_amount or 0 }}" id="discount-amt">
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label class="form-label">Notes</label>
+                    <input type="text" name="notes" class="form-control" value="{{ sale.notes or '' }}">
+                </div>
+            </div>
+
+            <hr>
+            <h5>Line Items</h5>
+            <table class="table table-sm" id="items-table">
+                <thead>
+                    <tr>
+                        <th style="width:35%">Product / Variant</th>
+                        <th>Qty</th>
+                        <th>Unit Price</th>
+                        <th>GST%</th>
+                        <th>GST Amt</th>
+                        <th>Total</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="items-body">
+                    {% for item in sale.items %}
+                    <tr class="item-row">
+                        <td>
+                            <select name="variant_id[]" class="form-select form-select-sm variant-select" required>
+                                {% for v, p in variants %}
+                                <option value="{{ v.id }}" data-cost="{{ v.effective_cost }}" data-gst="{{ p.gst_percent }}"
+                                    {{ 'selected' if v.id == item.variant_id }}>{{ p.name }} - {{ v.color or '' }} {{ v.size or '' }} ({{ v.sku_code }})</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td><input type="number" name="qty[]" class="form-control form-control-sm qty" value="{{ item.quantity }}" min="1"></td>
+                        <td><input type="number" name="unit_price[]" class="form-control form-control-sm unit-price" step="0.01" value="{{ item.unit_price }}"></td>
+                        <td><input type="number" name="gst_percent[]" class="form-control form-control-sm gst-pct" step="0.1" value="{{ item.gst_percent }}"></td>
+                        <td class="gst-amt">{{ "%.2f"|format(item.gst_amount) }}</td>
+                        <td class="row-total">{{ "%.2f"|format(item.total_amount) }}</td>
+                        <td><button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-trash"></i></button></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
+                        <td></td>
+                        <td id="total-gst"><strong>0.00</strong></td>
+                        <td id="subtotal"><strong>0.00</strong></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td colspan="5" class="text-end"><strong>Grand Total:</strong></td>
+                        <td id="grand-total"><strong>0.00</strong></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+            <button type="button" class="btn btn-sm btn-outline-success mb-3" id="add-row"><i class="bi bi-plus"></i> Add Item</button>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Update Sale</button>
+                <a href="{{ url_for('sales.view_sale', id=sale.id) }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const variantOptions = `<option value="">Select...</option>
+{% for v, p in variants %}<option value="{{ v.id }}" data-cost="{{ v.effective_cost }}" data-gst="{{ p.gst_percent }}">{{ p.name }} - {{ v.color or '' }} {{ v.size or '' }} ({{ v.sku_code }})</option>
+{% endfor %}`;
+
+function newRow() {
+    return `<tr class="item-row">
+        <td><select name="variant_id[]" class="form-select form-select-sm variant-select" required>${variantOptions}</select></td>
+        <td><input type="number" name="qty[]" class="form-control form-control-sm qty" value="1" min="1"></td>
+        <td><input type="number" name="unit_price[]" class="form-control form-control-sm unit-price" step="0.01" value="0"></td>
+        <td><input type="number" name="gst_percent[]" class="form-control form-control-sm gst-pct" step="0.1" value="0"></td>
+        <td class="gst-amt">0.00</td>
+        <td class="row-total">0.00</td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-trash"></i></button></td>
+    </tr>`;
+}
+
+document.getElementById('add-row').addEventListener('click', () => {
+    document.getElementById('items-body').insertAdjacentHTML('beforeend', newRow());
+    bindEvents();
+});
+
+function recalc() {
+    let totalGst = 0, subtotal = 0;
+    document.querySelectorAll('.item-row').forEach(row => {
+        const qty = parseFloat(row.querySelector('.qty')?.value || 0);
+        const price = parseFloat(row.querySelector('.unit-price')?.value || 0);
+        const gstPct = parseFloat(row.querySelector('.gst-pct')?.value || 0);
+        const taxable = qty * price;
+        const gst = taxable * gstPct / 100;
+        row.querySelector('.gst-amt').textContent = gst.toFixed(2);
+        row.querySelector('.row-total').textContent = (taxable + gst).toFixed(2);
+        totalGst += gst;
+        subtotal += taxable + gst;
+    });
+    document.getElementById('total-gst').innerHTML = `<strong>${totalGst.toFixed(2)}</strong>`;
+    document.getElementById('subtotal').innerHTML = `<strong>${subtotal.toFixed(2)}</strong>`;
+    const transport = parseFloat(document.getElementById('transport-charge').value || 0);
+    const discount = parseFloat(document.getElementById('discount-amt').value || 0);
+    document.getElementById('grand-total').innerHTML = `<strong>${(subtotal + transport - discount).toFixed(2)}</strong>`;
+}
+
+function bindEvents() {
+    document.querySelectorAll('.qty, .unit-price, .gst-pct').forEach(el => { el.oninput = recalc; });
+    document.querySelectorAll('.remove-row').forEach(btn => {
+        btn.onclick = function() { this.closest('tr').remove(); recalc(); };
+    });
+}
+
+document.getElementById('transport-charge').addEventListener('input', recalc);
+document.getElementById('discount-amt').addEventListener('input', recalc);
+bindEvents();
+recalc();
+</script>
+{% endblock %}

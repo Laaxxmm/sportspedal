@@ -188,6 +188,73 @@ def view_sale(id):
     return render_template('sales/detail.html', sale=sale, profile=profile)
 
 
+@bp.route('/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_sale(id):
+    sale = SaleOrder.query.get_or_404(id)
+    if request.method == 'POST':
+      try:
+        sale.sale_date = date.fromisoformat(request.form.get('sale_date', sale.sale_date.isoformat()))
+        sale.status = request.form.get('status', sale.status)
+        sale.payment_status = request.form.get('payment_status', sale.payment_status)
+        sale.transport_mode = request.form.get('transport_mode', '')
+        sale.transport_charge = float(request.form.get('transport_charge', 0))
+        sale.discount_amount = float(request.form.get('discount_amount', 0))
+        sale.notes = request.form.get('notes', '')
+
+        # Delete old items and recreate
+        SaleItem.query.filter_by(sale_order_id=sale.id).delete()
+
+        variant_ids = request.form.getlist('variant_id[]')
+        qtys = request.form.getlist('qty[]')
+        unit_prices = request.form.getlist('unit_price[]')
+        gst_percents = request.form.getlist('gst_percent[]')
+
+        for i in range(len(variant_ids)):
+            if not variant_ids[i]:
+                continue
+            qty = int(qtys[i] or 1)
+            price = float(unit_prices[i] or 0)
+            gst_pct = float(gst_percents[i] or 0)
+            taxable = price * qty
+            gst_amt = taxable * gst_pct / 100
+            db.session.add(SaleItem(
+                sale_order_id=sale.id, variant_id=int(variant_ids[i]),
+                quantity=qty, unit_price=price, gst_percent=gst_pct,
+                gst_amount=gst_amt, total_amount=taxable + gst_amt,
+            ))
+
+        db.session.commit()
+        flash(f'Sale {sale.invoice_number} updated.', 'success')
+        return redirect(url_for('sales.view_sale', id=sale.id))
+      except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating sale: {str(e)}', 'danger')
+
+    customers = Customer.query.order_by(Customer.name).all()
+    variants = (db.session.query(ProductVariant, Product)
+                .join(Product)
+                .filter(ProductVariant.is_active == True, Product.is_active == True)
+                .order_by(Product.name, ProductVariant.color, ProductVariant.size)
+                .all())
+    stock_map = get_stock_map()
+    packages = PackagePrice.query.all()
+    return render_template('sales/edit.html', sale=sale, customers=customers,
+                           variants=variants, stock_map=stock_map, packages=packages)
+
+
+@bp.route('/<int:id>/delete', methods=['POST'])
+@login_required
+def delete_sale(id):
+    sale = SaleOrder.query.get_or_404(id)
+    inv = sale.invoice_number
+    SaleItem.query.filter_by(sale_order_id=sale.id).delete()
+    db.session.delete(sale)
+    db.session.commit()
+    flash(f'Sale {inv} deleted.', 'info')
+    return redirect(url_for('sales.list_sales'))
+
+
 @bp.route('/<int:id>/invoice')
 @login_required
 def download_invoice(id):

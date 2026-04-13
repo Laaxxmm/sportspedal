@@ -69,9 +69,12 @@
                 <td><span class="badge bg-{{ 'success' if sale.status == 'delivered' else ('info' if sale.status == 'dispatched' else 'secondary') }}">{{ sale.status }}</span></td>
                 <td class="text-end fw-semibold">Rs.{{ "{:,.0f}".format(sale.grand_total) }}</td>
                 <td>
-                    <a href="{{ url_for('sales.view_sale', id=sale.id) }}" class="btn btn-sm btn-outline-info">View</a>
+                    <a href="{{ url_for('sales.view_sale', id=sale.id) }}" class="btn btn-sm btn-outline-info" title="View"><i class="bi bi-eye"></i></a>
+                    <a href="{{ url_for('sales.edit_sale', id=sale.id) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
                     <a href="{{ url_for('sales.download_invoice', id=sale.id) }}" class="btn btn-sm btn-outline-danger" title="Invoice"><i class="bi bi-file-pdf"></i></a>
-                    <a href="{{ url_for('sales.download_challan', id=sale.id) }}" class="btn btn-sm btn-outline-warning" title="Challan"><i class="bi bi-truck"></i></a>
+                    <form method="POST" action="{{ url_for('sales.delete_sale', id=sale.id) }}" class="d-inline" onsubmit="return confirm('Delete sale {{ sale.invoice_number }}?')">
+                        <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                    </form>
                 </td>
             </tr>
             {% else %}
