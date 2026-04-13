@@ -9,7 +9,10 @@ bp = Blueprint('customers', __name__)
 @bp.route('/')
 @login_required
 def list_customers():
-    customers = Customer.query.order_by(Customer.name).all()
+    query = Customer.query
+    if not current_user.is_superadmin and current_user.location_id:
+        query = query.filter_by(location_id=current_user.location_id)
+    customers = query.order_by(Customer.name).all()
     return render_template('customers/list.html', customers=customers)
 
 
@@ -17,6 +20,11 @@ def list_customers():
 @login_required
 def new_customer():
     if request.method == 'POST':
+        # Auto-assign location from current user for admins
+        loc_id = None
+        if not current_user.is_superadmin and current_user.location_id:
+            loc_id = current_user.location_id
+
         customer = Customer(
             name=request.form['name'],
             customer_type=request.form.get('customer_type', 'public'),
@@ -26,6 +34,7 @@ def new_customer():
             city=request.form.get('city', ''),
             state=request.form.get('state', 'Karnataka'),
             gstin=request.form.get('gstin', ''),
+            location_id=loc_id,
         )
         db.session.add(customer)
         db.session.commit()
@@ -42,12 +51,18 @@ def quick_add():
     name = request.form.get('name', '').strip()
     if not name:
         return jsonify({'error': 'Name is required'}), 400
+
+    loc_id = None
+    if not current_user.is_superadmin and current_user.location_id:
+        loc_id = current_user.location_id
+
     customer = Customer(
         name=name,
         customer_type=request.form.get('customer_type', 'public'),
         phone=request.form.get('phone', ''),
         city=request.form.get('city', ''),
         state=request.form.get('state', 'Karnataka'),
+        location_id=loc_id,
     )
     db.session.add(customer)
     db.session.commit()

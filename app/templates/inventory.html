@@ -2,8 +2,37 @@
 {% block title %}Inventory - Sportspedal{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Inventory</h2>
-    <a href="{{ url_for('inventory.download_inventory') }}" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel"></i> Download Excel</a>
+    <h2>Inventory
+        {% if selected_location %}
+        <small class="text-muted" style="font-size:0.55em;">- {{ selected_location.display_name }}</small>
+        {% elif view == 'global' or (current_user.is_superadmin and not selected_location) %}
+        <small class="text-muted" style="font-size:0.55em;">- All Locations</small>
+        {% endif %}
+    </h2>
+    <div class="d-flex gap-2 align-items-center">
+        <!-- Location toggle for admins / filter for superadmin -->
+        {% if not current_user.is_superadmin and current_user.location_id %}
+        <div class="btn-group btn-group-sm">
+            <a href="{{ url_for('inventory.view_inventory', view='my') }}" class="btn {{ 'btn-primary' if view == 'my' else 'btn-outline-primary' }}">
+                <i class="bi bi-pin-map"></i> My Location
+            </a>
+            <a href="{{ url_for('inventory.view_inventory', view='global') }}" class="btn {{ 'btn-primary' if view == 'global' else 'btn-outline-primary' }}">
+                <i class="bi bi-globe"></i> Global
+            </a>
+        </div>
+        {% endif %}
+        {% if current_user.is_superadmin and locations %}
+        <form method="GET" class="d-flex">
+            <select name="location_id" class="form-select form-select-sm" style="width:200px;" onchange="this.form.submit()">
+                <option value="">All Locations</option>
+                {% for loc in locations %}
+                <option value="{{ loc.id }}" {{ 'selected' if selected_location and selected_location.id == loc.id }}>{{ loc.display_name }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        {% endif %}
+        <a href="{{ url_for('inventory.download_inventory', view=view, location_id=selected_location.id if selected_location else '') }}" class="btn btn-outline-success btn-sm"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+    </div>
 </div>
 
 {% set zero_items = inventory | selectattr('stock', 'le', 0) | selectattr('inward', 'gt', 0) | list %}

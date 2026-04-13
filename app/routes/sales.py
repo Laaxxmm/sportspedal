@@ -64,7 +64,10 @@ def detect_package(items_data, customer_type):
 @bp.route('/')
 @login_required
 def list_sales():
-    sales = SaleOrder.query.order_by(SaleOrder.sale_date.desc()).all()
+    query = SaleOrder.query
+    if not current_user.is_superadmin and current_user.location_id:
+        query = query.filter_by(location_id=current_user.location_id)
+    sales = query.order_by(SaleOrder.sale_date.desc()).all()
     return render_template('sales/list.html', sales=sales)
 
 
@@ -72,7 +75,10 @@ def list_sales():
 @login_required
 def download_sales():
     from app.services.excel_export import export_sales
-    sales = SaleOrder.query.order_by(SaleOrder.sale_date.desc()).all()
+    query = SaleOrder.query
+    if not current_user.is_superadmin and current_user.location_id:
+        query = query.filter_by(location_id=current_user.location_id)
+    sales = query.order_by(SaleOrder.sale_date.desc()).all()
     return export_sales(sales)
 
 
@@ -168,13 +174,19 @@ def new_sale():
         flash(f'Error creating sale: {str(e)}', 'danger')
         return redirect(url_for('sales.new_sale'))
 
-    customers = Customer.query.order_by(Customer.name).all()
+    cust_query = Customer.query
+    if not current_user.is_superadmin and current_user.location_id:
+        cust_query = cust_query.filter_by(location_id=current_user.location_id)
+    customers = cust_query.order_by(Customer.name).all()
+
     variants = (db.session.query(ProductVariant, Product)
                 .join(Product)
                 .filter(ProductVariant.is_active == True, Product.is_active == True)
                 .order_by(Product.name, ProductVariant.color, ProductVariant.size)
                 .all())
-    stock_map = get_stock_map()
+    # Stock scoped to admin's location
+    loc_id = current_user.location_id if not current_user.is_superadmin else None
+    stock_map = get_stock_map(location_id=loc_id)
     packages = PackagePrice.query.all()
     return render_template('sales/form.html', sale=None, customers=customers,
                            variants=variants, stock_map=stock_map, packages=packages)
