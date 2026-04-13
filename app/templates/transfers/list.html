@@ -31,6 +31,7 @@
                     <a href="{{ url_for('transfers.view_transfer', id=t.id) }}" class="btn btn-sm btn-outline-info">View</a>
                     {% if t.status == 'pending' and current_user.is_superadmin %}
                     <form method="POST" action="{{ url_for('transfers.complete_transfer', id=t.id) }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button class="btn btn-sm btn-success">Complete</button>
                     </form>
                     {% endif %}

@@ -1,9 +1,16 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 from app import db
 from app.models import SaleOrder, SaleItem, Customer, ProductVariant, Product, BusinessProfile, PackagePrice
 from app.services.stock import get_stock_map
 from datetime import date
+
+
+def scope_sale(sale):
+    """Check if current user can access this sale."""
+    if not current_user.is_superadmin and current_user.location_id:
+        if sale.location_id != current_user.location_id:
+            abort(403)
 
 bp = Blueprint('sales', __name__)
 
@@ -196,6 +203,7 @@ def new_sale():
 @login_required
 def view_sale(id):
     sale = SaleOrder.query.get_or_404(id)
+    scope_sale(sale)
     profile = BusinessProfile.query.first()
     return render_template('sales/detail.html', sale=sale, profile=profile)
 
@@ -204,6 +212,7 @@ def view_sale(id):
 @login_required
 def edit_sale(id):
     sale = SaleOrder.query.get_or_404(id)
+    scope_sale(sale)
     if request.method == 'POST':
       try:
         sale.sale_date = date.fromisoformat(request.form.get('sale_date', sale.sale_date.isoformat()))
@@ -259,6 +268,7 @@ def edit_sale(id):
 @login_required
 def delete_sale(id):
     sale = SaleOrder.query.get_or_404(id)
+    scope_sale(sale)
     inv = sale.invoice_number
     SaleItem.query.filter_by(sale_order_id=sale.id).delete()
     db.session.delete(sale)

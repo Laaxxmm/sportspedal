@@ -79,6 +79,7 @@
                 <td>
                     <a href="{{ url_for('payments.edit_payment', id=p.id) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
                     <form method="POST" action="{{ url_for('payments.delete_payment', id=p.id) }}" class="d-inline" onsubmit="return confirm('Delete this payment of Rs.{{ '{:,.0f}'.format(p.amount) }}?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
                     </form>
                 </td>

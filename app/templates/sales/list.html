@@ -73,6 +73,7 @@
                     <a href="{{ url_for('sales.edit_sale', id=sale.id) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
                     <a href="{{ url_for('sales.download_invoice', id=sale.id) }}" class="btn btn-sm btn-outline-danger" title="Invoice"><i class="bi bi-file-pdf"></i></a>
                     <form method="POST" action="{{ url_for('sales.delete_sale', id=sale.id) }}" class="d-inline" onsubmit="return confirm('Delete sale {{ sale.invoice_number }}?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
                     </form>
                 </td>

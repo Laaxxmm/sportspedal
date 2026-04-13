@@ -6,9 +6,11 @@
     <div>
         {% if transfer.status == 'pending' and current_user.is_superadmin %}
         <form method="POST" action="{{ url_for('transfers.complete_transfer', id=transfer.id) }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-success"><i class="bi bi-check-circle"></i> Mark Completed</button>
         </form>
         <form method="POST" action="{{ url_for('transfers.cancel_transfer', id=transfer.id) }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-outline-danger">Cancel Transfer</button>
         </form>
         {% endif %}

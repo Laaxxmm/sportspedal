@@ -52,7 +52,11 @@ def new_user():
             location_id=location.id if location else None,
             supplier_id=supplier_id_val,
         )
-        user.set_password(request.form['password'])
+        password = request.form['password']
+        if len(password) < 6:
+            flash('Password must be at least 6 characters.', 'danger')
+            return redirect(url_for('users.new_user'))
+        user.set_password(password)
         db.session.add(user)
         db.session.flush()
 

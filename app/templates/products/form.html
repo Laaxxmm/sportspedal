@@ -6,6 +6,7 @@
 <div class="card">
     <div class="card-body">
         <form method="POST" action="{{ url_for('products.edit_product', id=product.id) if product else url_for('products.new_product') }}" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="row mb-3">
                 <div class="col-md-4">
                     <label class="form-label">Product Name</label>
@@ -116,6 +117,7 @@
         <hr>
         <h5>Add Variant</h5>
         <form method="POST" action="{{ url_for('products.add_variant', id=product.id) }}" class="row g-2 align-items-end">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="col-auto">
                 <label class="form-label">Color</label>
                 <select name="color" class="form-select form-select-sm">

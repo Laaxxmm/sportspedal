@@ -76,9 +76,12 @@ def get_locations():
 
 
 @bp.route('/image/<filename>')
+@login_required
 def serve_image(filename):
     """Serve product images from the persistent data directory."""
     import os
+    if not filename or '..' in filename or '/' in filename:
+        abort(400)
     path = get_image_path(filename)
     if path and os.path.exists(path):
         return send_file(path, mimetype='image/webp')

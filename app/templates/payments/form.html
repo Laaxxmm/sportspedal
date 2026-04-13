@@ -6,6 +6,7 @@
 <div class="card">
     <div class="card-body">
         <form method="POST" action="{{ url_for('payments.edit_payment', id=payment.id) if payment else url_for('payments.new_payment') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="row mb-3">
                 <div class="col-md-3">
                     <label class="form-label">Supplier *</label>

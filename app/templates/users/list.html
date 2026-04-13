@@ -26,6 +26,7 @@
                     <a href="{{ url_for('users.edit_user', id=u.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                     {% if not u.is_superadmin %}
                     <form method="POST" action="{{ url_for('users.toggle_active', id=u.id) }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button class="btn btn-sm btn-outline-{{ 'warning' if u.is_active else 'success' }}">
                             {{ 'Deactivate' if u.is_active else 'Activate' }}
                         </button>

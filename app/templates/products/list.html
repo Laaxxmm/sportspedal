@@ -51,6 +51,7 @@
                     <a href="{{ url_for('products.edit_product', id=product.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                     <form method="POST" action="{{ url_for('products.delete_product', id=product.id) }}" class="d-inline"
                           onsubmit="return confirm('Deactivate this product?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button class="btn btn-sm btn-outline-danger">Deactivate</button>
                     </form>
                 </td>

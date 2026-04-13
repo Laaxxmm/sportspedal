@@ -2,11 +2,13 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
 import os
 
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
+csrf = CSRFProtect()
 
 
 def create_app():
@@ -17,6 +19,7 @@ def create_app():
 
     db.init_app(app)
     migrate.init_app(app, db)
+    csrf.init_app(app)
 
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
@@ -27,20 +30,25 @@ def create_app():
         from app.models import User
         return User.query.get(int(user_id))
 
-    # Context processor to inject current_user permissions into templates
+    # Context processor
     @app.context_processor
     def inject_permissions():
         from flask_login import current_user
         from app.models import PERMISSION_KEYS
-        return {
-            'PERMISSION_KEYS': PERMISSION_KEYS,
-        }
+        return {'PERMISSION_KEYS': PERMISSION_KEYS}
 
-    # Show errors in production (temporary for debugging)
-    @app.errorhandler(500)
-    def internal_error(e):
-        import traceback
-        return f"<pre>{traceback.format_exc()}</pre>", 500
+    # Security headers
+    @app.after_request
+    def security_headers(response):
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        return response
+
+    # Exempt AJAX endpoints from CSRF where needed
+    from app.routes.api import bp as api_bp
+    csrf.exempt(api_bp)
 
     # Register blueprints
     from app.routes.auth import bp as auth_bp
@@ -52,7 +60,6 @@ def create_app():
     from app.routes.suppliers import bp as suppliers_bp
     from app.routes.inventory import bp as inventory_bp
     from app.routes.settings import bp as settings_bp
-    from app.routes.api import bp as api_bp
     from app.routes.users import bp as users_bp
     from app.routes.transfers import bp as transfers_bp
     from app.routes.payments import bp as payments_bp

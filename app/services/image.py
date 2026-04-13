@@ -21,7 +21,14 @@ def save_product_image(file):
     filename = f"{uuid.uuid4().hex}.webp"
     filepath = os.path.join(PRODUCT_IMG_DIR, filename)
 
-    img = Image.open(file.stream)
+    try:
+        img = Image.open(file.stream)
+        img.verify()  # Verify it's actually an image
+        file.stream.seek(0)  # Reset after verify
+        img = Image.open(file.stream)
+    except Exception:
+        return None  # Not a valid image
+
     if img.mode in ('RGBA', 'P'):
         img = img.convert('RGB')
     img.thumbnail(THUMBNAIL_SIZE, Image.LANCZOS)

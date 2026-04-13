@@ -8,6 +8,7 @@
         <a href="{{ url_for('sales.download_invoice', id=sale.id) }}" class="btn btn-danger"><i class="bi bi-file-pdf"></i> Invoice PDF</a>
         <a href="{{ url_for('sales.download_challan', id=sale.id) }}" class="btn btn-warning"><i class="bi bi-truck"></i> Challan PDF</a>
         <form method="POST" action="{{ url_for('sales.delete_sale', id=sale.id) }}" class="d-inline" onsubmit="return confirm('Delete this sale?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-outline-danger"><i class="bi bi-trash"></i> Delete</button>
         </form>
         <a href="{{ url_for('sales.list_sales') }}" class="btn btn-outline-secondary">Back</a>
