@@ -80,12 +80,10 @@ def download_sales():
 @login_required
 def new_sale():
     if request.method == 'POST':
+      try:
         customer = Customer.query.get(int(request.form['customer_id']))
-        # Set location: admin uses their location, superadmin can pick
-        from flask_login import current_user
-        loc_id = current_user.location_id
-        if current_user.is_superadmin:
-            loc_id = request.form.get('location_id', type=int) or current_user.location_id or 1
+        from app.models import Location
+        loc_id = current_user.location_id or Location.query.first().id if Location.query.first() else None
 
         sale = SaleOrder(
             invoice_number=generate_invoice_number(),
@@ -165,6 +163,10 @@ def new_sale():
         db.session.commit()
         flash(f'Sale {sale.invoice_number} created.', 'success')
         return redirect(url_for('sales.list_sales'))
+      except Exception as e:
+        db.session.rollback()
+        flash(f'Error creating sale: {str(e)}', 'danger')
+        return redirect(url_for('sales.new_sale'))
 
     customers = Customer.query.order_by(Customer.name).all()
     variants = (db.session.query(ProductVariant, Product)
