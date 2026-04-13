@@ -56,21 +56,14 @@
             </div>
 
             <div class="row mb-3">
-                <div class="col-md-8">
+                <div class="col-md-12">
                     <label class="form-label">Notes</label>
                     <input type="text" name="notes" class="form-control" value="">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Package Pricing</label>
-                    <div class="form-check mt-2">
-                        <input class="form-check-input" type="checkbox" name="apply_package" value="1" id="apply-package">
-                        <label class="form-check-label" for="apply-package">Apply package price (skate+helmet+guards+bag)</label>
-                    </div>
                 </div>
             </div>
 
             <div id="package-info" class="alert alert-success d-none mb-3">
-                <i class="bi bi-check-circle"></i> <span id="package-msg"></span>
+                <i class="bi bi-check-circle"></i> <span id="package-msg">Tip: Check the "Pkg" box on items to apply package pricing. Uncheck for individual pricing. Prices are always editable.</span>
             </div>
 
             <hr>
@@ -84,6 +77,7 @@
                         <th>Stock</th>
                         <th>Qty</th>
                         <th>Unit Price</th>
+                        <th title="Check to apply package price">Pkg</th>
                         <th>GST%</th>
                         <th>GST Amt</th>
                         <th>Total</th>
@@ -93,14 +87,14 @@
                 <tbody id="items-body"></tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="6" class="text-end"><strong>Subtotal:</strong></td>
+                        <td colspan="7" class="text-end"><strong>Subtotal:</strong></td>
                         <td></td>
                         <td id="total-gst"><strong>0.00</strong></td>
                         <td id="subtotal"><strong>0.00</strong></td>
                         <td></td>
                     </tr>
                     <tr>
-                        <td colspan="8" class="text-end"><strong>Grand Total (incl. transport - discount):</strong></td>
+                        <td colspan="9" class="text-end"><strong>Grand Total (incl. transport - discount):</strong></td>
                         <td id="grand-total"><strong>0.00</strong></td>
                         <td></td>
                     </tr>
@@ -205,6 +199,48 @@ function findVariant(name, color, size) {
     return products.find(p => p.name === name && (p.color || '') === (color || '') && (p.size || '') === (size || ''));
 }
 
+function getPackageUnitPrice(variant, custType) {
+    // Calculate proportional package price for this item's category
+    // Package = skate + helmet + guards + bag at a bundled price
+    // We distribute proportionally based on individual prices
+    const category = variant.category;
+    const prodName = variant.name;
+
+    // Find which package this product belongs to (by skate name in sale, or use first available)
+    // For non-skate items, find the skate in the current sale to determine package
+    let skateName = null;
+    document.querySelectorAll('.product-select').forEach(sel => {
+        const n = sel.value;
+        const p = products.find(x => x.name === n && x.category === 'skates');
+        if (p) skateName = p.name;
+    });
+
+    if (!skateName && category === 'skates') skateName = prodName;
+    if (!skateName) return null;
+
+    const pkg = packagePrices[skateName];
+    if (!pkg) return null;
+
+    const pkgTotal = custType === 'coach' ? pkg.coach : pkg.public;
+
+    // Get individual prices for all 4 categories to calculate ratio
+    const skateP = products.find(p => p.name === skateName);
+    const individualTotal = (skateP ? (custType === 'coach' ? skateP.coach : skateP.mrp) : 0)
+        + getAvgPrice('helmet', custType) + getAvgPrice('guards', custType) + getAvgPrice('bag', custType);
+
+    if (individualTotal <= 0) return null;
+
+    const itemPrice = custType === 'coach' ? variant.coach : variant.mrp;
+    return Math.round(itemPrice * pkgTotal / individualTotal);
+}
+
+function getAvgPrice(category, custType) {
+    const items = products.filter(p => p.category === category);
+    if (items.length === 0) return 0;
+    const p = items[0];
+    return custType === 'coach' ? p.coach : p.mrp;
+}
+
 function newRow() {
     return `<tr class="item-row">
         <td><select class="form-select form-select-sm product-select" required>${productOptions}</select></td>
@@ -213,6 +249,7 @@ function newRow() {
         <td class="stock-cell">-</td>
         <td><input type="number" name="qty[]" class="form-control form-control-sm qty" value="1" min="1"></td>
         <td><input type="number" name="unit_price[]" class="form-control form-control-sm unit-price" step="0.01" value="0"></td>
+        <td class="text-center"><input type="checkbox" class="form-check-input pkg-check" title="Apply package price"></td>
         <td><input type="number" name="gst_percent[]" class="form-control form-control-sm gst-pct" step="0.1" value="0"></td>
         <td class="gst-amt">0.00</td>
         <td class="row-total">0.00</td>
@@ -243,11 +280,18 @@ function updateVariantSelection(row) {
 
     // Find matching variant
     const v = findVariant(name, color, size);
+    const isPkg = row.querySelector('.pkg-check').checked;
     if (v) {
         hiddenInput.value = v.vid;
         stockCell.textContent = v.stock;
         const custType = getCustomerType();
-        row.querySelector('.unit-price').value = custType === 'coach' ? v.coach : v.mrp;
+        if (isPkg) {
+            // Apply package price proportionally
+            const pkgPrice = getPackageUnitPrice(v, custType);
+            row.querySelector('.unit-price').value = pkgPrice || (custType === 'coach' ? v.coach : v.mrp);
+        } else {
+            row.querySelector('.unit-price').value = custType === 'coach' ? v.coach : v.mrp;
+        }
         row.querySelector('.gst-pct').value = v.gst;
     } else {
         // Try without size/color for products like bags
@@ -256,7 +300,12 @@ function updateVariantSelection(row) {
             hiddenInput.value = simple.vid;
             stockCell.textContent = simple.stock;
             const custType = getCustomerType();
-            row.querySelector('.unit-price').value = custType === 'coach' ? simple.coach : simple.mrp;
+            if (isPkg) {
+                const pkgPrice = getPackageUnitPrice(simple, custType);
+                row.querySelector('.unit-price').value = pkgPrice || (custType === 'coach' ? simple.coach : simple.mrp);
+            } else {
+                row.querySelector('.unit-price').value = custType === 'coach' ? simple.coach : simple.mrp;
+            }
             row.querySelector('.gst-pct').value = simple.gst;
         } else {
             hiddenInput.value = '';
@@ -360,6 +409,11 @@ function bindEvents() {
         sel.onchange = function() { updateVariantSelection(this.closest('tr')); };
     });
 
+    // Package checkbox: toggle pricing
+    document.querySelectorAll('.pkg-check').forEach(cb => {
+        cb.onchange = function() { updateVariantSelection(this.closest('tr')); };
+    });
+
     document.querySelectorAll('.qty, .unit-price, .gst-pct').forEach(el => { el.oninput = recalc; });
     document.querySelectorAll('.remove-row').forEach(btn => {
         btn.onclick = function() { this.closest('tr').remove(); recalc(); };
@@ -374,7 +428,8 @@ document.getElementById('customer-select').addEventListener('change', function()
 });
 document.getElementById('transport-charge').addEventListener('input', recalc);
 document.getElementById('discount-amt').addEventListener('input', recalc);
-document.getElementById('apply-package').addEventListener('change', recalc);
+// Show package tip on first load
+document.getElementById('package-info').classList.remove('d-none');
 
 bindEvents();
 document.getElementById('add-row').click();
