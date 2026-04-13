@@ -41,7 +41,11 @@
             <div class="row mb-3">
                 <div class="col-md-4">
                     <label class="form-label">Location</label>
-                    <input type="text" name="location" class="form-control" value="{{ purchase.location if purchase else 'Bangalore' }}">
+                    <select name="location_id" class="form-select">
+                        {% for loc in locations %}
+                        <option value="{{ loc.id }}" {{ 'selected' if purchase and purchase.location_id == loc.id }}>{{ loc.display_name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 <div class="col-md-8">
                     <label class="form-label">Notes</label>

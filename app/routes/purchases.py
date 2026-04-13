@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from app import db
-from app.models import PurchaseOrder, PurchaseItem, Supplier, ProductVariant, Product
+from app.models import PurchaseOrder, PurchaseItem, Supplier, ProductVariant, Product, Location
 
 bp = Blueprint('purchases', __name__)
 
@@ -25,11 +25,16 @@ def download_purchases():
 @login_required
 def new_purchase():
     if request.method == 'POST':
+        from flask_login import current_user
+        loc_id = current_user.location_id
+        if current_user.is_superadmin:
+            loc_id = request.form.get('location_id', type=int) or 1
+
         po = PurchaseOrder(
             order_number=request.form.get('order_number', ''),
             supplier_id=int(request.form['supplier_id']),
             order_date=request.form['order_date'],
-            location=request.form.get('location', 'Bangalore'),
+            location_id=loc_id,
             transporter=request.form.get('transporter', ''),
             status=request.form.get('status', 'ordered'),
             notes=request.form.get('notes', ''),
@@ -74,7 +79,8 @@ def new_purchase():
                 .filter(ProductVariant.is_active == True, Product.is_active == True)
                 .order_by(Product.name, ProductVariant.color, ProductVariant.size)
                 .all())
-    return render_template('purchases/form.html', purchase=None, suppliers=suppliers, variants=variants)
+    locations = Location.query.filter_by(is_active=True).order_by(Location.state, Location.district).all()
+    return render_template('purchases/form.html', purchase=None, suppliers=suppliers, variants=variants, locations=locations)
 
 
 @bp.route('/<int:id>')
@@ -92,7 +98,7 @@ def edit_purchase(id):
         po.order_number = request.form.get('order_number', '')
         po.supplier_id = int(request.form['supplier_id'])
         po.order_date = request.form['order_date']
-        po.location = request.form.get('location', 'Bangalore')
+        po.location_id = request.form.get('location_id', type=int) or po.location_id
         po.transporter = request.form.get('transporter', '')
         po.status = request.form.get('status', 'ordered')
         po.notes = request.form.get('notes', '')
@@ -136,4 +142,5 @@ def edit_purchase(id):
                 .filter(ProductVariant.is_active == True, Product.is_active == True)
                 .order_by(Product.name, ProductVariant.color, ProductVariant.size)
                 .all())
-    return render_template('purchases/form.html', purchase=po, suppliers=suppliers, variants=variants)
+    locations = Location.query.filter_by(is_active=True).order_by(Location.state, Location.district).all()
+    return render_template('purchases/form.html', purchase=po, suppliers=suppliers, variants=variants, locations=locations)

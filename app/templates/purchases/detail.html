@@ -15,7 +15,7 @@
             <div class="card-body">
                 <p><strong>Supplier:</strong> {{ purchase.supplier.name }}</p>
                 <p><strong>Date:</strong> {{ purchase.order_date }}</p>
-                <p><strong>Location:</strong> {{ purchase.location }}</p>
+                <p><strong>Location:</strong> {{ purchase.location.display_name if purchase.location else '-' }}</p>
                 <p><strong>Transporter:</strong> {{ purchase.transporter or '-' }}</p>
                 <p><strong>Status:</strong> <span class="badge bg-{{ 'success' if purchase.status == 'delivered' else 'warning' }}">{{ purchase.status }}</span></p>
                 {% if purchase.notes %}<p><strong>Notes:</strong> {{ purchase.notes }}</p>{% endif %}

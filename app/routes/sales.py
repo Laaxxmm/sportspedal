@@ -81,11 +81,18 @@ def download_sales():
 def new_sale():
     if request.method == 'POST':
         customer = Customer.query.get(int(request.form['customer_id']))
+        # Set location: admin uses their location, superadmin can pick
+        from flask_login import current_user
+        loc_id = current_user.location_id
+        if current_user.is_superadmin:
+            loc_id = request.form.get('location_id', type=int) or current_user.location_id or 1
+
         sale = SaleOrder(
             invoice_number=generate_invoice_number(),
             challan_number=generate_challan_number(),
             customer_id=customer.id,
             sale_date=request.form.get('sale_date', date.today().isoformat()),
+            location_id=loc_id,
             status=request.form.get('status', 'confirmed'),
             payment_status=request.form.get('payment_status', 'paid'),
             transport_mode=request.form.get('transport_mode', ''),
