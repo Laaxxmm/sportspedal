@@ -65,7 +65,7 @@
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
             <thead class="table-light">
-                <tr><th>Date</th><th>Supplier</th><th>Mode</th><th>Reference</th><th class="text-end">Amount</th><th>Notes</th></tr>
+                <tr><th>Date</th><th>Supplier</th><th>Mode</th><th>Reference</th><th class="text-end">Amount</th><th>Notes</th><th>Actions</th></tr>
             </thead>
             <tbody>
             {% for p in payments %}
@@ -76,9 +76,15 @@
                 <td>{{ p.reference_number or '-' }}</td>
                 <td class="text-end fw-bold text-success">Rs.{{ "{:,.2f}".format(p.amount) }}</td>
                 <td>{{ p.notes or '-' }}</td>
+                <td>
+                    <a href="{{ url_for('payments.edit_payment', id=p.id) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
+                    <form method="POST" action="{{ url_for('payments.delete_payment', id=p.id) }}" class="d-inline" onsubmit="return confirm('Delete this payment of Rs.{{ '{:,.0f}'.format(p.amount) }}?')">
+                        <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                    </form>
+                </td>
             </tr>
             {% else %}
-            <tr><td colspan="6" class="text-center text-muted py-4">No payments recorded yet</td></tr>
+            <tr><td colspan="7" class="text-center text-muted py-4">No payments recorded yet</td></tr>
             {% endfor %}
             </tbody>
         </table>

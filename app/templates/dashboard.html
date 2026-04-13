@@ -5,13 +5,13 @@
 <!-- Header -->
 <div class="dash-header">
     <div>
-        <h2>Dashboard {% if selected_location %}<small class="text-muted" style="font-size: 0.6em;">- {{ selected_location.display_name }}</small>{% endif %}</h2>
+        <h2>Dashboard {% if selected_location %}<small class="text-muted" style="font-size: 0.55em;">{{ selected_location.display_name }}</small>{% endif %}</h2>
         <div class="dash-date">{{ now.strftime('%A, %d %B %Y') if now else '' }}</div>
     </div>
     <div class="d-flex gap-2 align-items-center">
         {% if current_user.is_superadmin and locations %}
-        <form method="GET" class="d-flex gap-2">
-            <select name="location_id" class="form-select form-select-sm" style="width: 220px;" onchange="this.form.submit()">
+        <form method="GET" class="d-flex">
+            <select name="location_id" class="form-select form-select-sm" style="width: 200px;" onchange="this.form.submit()">
                 <option value="">All Locations</option>
                 {% for loc in locations %}
                 <option value="{{ loc.id }}" {{ 'selected' if selected_location and selected_location.id == loc.id }}>{{ loc.display_name }}</option>
@@ -19,90 +19,70 @@
             </select>
         </form>
         {% endif %}
-        {% if current_user.has_permission('edit_purchases') %}
-        <a href="{{ url_for('purchases.new_purchase') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-cart-plus"></i> New Purchase</a>
-        {% endif %}
         {% if current_user.has_permission('edit_sales') %}
         <a href="{{ url_for('sales.new_sale') }}" class="btn btn-success btn-sm"><i class="bi bi-plus-lg"></i> New Sale</a>
         {% endif %}
     </div>
 </div>
 
-<!-- KPI Cards Row 1 -->
+<!-- Row 1: The Money Story (what every business owner checks first) -->
 <div class="row g-3 mb-4">
-    {% if current_user.has_permission('kpi_revenue') %}
-    <div class="col-md-3">
-        <div class="kpi-card kpi-emerald">
-            <div class="kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
-            <div class="kpi-label">Total Revenue</div>
-            <div class="kpi-value">Rs.{{ "{:,.0f}".format(total_revenue) }}</div>
-            <div class="kpi-sub">{{ total_units_sold }} units sold</div>
+    <div class="col-md-8">
+        <div class="detail-card" style="height:100%;">
+            <div class="detail-header"><span><i class="bi bi-currency-rupee"></i> Money Flow</span></div>
+            <div class="p-4">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--sp-gray-400); font-weight:600;">I Bought For</div>
+                        <div style="font-size:1.6rem; font-weight:800; color:var(--sp-rose); letter-spacing:-0.02em;">Rs.{{ "{:,.0f}".format(total_purchase_cost) }}</div>
+                        <div style="font-size:0.75rem; color:var(--sp-gray-400);">from supplier (incl GST)</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--sp-gray-400); font-weight:600;">I Sold For</div>
+                        <div style="font-size:1.6rem; font-weight:800; color:var(--sp-emerald); letter-spacing:-0.02em;">Rs.{{ "{:,.0f}".format(total_revenue) }}</div>
+                        <div style="font-size:0.75rem; color:var(--sp-gray-400);">{{ total_units_sold }} units sold</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--sp-gray-400); font-weight:600;">My Profit</div>
+                        <div style="font-size:1.6rem; font-weight:800; color:{{ 'var(--sp-emerald)' if gross_profit >= 0 else 'var(--sp-rose)' }}; letter-spacing:-0.02em;">Rs.{{ "{:,.0f}".format(gross_profit) }}</div>
+                        <div style="font-size:0.75rem; color:var(--sp-gray-400);">{{ "{:.1f}".format(profit_margin) }}% margin</div>
+                    </div>
+                    <div class="col-md-3">
+                        <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--sp-gray-400); font-weight:600;">Stock in Hand</div>
+                        <div style="font-size:1.6rem; font-weight:800; color:var(--sp-indigo); letter-spacing:-0.02em;">Rs.{{ "{:,.0f}".format(stock_value) }}</div>
+                        <div style="font-size:0.75rem; color:var(--sp-gray-400);">{{ total_stock_units }} units</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    {% endif %}
-    <div class="col-md-3">
-        <div class="kpi-card kpi-rose">
-            <div class="kpi-icon"><i class="bi bi-box-arrow-in-down"></i></div>
-            <div class="kpi-label">Landing Cost</div>
-            <div class="kpi-value">Rs.{{ "{:,.0f}".format(total_purchase_cost) }}</div>
-            <div class="kpi-sub">Cost from supplier (incl GST)</div>
-        </div>
-    </div>
-    {% if current_user.has_permission('kpi_profit') %}
-    <div class="col-md-3">
-        <div class="kpi-card {{ 'kpi-emerald' if gross_profit >= 0 else 'kpi-rose' }}">
-            <div class="kpi-icon"><i class="bi bi-{{ 'arrow-up-circle' if gross_profit >= 0 else 'arrow-down-circle' }}"></i></div>
-            <div class="kpi-label">Gross Profit</div>
-            <div class="kpi-value">Rs.{{ "{:,.0f}".format(gross_profit) }}</div>
-            <div class="kpi-sub">{{ "{:.1f}".format(profit_margin) }}% margin</div>
-        </div>
-    </div>
-    {% endif %}
-    {% if current_user.has_permission('kpi_stock_value') %}
-    <div class="col-md-3">
-        <div class="kpi-card kpi-indigo">
-            <div class="kpi-icon"><i class="bi bi-archive"></i></div>
-            <div class="kpi-label">Stock Value</div>
-            <div class="kpi-value">Rs.{{ "{:,.0f}".format(stock_value) }}</div>
-            <div class="kpi-sub">{{ total_stock_units }} units on hand</div>
-        </div>
-    </div>
-    {% endif %}
-</div>
 
-<!-- Supplier Payable (superadmin only, not scoped to location) -->
-{% if current_user.has_permission('kpi_supplier_payable') and supplier_balance %}
-<div class="row g-3 mb-4">
+    <!-- Supplier Account -->
+    {% if current_user.has_permission('kpi_supplier_payable') and supplier_balance %}
     <div class="col-md-4">
-        <div class="kpi-card kpi-rose">
-            <div class="kpi-icon"><i class="bi bi-cart-fill"></i></div>
-            <div class="kpi-label">Total Owed to Supplier</div>
-            <div class="kpi-value">Rs.{{ "{:,.0f}".format(supplier_balance.owed) }}</div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="kpi-card kpi-emerald">
-            <div class="kpi-icon"><i class="bi bi-cash-coin"></i></div>
-            <div class="kpi-label">Paid to Supplier</div>
-            <div class="kpi-value">Rs.{{ "{:,.0f}".format(supplier_balance.paid) }}</div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="kpi-card {{ 'kpi-amber' if supplier_balance.balance > 0 else 'kpi-emerald' }}">
-            <div class="kpi-icon"><i class="bi bi-wallet2"></i></div>
-            <div class="kpi-label">Still Payable</div>
-            <div class="kpi-value">Rs.{{ "{:,.0f}".format(supplier_balance.balance) }}</div>
-            <div class="kpi-sub">
+        <div class="detail-card" style="height:100%; border-left: 4px solid {{ 'var(--sp-amber)' if supplier_balance.balance > 0 else 'var(--sp-emerald)' }};">
+            <div class="detail-header"><span><i class="bi bi-bank"></i> Supplier Account</span>
+                {% if current_user.is_superadmin %}<a href="{{ url_for('payments.new_payment') }}" class="btn btn-sm btn-outline-success"><i class="bi bi-plus"></i> Pay</a>{% endif %}
+            </div>
+            <div class="p-3">
+                <div class="fin-row"><span class="fin-label">Total Owed</span><span class="fin-value" style="color:var(--sp-rose)">Rs.{{ "{:,.0f}".format(supplier_balance.owed) }}</span></div>
+                <div class="fin-row"><span class="fin-label">Paid So Far</span><span class="fin-value" style="color:var(--sp-emerald)">Rs.{{ "{:,.0f}".format(supplier_balance.paid) }}</span></div>
+                <div class="fin-row fin-total">
+                    <span class="fin-label">Still Due</span>
+                    <span class="fin-value" style="color:{{ 'var(--sp-rose)' if supplier_balance.balance > 0 else 'var(--sp-emerald)' }}; font-size:1.1rem;">Rs.{{ "{:,.0f}".format(supplier_balance.balance) }}</span>
+                </div>
                 {% if total_revenue > 0 %}
-                From revenue: Rs.{{ "{:,.0f}".format(total_revenue) }} - payable: Rs.{{ "{:,.0f}".format(supplier_balance.balance) }} = Rs.{{ "{:,.0f}".format(total_revenue - supplier_balance.balance) }} left
+                <div style="margin-top:10px; padding:8px 12px; background:var(--sp-gray-50); border-radius:var(--sp-radius-sm); font-size:0.8rem; color:var(--sp-gray-500);">
+                    Revenue Rs.{{ "{:,.0f}".format(total_revenue) }} - Due Rs.{{ "{:,.0f}".format(supplier_balance.balance) }} = <strong style="color:{{ 'var(--sp-emerald)' if (total_revenue - supplier_balance.balance) >= 0 else 'var(--sp-rose)' }}">Rs.{{ "{:,.0f}".format(total_revenue - supplier_balance.balance) }}</strong> in hand
+                </div>
                 {% endif %}
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
-{% endif %}
 
-<!-- Coach vs Public Split -->
+<!-- Row 2: Coach vs Public Split -->
 {% if current_user.has_permission('kpi_coach_public') %}
 <div class="row g-3 mb-4">
     <div class="col-md-6">
@@ -110,22 +90,10 @@
             <div class="split-header"><i class="bi bi-person-badge-fill"></i> Coach Sales</div>
             <div class="split-body">
                 <div class="row">
-                    <div class="col-3 split-metric">
-                        <div class="metric-value" style="color: var(--sp-blue)">{{ coach_data.orders }}</div>
-                        <div class="metric-label">Orders</div>
-                    </div>
-                    <div class="col-3 split-metric">
-                        <div class="metric-value" style="color: var(--sp-blue)">{{ coach_data.qty }}</div>
-                        <div class="metric-label">Qty Sold</div>
-                    </div>
-                    <div class="col-3 split-metric">
-                        <div class="metric-value" style="color: var(--sp-emerald)">Rs.{{ "{:,.0f}".format(coach_data.revenue) }}</div>
-                        <div class="metric-label">Revenue</div>
-                    </div>
-                    <div class="col-3 split-metric">
-                        <div class="metric-value" style="color: {{ 'var(--sp-emerald)' if coach_data.profit >= 0 else 'var(--sp-rose)' }}">Rs.{{ "{:,.0f}".format(coach_data.profit) }}</div>
-                        <div class="metric-label">Profit</div>
-                    </div>
+                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--sp-blue)">{{ coach_data.orders }}</div><div class="metric-label">Orders</div></div>
+                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--sp-blue)">{{ coach_data.qty }}</div><div class="metric-label">Qty Sold</div></div>
+                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--sp-emerald)">Rs.{{ "{:,.0f}".format(coach_data.revenue) }}</div><div class="metric-label">Revenue</div></div>
+                    <div class="col-3 split-metric"><div class="metric-value" style="color:{{ 'var(--sp-emerald)' if coach_data.profit >= 0 else 'var(--sp-rose)' }}">Rs.{{ "{:,.0f}".format(coach_data.profit) }}</div><div class="metric-label">Profit</div></div>
                 </div>
             </div>
         </div>
@@ -135,22 +103,10 @@
             <div class="split-header"><i class="bi bi-people-fill"></i> Public / Customer Sales</div>
             <div class="split-body">
                 <div class="row">
-                    <div class="col-3 split-metric">
-                        <div class="metric-value" style="color: var(--sp-indigo)">{{ public_data.orders }}</div>
-                        <div class="metric-label">Orders</div>
-                    </div>
-                    <div class="col-3 split-metric">
-                        <div class="metric-value" style="color: var(--sp-indigo)">{{ public_data.qty }}</div>
-                        <div class="metric-label">Qty Sold</div>
-                    </div>
-                    <div class="col-3 split-metric">
-                        <div class="metric-value" style="color: var(--sp-emerald)">Rs.{{ "{:,.0f}".format(public_data.revenue) }}</div>
-                        <div class="metric-label">Revenue</div>
-                    </div>
-                    <div class="col-3 split-metric">
-                        <div class="metric-value" style="color: {{ 'var(--sp-emerald)' if public_data.profit >= 0 else 'var(--sp-rose)' }}">Rs.{{ "{:,.0f}".format(public_data.profit) }}</div>
-                        <div class="metric-label">Profit</div>
-                    </div>
+                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--sp-indigo)">{{ public_data.orders }}</div><div class="metric-label">Orders</div></div>
+                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--sp-indigo)">{{ public_data.qty }}</div><div class="metric-label">Qty Sold</div></div>
+                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--sp-emerald)">Rs.{{ "{:,.0f}".format(public_data.revenue) }}</div><div class="metric-label">Revenue</div></div>
+                    <div class="col-3 split-metric"><div class="metric-value" style="color:{{ 'var(--sp-emerald)' if public_data.profit >= 0 else 'var(--sp-rose)' }}">Rs.{{ "{:,.0f}".format(public_data.profit) }}</div><div class="metric-label">Profit</div></div>
                 </div>
             </div>
         </div>
@@ -158,64 +114,28 @@
 </div>
 {% endif %}
 
-<!-- Financial Breakdown -->
-{% if current_user.is_superadmin %}
-<div class="row g-3 mb-4">
-    <div class="col-12">
-        <div class="detail-card">
-            <div class="detail-header"><span><i class="bi bi-calculator"></i> Financial Breakdown</span></div>
-            <div class="p-4">
-                <div class="row">
-                    <div class="col-md-4 fin-section">
-                        <h6><i class="bi bi-cart-fill"></i> Purchases</h6>
-                        <div class="fin-row"><span class="fin-label">Taxable Amount</span><span class="fin-value">Rs.{{ "{:,.2f}".format(purchase_taxable) }}</span></div>
-                        <div class="fin-row"><span class="fin-label">GST Paid (Input)</span><span class="fin-value">Rs.{{ "{:,.2f}".format(purchase_gst) }}</span></div>
-                        <div class="fin-row fin-total"><span class="fin-label">Total Paid</span><span class="fin-value" style="color: var(--sp-rose)">Rs.{{ "{:,.2f}".format(total_purchase_cost) }}</span></div>
-                    </div>
-                    <div class="col-md-4 fin-section" style="border-left: 1px solid var(--sp-gray-200); padding-left: 24px;">
-                        <h6><i class="bi bi-receipt-cutoff"></i> Sales</h6>
-                        <div class="fin-row"><span class="fin-label">Total Revenue</span><span class="fin-value">Rs.{{ "{:,.2f}".format(total_revenue) }}</span></div>
-                        <div class="fin-row"><span class="fin-label">GST Collected</span><span class="fin-value">Rs.{{ "{:,.2f}".format(total_sale_gst) }}</span></div>
-                        <div class="fin-row fin-total"><span class="fin-label">COGS</span><span class="fin-value">Rs.{{ "{:,.2f}".format(total_cogs) }}</span></div>
-                    </div>
-                    <div class="col-md-4 d-flex align-items-center justify-content-center">
-                        <div class="profit-highlight {{ 'profit-positive' if gross_profit >= 0 else 'profit-negative' }}" style="width: 100%;">
-                            <div><i class="bi bi-{{ 'trophy-fill' if gross_profit >= 0 else 'exclamation-triangle-fill' }}" style="font-size: 1.5rem; opacity: 0.6;"></i></div>
-                            <div class="profit-amount">Rs.{{ "{:,.2f}".format(gross_profit) }}</div>
-                            <div class="profit-label">Gross Profit ({{ "{:.1f}".format(profit_margin) }}%)</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
-
-<!-- Restock Required -->
+<!-- Row 3: Stock Alerts -->
 {% if zero_stock %}
 <div class="row g-3 mb-4">
     <div class="col-12">
         <div class="detail-card" style="border-left: 4px solid var(--sp-rose);">
             <div class="detail-header" style="background: var(--sp-rose-light); color: #991b1b;">
-                <span><i class="bi bi-exclamation-octagon-fill"></i> Restock Required - {{ zero_stock|length }} items sold out</span>
+                <span><i class="bi bi-exclamation-octagon-fill"></i> Restock Required - {{ zero_stock|length }} sold out</span>
                 {% if current_user.has_permission('edit_purchases') %}
-                <a href="{{ url_for('purchases.new_purchase') }}" class="btn btn-sm btn-danger"><i class="bi bi-cart-plus"></i> Create Purchase Order</a>
+                <a href="{{ url_for('purchases.new_purchase') }}" class="btn btn-sm btn-danger"><i class="bi bi-cart-plus"></i> Restock</a>
                 {% endif %}
             </div>
             <div class="detail-body">
-                <table class="table">
-                    <thead><tr><th>Product</th><th>Color</th><th>Size</th><th>SKU</th><th class="text-center">Total Sold</th><th>Priority</th></tr></thead>
-                    <tbody>
-                    {% for item in zero_stock %}
-                    <tr style="background: var(--sp-rose-light);">
-                        <td><strong>{{ item.product_name }}</strong></td><td>{{ item.color }}</td><td>{{ item.size }}</td>
-                        <td><code>{{ item.sku }}</code></td><td class="text-center fw-bold">{{ item.outward }}</td>
-                        <td><span class="badge" style="background: var(--sp-rose);"><i class="bi bi-arrow-repeat"></i> RESTOCK</span></td>
-                    </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
+                <table class="table"><thead><tr><th>Product</th><th>Variant</th><th>SKU</th><th class="text-center">Sold</th><th>Action</th></tr></thead>
+                <tbody>
+                {% for item in zero_stock %}
+                <tr style="background:var(--sp-rose-light);">
+                    <td><strong>{{ item.product_name }}</strong></td><td>{{ item.color }} {{ item.size }}</td>
+                    <td><code>{{ item.sku }}</code></td><td class="text-center">{{ item.outward }}</td>
+                    <td><span class="badge" style="background:var(--sp-rose);"><i class="bi bi-arrow-repeat"></i> RESTOCK</span></td>
+                </tr>
+                {% endfor %}
+                </tbody></table>
             </div>
         </div>
     </div>
@@ -226,44 +146,41 @@
 <div class="row g-3 mb-4">
     <div class="col-12">
         <div class="detail-card alert-card">
-            <div class="detail-header"><span><i class="bi bi-exclamation-triangle-fill"></i> Low Stock - {{ low_stock|length }} items below 3 units</span></div>
+            <div class="detail-header"><span><i class="bi bi-exclamation-triangle-fill"></i> Low Stock - {{ low_stock|length }} items</span></div>
             <div class="detail-body">
-                <table class="table">
-                    <thead><tr><th>Product</th><th>Color</th><th>Size</th><th class="text-center">Stock</th><th>Status</th></tr></thead>
-                    <tbody>
-                    {% for item in low_stock %}
-                    <tr class="stock-low"><td><strong>{{ item.product_name }}</strong></td><td>{{ item.color }}</td><td>{{ item.size }}</td>
-                        <td class="text-center"><strong>{{ item.stock }}</strong></td><td><span class="badge" style="background: var(--sp-amber);">Low Stock</span></td></tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
+                <table class="table"><thead><tr><th>Product</th><th>Variant</th><th class="text-center">Stock</th></tr></thead>
+                <tbody>
+                {% for item in low_stock %}
+                <tr class="stock-low"><td><strong>{{ item.product_name }}</strong></td><td>{{ item.color }} {{ item.size }}</td><td class="text-center"><strong>{{ item.stock }}</strong></td></tr>
+                {% endfor %}
+                </tbody></table>
             </div>
         </div>
     </div>
 </div>
 {% endif %}
 
-<!-- Recent Activity -->
+<!-- Row 4: Recent Activity -->
 <div class="row g-3 mb-4">
     <div class="col-md-6">
         <div class="detail-card">
             <div class="detail-header">
-                <span><i class="bi bi-cart-plus-fill"></i> Recent Purchases</span>
-                {% if current_user.has_permission('edit_purchases') %}<a href="{{ url_for('purchases.new_purchase') }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus"></i> New</a>{% endif %}
+                <span><i class="bi bi-receipt-cutoff"></i> Recent Sales</span>
+                {% if current_user.has_permission('edit_sales') %}<a href="{{ url_for('sales.new_sale') }}" class="btn btn-sm btn-success"><i class="bi bi-plus"></i></a>{% endif %}
             </div>
             <div class="detail-body">
                 <table class="table">
-                    <thead><tr><th>Date</th><th>Supplier</th><th>Location</th><th>Status</th><th class="text-end">Total</th></tr></thead>
+                    <thead><tr><th>Date</th><th>Customer</th><th>Payment</th><th class="text-end">Amount</th></tr></thead>
                     <tbody>
-                    {% for po in recent_purchases %}
+                    {% for sale in recent_sales %}
                     <tr>
-                        <td>{{ po.order_date }}</td><td>{{ po.supplier.name }}</td>
-                        <td><small>{{ po.location.display_name if po.location else '-' }}</small></td>
-                        <td><span class="badge badge-{{ po.status }}">{{ po.status }}</span></td>
-                        <td class="text-end fw-semibold">Rs.{{ "{:,.0f}".format(po.total_amount) }}</td>
+                        <td>{{ sale.sale_date }}</td>
+                        <td>{{ sale.customer.name }}</td>
+                        <td><span class="badge bg-{{ 'success' if (sale.payment_status or 'paid') == 'paid' else ('danger' if sale.payment_status == 'pending' else 'warning') }}">{{ sale.payment_status or 'paid' }}</span></td>
+                        <td class="text-end fw-semibold">Rs.{{ "{:,.0f}".format(sale.grand_total) }}</td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="5" class="text-center py-4" style="color: var(--sp-gray-400);">No purchases yet</td></tr>
+                    <tr><td colspan="4" class="text-center py-3" style="color:var(--sp-gray-400);">No sales yet</td></tr>
                     {% endfor %}
                     </tbody>
                 </table>
@@ -273,22 +190,22 @@
     <div class="col-md-6">
         <div class="detail-card">
             <div class="detail-header">
-                <span><i class="bi bi-receipt-cutoff"></i> Recent Sales</span>
-                {% if current_user.has_permission('edit_sales') %}<a href="{{ url_for('sales.new_sale') }}" class="btn btn-sm btn-success"><i class="bi bi-plus"></i> New</a>{% endif %}
+                <span><i class="bi bi-cart-plus-fill"></i> Recent Purchases</span>
+                {% if current_user.has_permission('edit_purchases') %}<a href="{{ url_for('purchases.new_purchase') }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus"></i></a>{% endif %}
             </div>
             <div class="detail-body">
                 <table class="table">
-                    <thead><tr><th>Date</th><th>Invoice</th><th>Customer</th><th class="text-end">Total</th></tr></thead>
+                    <thead><tr><th>Date</th><th>Supplier</th><th>Status</th><th class="text-end">Amount</th></tr></thead>
                     <tbody>
-                    {% for sale in recent_sales %}
+                    {% for po in recent_purchases %}
                     <tr>
-                        <td>{{ sale.sale_date }}</td>
-                        <td><code style="font-size: 0.8rem;">{{ sale.invoice_number }}</code></td>
-                        <td>{{ sale.customer.name }}</td>
-                        <td class="text-end fw-semibold">Rs.{{ "{:,.0f}".format(sale.grand_total) }}</td>
+                        <td>{{ po.order_date }}</td>
+                        <td>{{ po.supplier.name }}</td>
+                        <td><span class="badge badge-{{ po.status }}">{{ po.status }}</span></td>
+                        <td class="text-end fw-semibold">Rs.{{ "{:,.0f}".format(po.total_amount) }}</td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="4" class="text-center py-4" style="color: var(--sp-gray-400);">No sales yet</td></tr>
+                    <tr><td colspan="4" class="text-center py-3" style="color:var(--sp-gray-400);">No purchases yet</td></tr>
                     {% endfor %}
                     </tbody>
                 </table>

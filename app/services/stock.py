@@ -83,6 +83,7 @@ def get_inventory_data(location_id=None):
             'color': variant.color or '-',
             'size': variant.size or '-',
             'sku': variant.sku_code,
+            'image_url': product.image_url,
             'inward': inward,
             'outward': outward,
             'stock': stock,

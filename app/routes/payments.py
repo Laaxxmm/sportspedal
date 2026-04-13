@@ -65,4 +65,37 @@ def new_payment():
 
     suppliers = Supplier.query.all()
     balances = {s.id: get_supplier_balance(s.id) for s in suppliers}
-    return render_template('payments/form.html', suppliers=suppliers, balances=balances)
+    return render_template('payments/form.html', payment=None, suppliers=suppliers, balances=balances)
+
+
+@bp.route('/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+@superadmin_required
+def edit_payment(id):
+    payment = SupplierPayment.query.get_or_404(id)
+    if request.method == 'POST':
+        payment.supplier_id = int(request.form['supplier_id'])
+        payment.payment_date = date.fromisoformat(request.form['payment_date'])
+        payment.amount = float(request.form['amount'])
+        payment.payment_mode = request.form.get('payment_mode', '')
+        payment.reference_number = request.form.get('reference_number', '')
+        payment.notes = request.form.get('notes', '')
+        db.session.commit()
+        flash(f'Payment updated.', 'success')
+        return redirect(url_for('payments.list_payments'))
+
+    suppliers = Supplier.query.all()
+    balances = {s.id: get_supplier_balance(s.id) for s in suppliers}
+    return render_template('payments/form.html', payment=payment, suppliers=suppliers, balances=balances)
+
+
+@bp.route('/<int:id>/delete', methods=['POST'])
+@login_required
+@superadmin_required
+def delete_payment(id):
+    payment = SupplierPayment.query.get_or_404(id)
+    amt = payment.amount
+    db.session.delete(payment)
+    db.session.commit()
+    flash(f'Payment of Rs.{amt:,.2f} deleted.', 'info')
+    return redirect(url_for('payments.list_payments'))
