@@ -9,14 +9,14 @@
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
     <style>
         body {
-            background: linear-gradient(135deg, var(--sp-dark-1) 0%, var(--sp-dark-2) 50%, var(--sp-dark-3) 100%);
+            background: var(--bg);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
         }
         .login-card {
-            background: var(--sp-white);
+            background: var(--white);
             border-radius: 16px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             width: 100%;
@@ -24,7 +24,7 @@
             overflow: hidden;
         }
         .login-header {
-            background: linear-gradient(135deg, var(--sp-indigo), var(--sp-blue));
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
             padding: 32px;
             text-align: center;
             color: white;
@@ -33,23 +33,23 @@
         .login-header h2 { font-weight: 700; margin: 0; font-size: 1.5rem; }
         .login-header p { opacity: 0.8; margin: 4px 0 0; font-size: 0.9rem; }
         .login-body { padding: 32px; }
-        .login-body .form-label { font-weight: 600; font-size: 0.85rem; color: var(--sp-gray-600); }
+        .login-body .form-label { font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); }
         .login-body .form-control {
-            border-radius: var(--sp-radius-sm);
+            border-radius: var(--radius-sm);
             padding: 10px 14px;
-            border: 1px solid var(--sp-gray-300);
+            border: 1px solid var(--border);
         }
         .login-body .form-control:focus {
-            border-color: var(--sp-indigo);
+            border-color: var(--accent-purple);
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
         }
         .btn-login {
-            background: linear-gradient(135deg, var(--sp-indigo), var(--sp-blue));
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
             border: none;
             color: white;
             font-weight: 600;
             padding: 12px;
-            border-radius: var(--sp-radius-sm);
+            border-radius: var(--radius-sm);
             width: 100%;
             font-size: 1rem;
         }
@@ -67,7 +67,7 @@
             {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
             {% for category, message in messages %}
-            <div class="alert alert-{{ category }} alert-sm py-2 px-3" style="font-size: 0.85rem; border-radius: var(--sp-radius-sm);">
+            <div class="alert alert-{{ category }} alert-sm py-2 px-3" style="font-size: 0.85rem; border-radius: var(--radius-sm);">
                 {{ message }}
             </div>
             {% endfor %}

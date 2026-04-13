@@ -75,7 +75,7 @@
                             {% if p.image_url %}
                             <img src="{{ p.image_url }}" style="width:32px;height:32px;object-fit:cover;border-radius:6px;">
                             {% else %}
-                            <div style="width:32px;height:32px;background:var(--sp-gray-100);border-radius:6px;display:flex;align-items:center;justify-content:center;"><i class="bi bi-image text-muted" style="font-size:0.7rem;"></i></div>
+                            <div style="width:32px;height:32px;background:#f4f5f9;border-radius:6px;display:flex;align-items:center;justify-content:center;"><i class="bi bi-image text-muted" style="font-size:0.7rem;"></i></div>
                             {% endif %}
                         </td>
                         <td><strong>{{ p.name }}</strong></td>
@@ -84,22 +84,22 @@
                         <td class="text-center">{{ p.total_sold }}</td>
                         <td class="text-center">
                             {% if p.total_stock <= 0 %}
-                            <span class="badge" style="background:var(--sp-rose);">0</span>
+                            <span class="badge" style="background:var(--accent-red);">0</span>
                             {% elif p.total_stock < 3 %}
-                            <span class="badge" style="background:var(--sp-amber);">{{ p.total_stock }}</span>
+                            <span class="badge" style="background:var(--accent-amber);">{{ p.total_stock }}</span>
                             {% else %}
                             <strong>{{ p.total_stock }}</strong>
                             {% endif %}
                         </td>
                         <td>
                             {% if p.total_stock <= 0 and p.total_sent > 0 %}
-                            <span class="badge" style="background:var(--sp-rose);"><i class="bi bi-arrow-repeat"></i> Needs Restock</span>
+                            <span class="badge" style="background:var(--accent-red);"><i class="bi bi-arrow-repeat"></i> Needs Restock</span>
                             {% elif p.total_stock < 3 and p.total_sent > 0 %}
-                            <span class="badge" style="background:var(--sp-amber);">Low Stock</span>
+                            <span class="badge" style="background:var(--accent-amber);">Low Stock</span>
                             {% elif p.total_sent == 0 %}
                             <span class="text-muted">Not sent yet</span>
                             {% else %}
-                            <span class="badge" style="background:var(--sp-emerald);">OK</span>
+                            <span class="badge" style="background:var(--accent-green);">OK</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -115,8 +115,8 @@
 {% if restock_needed %}
 <div class="row g-3 mb-4">
     <div class="col-12">
-        <div class="detail-card" style="border-left: 4px solid var(--sp-rose);">
-            <div class="detail-header" style="background:var(--sp-rose-light);color:#991b1b;">
+        <div class="detail-card" style="border-left: 4px solid var(--accent-red);">
+            <div class="detail-header" style="background:#fff1f3;color:#991b1b;">
                 <span><i class="bi bi-exclamation-octagon-fill"></i> Restock Required - {{ restock_needed|length }} items at zero stock</span>
             </div>
             <div class="detail-body">
@@ -124,7 +124,7 @@
                     <thead><tr><th>Product</th><th>Color</th><th>Size</th><th>SKU</th><th class="text-center">Previously Sent</th><th class="text-center">All Sold</th></tr></thead>
                     <tbody>
                     {% for item in restock_needed %}
-                    <tr style="background:var(--sp-rose-light);">
+                    <tr style="background:#fff1f3;">
                         <td><strong>{{ item.product_name }}</strong></td>
                         <td>{{ item.color }}</td><td>{{ item.size }}</td>
                         <td><code>{{ item.sku }}</code></td>

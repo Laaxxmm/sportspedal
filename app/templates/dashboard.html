@@ -25,55 +25,53 @@
     </div>
 </div>
 
-<!-- Row 1: The Money Story (what every business owner checks first) -->
+<!-- Row 1: The Money Story -->
 <div class="row g-3 mb-4">
     <div class="col-md-8">
-        <div class="detail-card" style="height:100%;">
-            <div class="detail-header"><span><i class="bi bi-currency-rupee"></i> Money Flow</span></div>
-            <div class="p-4">
-                <div class="row text-center">
-                    <div class="col-md-3">
-                        <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--sp-gray-400); font-weight:600;">I Bought For</div>
-                        <div style="font-size:1.6rem; font-weight:800; color:var(--sp-rose); letter-spacing:-0.02em;">Rs.{{ "{:,.0f}".format(total_purchase_cost) }}</div>
-                        <div style="font-size:0.75rem; color:var(--sp-gray-400);">from supplier (incl GST)</div>
+        <div class="money-flow-card" style="height:100%; padding: 24px;">
+            <div style="font-weight:600; font-size:0.88rem; margin-bottom:18px; color:rgba(26,29,46,0.7);"><i class="bi bi-currency-rupee"></i> Money Flow</div>
+            <div class="row">
+                    <div class="col-md-3 flow-item">
+                        <div class="flow-label">I Bought For</div>
+                        <div class="flow-value" style="color:#c0392b;">Rs.{{ "{:,.0f}".format(total_purchase_cost) }}</div>
+                        <div class="flow-sub">from supplier</div>
                     </div>
-                    <div class="col-md-3">
-                        <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--sp-gray-400); font-weight:600;">I Sold For</div>
-                        <div style="font-size:1.6rem; font-weight:800; color:var(--sp-emerald); letter-spacing:-0.02em;">Rs.{{ "{:,.0f}".format(total_revenue) }}</div>
-                        <div style="font-size:0.75rem; color:var(--sp-gray-400);">{{ total_units_sold }} units sold</div>
+                    <div class="col-md-3 flow-item">
+                        <div class="flow-label">I Sold For</div>
+                        <div class="flow-value" style="color:#0d9e6d;">Rs.{{ "{:,.0f}".format(total_revenue) }}</div>
+                        <div class="flow-sub">{{ total_units_sold }} units sold</div>
                     </div>
-                    <div class="col-md-3">
-                        <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--sp-gray-400); font-weight:600;">My Profit</div>
-                        <div style="font-size:1.6rem; font-weight:800; color:{{ 'var(--sp-emerald)' if gross_profit >= 0 else 'var(--sp-rose)' }}; letter-spacing:-0.02em;">Rs.{{ "{:,.0f}".format(gross_profit) }}</div>
-                        <div style="font-size:0.75rem; color:var(--sp-gray-400);">{{ "{:.1f}".format(profit_margin) }}% margin</div>
+                    <div class="col-md-3 flow-item">
+                        <div class="flow-label">My Profit</div>
+                        <div class="flow-value" style="color:{{ '#0d9e6d' if gross_profit >= 0 else '#c0392b' }};">Rs.{{ "{:,.0f}".format(gross_profit) }}</div>
+                        <div class="flow-sub">{{ "{:.1f}".format(profit_margin) }}% margin</div>
                     </div>
-                    <div class="col-md-3">
-                        <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--sp-gray-400); font-weight:600;">Stock in Hand</div>
-                        <div style="font-size:1.6rem; font-weight:800; color:var(--sp-indigo); letter-spacing:-0.02em;">Rs.{{ "{:,.0f}".format(stock_value) }}</div>
-                        <div style="font-size:0.75rem; color:var(--sp-gray-400);">{{ total_stock_units }} units</div>
+                    <div class="col-md-3 flow-item">
+                        <div class="flow-label">Stock in Hand</div>
+                        <div class="flow-value" style="color:#5b21b6;">Rs.{{ "{:,.0f}".format(stock_value) }}</div>
+                        <div class="flow-sub">{{ total_stock_units }} units</div>
                     </div>
                 </div>
-            </div>
         </div>
     </div>
 
     <!-- Supplier Account -->
     {% if current_user.has_permission('kpi_supplier_payable') and supplier_balance %}
     <div class="col-md-4">
-        <div class="detail-card" style="height:100%; border-left: 4px solid {{ 'var(--sp-amber)' if supplier_balance.balance > 0 else 'var(--sp-emerald)' }};">
+        <div class="detail-card" style="height:100%; border-left: 4px solid {{ 'var(--accent-amber)' if supplier_balance.balance > 0 else 'var(--accent-green)' }};">
             <div class="detail-header"><span><i class="bi bi-bank"></i> Supplier Account</span>
                 {% if current_user.is_superadmin %}<a href="{{ url_for('payments.new_payment') }}" class="btn btn-sm btn-outline-success"><i class="bi bi-plus"></i> Pay</a>{% endif %}
             </div>
             <div class="p-3">
-                <div class="fin-row"><span class="fin-label">Total Owed</span><span class="fin-value" style="color:var(--sp-rose)">Rs.{{ "{:,.0f}".format(supplier_balance.owed) }}</span></div>
-                <div class="fin-row"><span class="fin-label">Paid So Far</span><span class="fin-value" style="color:var(--sp-emerald)">Rs.{{ "{:,.0f}".format(supplier_balance.paid) }}</span></div>
+                <div class="fin-row"><span class="fin-label">Total Owed</span><span class="fin-value" style="color:var(--accent-red)">Rs.{{ "{:,.0f}".format(supplier_balance.owed) }}</span></div>
+                <div class="fin-row"><span class="fin-label">Paid So Far</span><span class="fin-value" style="color:var(--accent-green)">Rs.{{ "{:,.0f}".format(supplier_balance.paid) }}</span></div>
                 <div class="fin-row fin-total">
                     <span class="fin-label">Still Due</span>
-                    <span class="fin-value" style="color:{{ 'var(--sp-rose)' if supplier_balance.balance > 0 else 'var(--sp-emerald)' }}; font-size:1.1rem;">Rs.{{ "{:,.0f}".format(supplier_balance.balance) }}</span>
+                    <span class="fin-value" style="color:{{ 'var(--accent-red)' if supplier_balance.balance > 0 else 'var(--accent-green)' }}; font-size:1.1rem;">Rs.{{ "{:,.0f}".format(supplier_balance.balance) }}</span>
                 </div>
                 {% if total_revenue > 0 %}
-                <div style="margin-top:10px; padding:8px 12px; background:var(--sp-gray-50); border-radius:var(--sp-radius-sm); font-size:0.8rem; color:var(--sp-gray-500);">
-                    Revenue Rs.{{ "{:,.0f}".format(total_revenue) }} - Due Rs.{{ "{:,.0f}".format(supplier_balance.balance) }} = <strong style="color:{{ 'var(--sp-emerald)' if (total_revenue - supplier_balance.balance) >= 0 else 'var(--sp-rose)' }}">Rs.{{ "{:,.0f}".format(total_revenue - supplier_balance.balance) }}</strong> in hand
+                <div style="margin-top:10px; padding:8px 12px; background:#fafbfd; border-radius:var(--radius-sm); font-size:0.8rem; color:var(--text-secondary);">
+                    Revenue Rs.{{ "{:,.0f}".format(total_revenue) }} - Due Rs.{{ "{:,.0f}".format(supplier_balance.balance) }} = <strong style="color:{{ 'var(--accent-green)' if (total_revenue - supplier_balance.balance) >= 0 else 'var(--accent-red)' }}">Rs.{{ "{:,.0f}".format(total_revenue - supplier_balance.balance) }}</strong> in hand
                 </div>
                 {% endif %}
             </div>
@@ -90,10 +88,10 @@
             <div class="split-header"><i class="bi bi-person-badge-fill"></i> Coach Sales</div>
             <div class="split-body">
                 <div class="row">
-                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--sp-blue)">{{ coach_data.orders }}</div><div class="metric-label">Orders</div></div>
-                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--sp-blue)">{{ coach_data.qty }}</div><div class="metric-label">Qty Sold</div></div>
-                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--sp-emerald)">Rs.{{ "{:,.0f}".format(coach_data.revenue) }}</div><div class="metric-label">Revenue</div></div>
-                    <div class="col-3 split-metric"><div class="metric-value" style="color:{{ 'var(--sp-emerald)' if coach_data.profit >= 0 else 'var(--sp-rose)' }}">Rs.{{ "{:,.0f}".format(coach_data.profit) }}</div><div class="metric-label">Profit</div></div>
+                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--accent-blue)">{{ coach_data.orders }}</div><div class="metric-label">Orders</div></div>
+                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--accent-blue)">{{ coach_data.qty }}</div><div class="metric-label">Qty Sold</div></div>
+                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--accent-green)">Rs.{{ "{:,.0f}".format(coach_data.revenue) }}</div><div class="metric-label">Revenue</div></div>
+                    <div class="col-3 split-metric"><div class="metric-value" style="color:{{ 'var(--accent-green)' if coach_data.profit >= 0 else 'var(--accent-red)' }}">Rs.{{ "{:,.0f}".format(coach_data.profit) }}</div><div class="metric-label">Profit</div></div>
                 </div>
             </div>
         </div>
@@ -103,10 +101,10 @@
             <div class="split-header"><i class="bi bi-people-fill"></i> Public / Customer Sales</div>
             <div class="split-body">
                 <div class="row">
-                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--sp-indigo)">{{ public_data.orders }}</div><div class="metric-label">Orders</div></div>
-                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--sp-indigo)">{{ public_data.qty }}</div><div class="metric-label">Qty Sold</div></div>
-                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--sp-emerald)">Rs.{{ "{:,.0f}".format(public_data.revenue) }}</div><div class="metric-label">Revenue</div></div>
-                    <div class="col-3 split-metric"><div class="metric-value" style="color:{{ 'var(--sp-emerald)' if public_data.profit >= 0 else 'var(--sp-rose)' }}">Rs.{{ "{:,.0f}".format(public_data.profit) }}</div><div class="metric-label">Profit</div></div>
+                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--accent-purple)">{{ public_data.orders }}</div><div class="metric-label">Orders</div></div>
+                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--accent-purple)">{{ public_data.qty }}</div><div class="metric-label">Qty Sold</div></div>
+                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--accent-green)">Rs.{{ "{:,.0f}".format(public_data.revenue) }}</div><div class="metric-label">Revenue</div></div>
+                    <div class="col-3 split-metric"><div class="metric-value" style="color:{{ 'var(--accent-green)' if public_data.profit >= 0 else 'var(--accent-red)' }}">Rs.{{ "{:,.0f}".format(public_data.profit) }}</div><div class="metric-label">Profit</div></div>
                 </div>
             </div>
         </div>
@@ -118,8 +116,8 @@
 {% if zero_stock %}
 <div class="row g-3 mb-4">
     <div class="col-12">
-        <div class="detail-card" style="border-left: 4px solid var(--sp-rose);">
-            <div class="detail-header" style="background: var(--sp-rose-light); color: #991b1b;">
+        <div class="detail-card" style="border-left: 4px solid var(--accent-red);">
+            <div class="detail-header" style="background: #fff1f3; color: #991b1b;">
                 <span><i class="bi bi-exclamation-octagon-fill"></i> Restock Required - {{ zero_stock|length }} sold out</span>
                 {% if current_user.has_permission('edit_purchases') %}
                 <a href="{{ url_for('purchases.new_purchase') }}" class="btn btn-sm btn-danger"><i class="bi bi-cart-plus"></i> Restock</a>
@@ -129,10 +127,10 @@
                 <table class="table"><thead><tr><th>Product</th><th>Variant</th><th>SKU</th><th class="text-center">Sold</th><th>Action</th></tr></thead>
                 <tbody>
                 {% for item in zero_stock %}
-                <tr style="background:var(--sp-rose-light);">
+                <tr style="background:#fff1f3;">
                     <td><strong>{{ item.product_name }}</strong></td><td>{{ item.color }} {{ item.size }}</td>
                     <td><code>{{ item.sku }}</code></td><td class="text-center">{{ item.outward }}</td>
-                    <td><span class="badge" style="background:var(--sp-rose);"><i class="bi bi-arrow-repeat"></i> RESTOCK</span></td>
+                    <td><span class="badge" style="background:var(--accent-red);"><i class="bi bi-arrow-repeat"></i> RESTOCK</span></td>
                 </tr>
                 {% endfor %}
                 </tbody></table>
@@ -180,7 +178,7 @@
                         <td class="text-end fw-semibold">Rs.{{ "{:,.0f}".format(sale.grand_total) }}</td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="4" class="text-center py-3" style="color:var(--sp-gray-400);">No sales yet</td></tr>
+                    <tr><td colspan="4" class="text-center py-3" style="color:var(--text-muted);">No sales yet</td></tr>
                     {% endfor %}
                     </tbody>
                 </table>
@@ -205,7 +203,7 @@
                         <td class="text-end fw-semibold">Rs.{{ "{:,.0f}".format(po.total_amount) }}</td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="4" class="text-center py-3" style="color:var(--sp-gray-400);">No purchases yet</td></tr>
+                    <tr><td colspan="4" class="text-center py-3" style="color:var(--text-muted);">No purchases yet</td></tr>
                     {% endfor %}
                     </tbody>
                 </table>
