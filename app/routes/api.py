@@ -1,7 +1,8 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_file, abort
 from flask_login import login_required
 from app.models import Location, Product, ProductVariant
 from app.services.stock import get_stock_map
+from app.services.image import get_image_path
 from app.data.india_locations import INDIA_STATES_DISTRICTS
 
 bp = Blueprint('api', __name__, url_prefix='/api')
@@ -72,3 +73,13 @@ def get_products():
 def get_locations():
     locations = Location.query.filter_by(is_active=True).order_by(Location.state, Location.district).all()
     return jsonify([{'id': l.id, 'state': l.state, 'district': l.district, 'display': l.display_name} for l in locations])
+
+
+@bp.route('/image/<filename>')
+def serve_image(filename):
+    """Serve product images from the persistent data directory."""
+    import os
+    path = get_image_path(filename)
+    if path and os.path.exists(path):
+        return send_file(path, mimetype='image/webp')
+    abort(404)

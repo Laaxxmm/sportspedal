@@ -142,7 +142,7 @@ class Product(db.Model):
     @property
     def image_url(self):
         if self.image_path:
-            return f'/static/img/products/{self.image_path}'
+            return f'/api/image/{self.image_path}'
         return None
 
 
