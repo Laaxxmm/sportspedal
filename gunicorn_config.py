@@ -1,6 +1,5 @@
 import os
 
 bind = f"0.0.0.0:{os.environ.get('PORT', '5000')}"
-workers = 2
+workers = 1
 timeout = 120
-preload_app = True  # Load app once in master, fork to workers (prevents double-seed)

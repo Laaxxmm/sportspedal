@@ -163,28 +163,27 @@ with app.app_context():
     from app.config import DATA_DIR
     db_path = os.path.join(DATA_DIR, 'sportspedal.db')
 
-    def fresh_start():
-        """Delete DB file and create from scratch."""
-        print("=== Fresh database setup ===")
-        db.session.remove()
-        db.engine.dispose()
-        if os.path.exists(db_path):
+    # If old DB exists with wrong schema, delete it
+    if os.path.exists(db_path):
+        try:
+            db.create_all()
+            User.query.count()  # Test new schema
+        except Exception:
+            print("=== Old schema detected, deleting DB ===")
+            db.session.remove()
+            db.engine.dispose()
             os.remove(db_path)
-            print("  Old database deleted")
-        db.create_all()
-        seed_and_import()
 
+    # Create tables and seed if needed
+    db.create_all()
     try:
-        db.create_all()
-        # Test if schema is current
-        User.query.count()
-        if Product.query.count() == 0:
+        if User.query.count() == 0:
+            print("=== Seeding database ===")
             seed_and_import()
-        elif User.query.count() == 0:
-            fresh_start()
+        else:
+            print(f"=== DB ready: {User.query.count()} users, {Product.query.count()} products ===")
     except Exception as e:
-        print(f"=== Schema error: {e} ===")
-        fresh_start()
+        print(f"=== Seed error: {e} ===")
 
 if __name__ == '__main__':
     app.run(debug=True, port=int(os.environ.get('PORT', 5000)), use_reloader=False)
