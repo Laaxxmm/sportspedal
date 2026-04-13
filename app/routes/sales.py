@@ -89,7 +89,7 @@ def new_sale():
             invoice_number=generate_invoice_number(),
             challan_number=generate_challan_number(),
             customer_id=customer.id,
-            sale_date=request.form.get('sale_date', date.today().isoformat()),
+            sale_date=date.fromisoformat(request.form.get('sale_date', date.today().isoformat())),
             location_id=loc_id,
             status=request.form.get('status', 'confirmed'),
             payment_status=request.form.get('payment_status', 'paid'),

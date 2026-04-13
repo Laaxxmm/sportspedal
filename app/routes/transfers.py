@@ -1,3 +1,4 @@
+from datetime import date
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app import db
@@ -38,7 +39,7 @@ def new_transfer():
             transfer_number=f"TRF-{count:04d}",
             from_location_id=from_loc,
             to_location_id=to_loc,
-            transfer_date=request.form.get('transfer_date'),
+            transfer_date=date.fromisoformat(request.form.get('transfer_date', date.today().isoformat())),
             status='pending',
             notes=request.form.get('notes', ''),
             created_by=current_user.id,

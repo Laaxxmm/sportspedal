@@ -1,3 +1,4 @@
+from datetime import date
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app import db
@@ -50,7 +51,7 @@ def new_payment():
     if request.method == 'POST':
         payment = SupplierPayment(
             supplier_id=int(request.form['supplier_id']),
-            payment_date=request.form['payment_date'],
+            payment_date=date.fromisoformat(request.form['payment_date']),
             amount=float(request.form['amount']),
             payment_mode=request.form.get('payment_mode', ''),
             reference_number=request.form.get('reference_number', ''),

@@ -1,3 +1,4 @@
+from datetime import date
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from app import db
@@ -33,7 +34,7 @@ def new_purchase():
         po = PurchaseOrder(
             order_number=request.form.get('order_number', ''),
             supplier_id=int(request.form['supplier_id']),
-            order_date=request.form['order_date'],
+            order_date=date.fromisoformat(request.form['order_date']),
             location_id=loc_id,
             transporter=request.form.get('transporter', ''),
             status=request.form.get('status', 'ordered'),
