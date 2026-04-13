@@ -36,6 +36,12 @@ def create_app():
             'PERMISSION_KEYS': PERMISSION_KEYS,
         }
 
+    # Show errors in production (temporary for debugging)
+    @app.errorhandler(500)
+    def internal_error(e):
+        import traceback
+        return f"<pre>{traceback.format_exc()}</pre>", 500
+
     # Register blueprints
     from app.routes.auth import bp as auth_bp
     from app.routes.dashboard import bp as dashboard_bp
