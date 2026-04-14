@@ -505,82 +505,90 @@ code { font-size: 0.8rem; color: var(--accent-purple); background: rgba(124,92,2
     z-index: 999;
 }
 
-/* ===== Responsive: Tablet (< 992px) ===== */
+/* ===== Responsive: Tablet + Mobile (< 992px) ===== */
 @media (max-width: 991px) {
     .sidebar { width: 230px; transform: translateX(-100%); transition: transform 0.3s ease; }
     .sidebar:hover { width: 230px; }
     .sidebar.open { transform: translateX(0); }
     .sidebar .nav-text, .sidebar .brand-text { opacity: 1; }
-
     .mobile-nav-toggle { display: flex; }
     .mobile-overlay.open { display: block; }
+    .main-content { margin-left: 0 !important; padding: 56px 12px 12px !important; }
 
-    .main-content { margin-left: 0; padding: 60px 16px 16px; }
+    /* Dashboard header */
+    .dash-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .dash-header h2 { font-size: 1.2rem; }
 
-    .dash-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-    .dash-header h2 { font-size: 1.3rem; }
-
-    .money-flow-card .row { flex-wrap: wrap; }
-    .money-flow-card .flow-item { flex: 0 0 50%; max-width: 50%; margin-bottom: 12px; }
-    .money-flow-card .flow-item::after { display: none; }
-    .money-flow-card .flow-value { font-size: 1.2rem; }
-
-    .kpi-card .kpi-value { font-size: 1.2rem; }
-    .kpi-card { padding: 16px; }
-
-    .split-card .split-metric .metric-value { font-size: 1rem; }
-
-    .table-responsive-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-}
-
-/* ===== Responsive: Mobile (< 576px) ===== */
-@media (max-width: 575px) {
-    .main-content { padding: 56px 10px 10px; }
-
-    .dash-header h2 { font-size: 1.1rem; }
-    .dash-header .dash-date { font-size: 0.75rem; }
-
-    .money-flow-card { padding: 16px !important; }
-    .money-flow-card .flow-item { flex: 0 0 50%; max-width: 50%; padding: 8px 4px; }
-    .money-flow-card .flow-value { font-size: 1rem; }
-    .money-flow-card .flow-label { font-size: 0.6rem; }
+    /* Money Flow: force 2-col grid */
+    .money-flow-card { padding: 14px !important; }
+    .money-flow-card > div:last-child { display: flex; flex-wrap: wrap; }
+    .money-flow-card .row { display: flex !important; flex-wrap: wrap !important; }
+    .money-flow-card .col,
+    .money-flow-card .flow-item,
+    .money-flow-card [class*="col"] {
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+        margin-bottom: 10px;
+    }
+    .money-flow-card .flow-item::after { display: none !important; }
+    .money-flow-card .flow-value { font-size: 1.1rem !important; }
+    .money-flow-card .flow-label { font-size: 0.62rem; }
     .money-flow-card .flow-sub { font-size: 0.65rem; }
+
+    /* All row columns: full width on mobile */
+    .row.g-3 > .col-md-8,
+    .row.g-3 > .col-md-4,
+    .row.g-3 > .col-md-6,
+    .row.g-3 > .col-md-12,
+    .row.g-3 > .col-12 {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* KPI cards: 2-col grid */
+    .row.g-3 > .col-md-3 { flex: 0 0 50% !important; max-width: 50% !important; }
 
     .kpi-card { padding: 14px; }
     .kpi-card .kpi-value { font-size: 1.1rem; }
-    .kpi-card .kpi-label { font-size: 0.65rem; }
-    .kpi-card .kpi-icon { width: 36px; height: 36px; font-size: 1rem; }
+    .kpi-card .kpi-label { font-size: 0.62rem; }
+    .kpi-card .kpi-icon { width: 34px; height: 34px; font-size: 0.95rem; top: 10px; right: 10px; }
 
-    .row.g-3 > [class*="col-md-"] { flex: 0 0 50%; max-width: 50%; }
-    .row.g-3 > .col-md-8, .row.g-3 > .col-md-12, .row.g-3 > .col-12 { flex: 0 0 100%; max-width: 100%; }
-    .row.g-3 > .col-md-4 { flex: 0 0 100%; max-width: 100%; }
+    /* Split cards: stack on mobile */
+    .row.g-3 > .col-md-6 { flex: 0 0 100% !important; max-width: 100% !important; }
+    .split-card .split-body { padding: 10px; }
+    .split-card .split-metric .metric-value { font-size: 0.95rem; }
+    .split-card .split-metric .metric-label { font-size: 0.58rem; }
 
-    .split-card .split-body { padding: 12px; }
-    .split-card .split-metric .metric-value { font-size: 0.9rem; }
-    .split-card .split-metric .metric-label { font-size: 0.6rem; }
+    /* Financial rows */
+    .fin-row { font-size: 0.8rem; }
+    .fin-row .fin-value { font-size: 0.85rem; }
 
-    .detail-card .table thead th { font-size: 0.65rem; padding: 8px 8px; }
-    .detail-card .table tbody td { font-size: 0.78rem; padding: 8px 8px; }
+    /* Tables: horizontal scroll */
+    .card-body.p-0, .detail-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .table { min-width: 550px; }
+    .detail-card .table thead th { font-size: 0.65rem; padding: 8px 6px; }
+    .detail-card .table tbody td { font-size: 0.78rem; padding: 8px 6px; }
 
-    .btn-sm { font-size: 0.72rem; padding: 4px 8px; }
+    /* Buttons */
     .btn { font-size: 0.78rem; }
+    .btn-sm { font-size: 0.7rem; padding: 4px 7px; }
+    td .btn-sm { padding: 3px 5px; font-size: 0.65rem; }
 
+    /* Forms */
     .form-control, .form-select { font-size: 0.82rem; padding: 7px 10px; }
     .form-label { font-size: 0.7rem; }
+    /* Form fields: stack on mobile */
+    .row.mb-3 > [class*="col-md-"] { flex: 0 0 100% !important; max-width: 100% !important; margin-bottom: 8px; }
+    .row.mb-3 > .col-md-1,
+    .row.mb-3 > .col-md-2 { flex: 0 0 50% !important; max-width: 50% !important; }
 
+    /* Center the odd last flow item */
+    .money-flow-card .row { justify-content: center; }
+
+    /* Cards */
     .card { border-radius: var(--radius-sm) !important; }
+    h2 { font-size: 1.15rem; }
 
-    h2 { font-size: 1.2rem; }
-
-    .fin-row { font-size: 0.78rem; }
-    .fin-row .fin-value { font-size: 0.82rem; }
-
+    /* Alerts */
     .alert { font-size: 0.78rem; padding: 8px 12px; }
-
-    /* Stack action buttons */
-    td .btn-sm { padding: 3px 6px; font-size: 0.68rem; }
-
-    /* Make tables scrollable */
-    .card-body.p-0 { overflow-x: auto; }
-    .table { min-width: 600px; }
 }
