@@ -25,8 +25,12 @@
                 <td><span class="badge bg-{{ 'success' if po.status == 'delivered' else ('info' if po.status == 'dispatched' else 'secondary') }}">{{ po.status }}</span></td>
                 <td>{{ "%.2f"|format(po.total_amount) }}</td>
                 <td>
-                    <a href="{{ url_for('purchases.view_purchase', id=po.id) }}" class="btn btn-sm btn-outline-info">View</a>
-                    <a href="{{ url_for('purchases.edit_purchase', id=po.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                    <a href="{{ url_for('purchases.view_purchase', id=po.id) }}" class="btn btn-sm btn-outline-info" title="View"><i class="bi bi-eye"></i></a>
+                    <a href="{{ url_for('purchases.edit_purchase', id=po.id) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
+                    <form method="POST" action="{{ url_for('purchases.delete_purchase', id=po.id) }}" class="d-inline" onsubmit="return confirm('Delete purchase {{ po.order_number or po.id }}?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                    </form>
                 </td>
             </tr>
             {% else %}

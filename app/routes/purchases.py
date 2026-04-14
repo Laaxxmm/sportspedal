@@ -151,3 +151,16 @@ def edit_purchase(id):
                 .order_by(Product.name, ProductVariant.color, ProductVariant.size).all())
     locations = Location.query.filter_by(is_active=True).order_by(Location.state, Location.district).all()
     return render_template('purchases/form.html', purchase=po, suppliers=suppliers, variants=variants, locations=locations)
+
+
+@bp.route('/<int:id>/delete', methods=['POST'])
+@login_required
+def delete_purchase(id):
+    po = PurchaseOrder.query.get_or_404(id)
+    scope_purchase(po)
+    order_num = po.order_number or str(po.id)
+    PurchaseItem.query.filter_by(purchase_order_id=po.id).delete()
+    db.session.delete(po)
+    db.session.commit()
+    flash(f'Purchase Order #{order_num} deleted.', 'info')
+    return redirect(url_for('purchases.list_purchases'))
