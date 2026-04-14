@@ -11,7 +11,7 @@ bp = Blueprint('purchases', __name__)
 def scope_purchase(po):
     """Check if current user can access this purchase order."""
     if not current_user.is_superadmin and current_user.location_id:
-        if po.location_id != current_user.location_id:
+        if po.location_id and po.location_id != current_user.location_id:
             abort(403)
 
 

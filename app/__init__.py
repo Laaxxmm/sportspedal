@@ -37,6 +37,15 @@ def create_app():
         from app.models import PERMISSION_KEYS
         return {'PERMISSION_KEYS': PERMISSION_KEYS}
 
+    # Error handler (shows error to logged-in superadmin only)
+    @app.errorhandler(500)
+    def handle_500(e):
+        import traceback
+        from flask_login import current_user as cu
+        if cu and cu.is_authenticated and cu.is_superadmin:
+            return f"<pre>{traceback.format_exc()}</pre>", 500
+        return "Something went wrong. Please try again.", 500
+
     # Security headers
     @app.after_request
     def security_headers(response):
