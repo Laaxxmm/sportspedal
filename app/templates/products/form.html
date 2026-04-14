@@ -139,13 +139,36 @@
 
         <h5 class="mt-3">Existing Variants</h5>
         <table class="table table-sm">
-            <thead><tr><th>SKU</th><th>Color</th><th>Size</th></tr></thead>
+            <thead><tr><th>SKU</th><th>Color</th><th>Size</th><th>Cost Override</th><th>Coach Override</th><th>MRP Override</th><th>Actions</th></tr></thead>
             <tbody>
             {% for v in product.variants.filter_by(is_active=True).all() %}
             <tr>
-                <td><code>{{ v.sku_code }}</code></td>
-                <td>{{ v.color or '-' }}</td>
-                <td>{{ v.size or '-' }}</td>
+                <form method="POST" action="{{ url_for('products.edit_variant', vid=v.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <td><code>{{ v.sku_code }}</code></td>
+                    <td>
+                        <select name="color" class="form-select form-select-sm" style="width:90px;">
+                            <option value="">-</option>
+                            {% for c in colors %}<option value="{{ c }}" {{ 'selected' if v.color == c }}>{{ c }}</option>{% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <select name="size" class="form-select form-select-sm" style="width:70px;">
+                            <option value="">-</option>
+                            {% for s in sizes %}<option value="{{ s }}" {{ 'selected' if v.size == s }}>{{ s }}</option>{% endfor %}
+                        </select>
+                    </td>
+                    <td><input type="number" name="cost_override" class="form-control form-control-sm" style="width:80px;" step="0.01" value="{{ v.cost_price_override or '' }}" placeholder="-"></td>
+                    <td><input type="number" name="coach_override" class="form-control form-control-sm" style="width:80px;" step="0.01" value="{{ v.coach_price_override or '' }}" placeholder="-"></td>
+                    <td><input type="number" name="mrp_override" class="form-control form-control-sm" style="width:80px;" step="0.01" value="{{ v.mrp_override or '' }}" placeholder="-"></td>
+                    <td>
+                        <button type="submit" class="btn btn-sm btn-outline-primary" title="Save"><i class="bi bi-check-lg"></i></button>
+                </form>
+                        <form method="POST" action="{{ url_for('products.delete_variant', vid=v.id) }}" class="d-inline" onsubmit="return confirm('Delete variant {{ v.sku_code }}?')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
             </tr>
             {% endfor %}
             </tbody>

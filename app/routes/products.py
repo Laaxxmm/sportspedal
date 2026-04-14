@@ -132,6 +132,42 @@ def add_variant(id):
     return redirect(url_for('products.edit_product', id=id))
 
 
+@bp.route('/variant/<int:vid>/edit', methods=['POST'])
+@login_required
+def edit_variant(vid):
+    variant = ProductVariant.query.get_or_404(vid)
+    variant.color = request.form.get('color') or None
+    variant.size = request.form.get('size') or None
+    variant.sku_code = generate_sku(variant.product.name, variant.color, variant.size)
+    variant.cost_price_override = float(request.form.get('cost_override') or 0) or None
+    variant.coach_price_override = float(request.form.get('coach_override') or 0) or None
+    variant.mrp_override = float(request.form.get('mrp_override') or 0) or None
+    db.session.commit()
+    flash(f'Variant {variant.sku_code} updated.', 'success')
+    return redirect(url_for('products.edit_product', id=variant.product_id))
+
+
+@bp.route('/variant/<int:vid>/delete', methods=['POST'])
+@login_required
+def delete_variant(vid):
+    variant = ProductVariant.query.get_or_404(vid)
+    pid = variant.product_id
+    sku = variant.sku_code
+    # Check if variant has purchase or sale items
+    from app.models import PurchaseItem, SaleItem
+    has_purchases = PurchaseItem.query.filter_by(variant_id=vid).count() > 0
+    has_sales = SaleItem.query.filter_by(variant_id=vid).count() > 0
+    if has_purchases or has_sales:
+        variant.is_active = False
+        db.session.commit()
+        flash(f'Variant {sku} deactivated (has order history).', 'warning')
+    else:
+        db.session.delete(variant)
+        db.session.commit()
+        flash(f'Variant {sku} deleted.', 'info')
+    return redirect(url_for('products.edit_product', id=pid))
+
+
 @bp.route('/<int:id>/delete', methods=['POST'])
 @login_required
 def delete_product(id):
