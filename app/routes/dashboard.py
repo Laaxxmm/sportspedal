@@ -76,7 +76,8 @@ def compute_dashboard_data(location_id=None):
         for item in sale.items:
             bucket['qty'] += item.quantity
             bucket['cogs'] += (item.variant.effective_cost or 0) * item.quantity
-    coach_data['profit'] = coach_data['revenue'] - coach_data['cogs']
+    # Coach = pass-through (zero profit), Public = actual margin
+    coach_data['profit'] = 0
     public_data['profit'] = public_data['revenue'] - public_data['cogs']
 
     # Supplier balance (global only, not scoped)
