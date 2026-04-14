@@ -302,11 +302,19 @@ class SaleItem(db.Model):
     variant_id = db.Column(db.Integer, db.ForeignKey('product_variant.id'), nullable=False)
     quantity = db.Column(db.Integer, default=1)
     unit_price = db.Column(db.Float, default=0)
+    cost_at_sale = db.Column(db.Float, default=0)  # Frozen cost price at time of sale
     gst_percent = db.Column(db.Float, default=12.0)
     gst_amount = db.Column(db.Float, default=0)
     total_amount = db.Column(db.Float, default=0)
 
     variant = db.relationship('ProductVariant')
+
+    @property
+    def effective_cost(self):
+        """Use frozen cost if available, otherwise fall back to current."""
+        if self.cost_at_sale and self.cost_at_sale > 0:
+            return self.cost_at_sale
+        return self.variant.effective_cost if self.variant else 0
 
 
 # ===== Package Pricing =====

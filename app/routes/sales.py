@@ -145,11 +145,13 @@ def new_sale():
                     adjusted_price = round(d['unit_price'] * ratio, 2)
                     taxable = adjusted_price * d['quantity']
                     gst_amt = taxable * d['gst_percent'] / 100
+                    v = ProductVariant.query.get(d['variant_id'])
                     item = SaleItem(
                         sale_order_id=sale.id,
                         variant_id=d['variant_id'],
                         quantity=d['quantity'],
                         unit_price=adjusted_price,
+                        cost_at_sale=v.effective_cost if v else 0,
                         gst_percent=d['gst_percent'],
                         gst_amount=gst_amt,
                         total_amount=taxable + gst_amt,
@@ -162,11 +164,13 @@ def new_sale():
             for d in items_data:
                 taxable = d['unit_price'] * d['quantity']
                 gst_amt = taxable * d['gst_percent'] / 100
+                v = ProductVariant.query.get(d['variant_id'])
                 item = SaleItem(
                     sale_order_id=sale.id,
                     variant_id=d['variant_id'],
                     quantity=d['quantity'],
                     unit_price=d['unit_price'],
+                    cost_at_sale=v.effective_cost if v else 0,
                     gst_percent=d['gst_percent'],
                     gst_amount=gst_amt,
                     total_amount=taxable + gst_amt,
@@ -239,9 +243,13 @@ def edit_sale(id):
             gst_pct = float(gst_percents[i] or 0)
             taxable = price * qty
             gst_amt = taxable * gst_pct / 100
+            vid = int(variant_ids[i])
+            v = ProductVariant.query.get(vid)
             db.session.add(SaleItem(
-                sale_order_id=sale.id, variant_id=int(variant_ids[i]),
-                quantity=qty, unit_price=price, gst_percent=gst_pct,
+                sale_order_id=sale.id, variant_id=vid,
+                quantity=qty, unit_price=price,
+                cost_at_sale=v.effective_cost if v else 0,
+                gst_percent=gst_pct,
                 gst_amount=gst_amt, total_amount=taxable + gst_amt,
             ))
 

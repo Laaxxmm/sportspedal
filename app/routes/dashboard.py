@@ -54,7 +54,7 @@ def compute_dashboard_data(location_id=None):
     if location_id:
         sale_items_query = sale_items_query.filter(SaleOrder.location_id == location_id)
     for si in sale_items_query.all():
-        total_cogs += (si.variant.effective_cost or 0) * si.quantity
+        total_cogs += si.effective_cost * si.quantity
 
     gross_profit = total_revenue - total_cogs
     profit_margin = (gross_profit / total_revenue * 100) if total_revenue > 0 else 0
@@ -75,7 +75,7 @@ def compute_dashboard_data(location_id=None):
         bucket['revenue'] += sale.grand_total
         for item in sale.items:
             bucket['qty'] += item.quantity
-            bucket['cogs'] += (item.variant.effective_cost or 0) * item.quantity
+            bucket['cogs'] += item.effective_cost * item.quantity
     # Coach = pass-through (zero profit), Public = actual margin
     coach_data['profit'] = 0
     public_data['profit'] = public_data['revenue'] - public_data['cogs']

@@ -155,6 +155,7 @@ def seed_and_import():
             db.session.add(SaleItem(
                 sale_order_id=sale.id, variant_id=variant.id,
                 quantity=qty, unit_price=sell_price,
+                cost_at_sale=variant.effective_cost,
                 gst_percent=0, gst_amount=0,
                 total_amount=sell_price * qty,
             ))
