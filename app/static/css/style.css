@@ -38,7 +38,7 @@ body { background: var(--bg); color: var(--text-primary); margin: 0; }
 /* ===== Sidebar (Light) ===== */
 .sidebar {
     width: 68px;
-    min-height: 100vh;
+    height: 100vh;
     background: var(--sidebar-bg);
     border-right: 1px solid var(--border);
     position: fixed;
@@ -75,7 +75,7 @@ body { background: var(--bg); color: var(--text-primary); margin: 0; }
 .brand-text { opacity: 0; transition: opacity 0.25s ease 0.08s; }
 .sidebar:hover .brand-text { opacity: 1; }
 
-.nav-section { flex: 1; }
+.nav-section { flex: 1; min-height: 0; overflow-y: auto; }
 .sidebar .nav { padding: 10px 10px; }
 .sidebar .nav-link {
     color: var(--text-secondary);
@@ -122,7 +122,7 @@ body { background: var(--bg); color: var(--text-primary); margin: 0; }
 }
 .sidebar .nav-link.user-info:hover { background: none; }
 
-.nav-bottom { margin-top: auto; }
+.nav-bottom { flex-shrink: 0; }
 .sidebar .nav-divider {
     border-top: 1px solid var(--border);
     margin: 8px 12px;
