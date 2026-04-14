@@ -30,10 +30,10 @@
 }
 
 * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-body { background: var(--bg); color: var(--text-primary); margin: 0; }
+body { background: var(--bg); color: var(--text-primary); margin: 0; overflow-x: hidden; }
 
 /* ===== App Layout ===== */
-.app-wrapper { display: flex; min-height: 100vh; }
+.app-wrapper { display: flex; min-height: 100vh; overflow-x: hidden; max-width: 100vw; }
 
 /* ===== Sidebar (Light) ===== */
 .sidebar {
@@ -513,27 +513,29 @@ code { font-size: 0.8rem; color: var(--accent-purple); background: rgba(124,92,2
     .sidebar .nav-text, .sidebar .brand-text { opacity: 1; }
     .mobile-nav-toggle { display: flex; }
     .mobile-overlay.open { display: block; }
-    .main-content { margin-left: 0 !important; padding: 56px 12px 12px !important; }
+    .main-content { margin-left: 0 !important; padding: 56px 10px 10px !important; max-width: 100vw; overflow-x: hidden; }
 
     /* Dashboard header */
     .dash-header { flex-direction: column; align-items: flex-start; gap: 8px; }
     .dash-header h2 { font-size: 1.2rem; }
 
     /* Money Flow: force 2-col grid */
-    .money-flow-card { padding: 14px !important; }
-    .money-flow-card > div:last-child { display: flex; flex-wrap: wrap; }
-    .money-flow-card .row { display: flex !important; flex-wrap: wrap !important; }
-    .money-flow-card .col,
+    .money-flow-card { padding: 12px !important; overflow: hidden; }
+    .money-flow-card .row { display: flex !important; flex-wrap: wrap !important; margin: 0 !important; }
+    .money-flow-card .col-6,
+    .money-flow-card .col-lg,
     .money-flow-card .flow-item,
     .money-flow-card [class*="col"] {
         flex: 0 0 50% !important;
         max-width: 50% !important;
-        margin-bottom: 10px;
+        padding: 6px 4px !important;
+        margin-bottom: 8px;
+        box-sizing: border-box;
     }
     .money-flow-card .flow-item::after { display: none !important; }
-    .money-flow-card .flow-value { font-size: 1.1rem !important; }
-    .money-flow-card .flow-label { font-size: 0.62rem; }
-    .money-flow-card .flow-sub { font-size: 0.65rem; }
+    .money-flow-card .flow-value { font-size: 1rem !important; word-break: break-all; }
+    .money-flow-card .flow-label { font-size: 0.58rem; }
+    .money-flow-card .flow-sub { font-size: 0.6rem; }
 
     /* All row columns: full width on mobile */
     .row.g-3 > .col-md-8,
@@ -560,8 +562,10 @@ code { font-size: 0.8rem; color: var(--accent-purple); background: rgba(124,92,2
     .split-card .split-metric .metric-label { font-size: 0.58rem; }
 
     /* Financial rows */
-    .fin-row { font-size: 0.8rem; }
-    .fin-row .fin-value { font-size: 0.85rem; }
+    .fin-row { font-size: 0.78rem; flex-wrap: wrap; }
+    .fin-row .fin-value { font-size: 0.82rem; word-break: break-all; }
+    .detail-card .p-3 { padding: 10px !important; }
+    .detail-card [style*="padding:8px 12px"] { font-size: 0.7rem !important; word-break: break-word; }
 
     /* Tables: horizontal scroll */
     .card-body.p-0, .detail-body { overflow-x: auto; -webkit-overflow-scrolling: touch; }
