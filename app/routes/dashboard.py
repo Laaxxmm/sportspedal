@@ -80,6 +80,10 @@ def compute_dashboard_data(location_id=None):
     coach_data['profit'] = 0
     public_data['profit'] = public_data['revenue'] - public_data['cogs']
 
+    # Override overall profit to match: only public profit counts (coach is pass-through)
+    gross_profit = public_data['profit']
+    profit_margin = (gross_profit / public_data['revenue'] * 100) if public_data['revenue'] > 0 else 0
+
     # Supplier balance (global only, not scoped)
     supplier_balance = get_supplier_balance()
 
