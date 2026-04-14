@@ -26,6 +26,14 @@
                 <p><strong>Status:</strong> <span class="badge bg-{{ 'success' if sale.status == 'delivered' else 'warning' }}">{{ sale.status }}</span></p>
                 {% if sale.is_package %}<p><strong>Package:</strong> <span class="badge bg-success">{{ sale.package_type }}</span></p>{% endif %}
                 {% if sale.transport_mode %}<p><strong>Transport:</strong> {{ sale.transport_mode }}</p>{% endif %}
+                {% if sale.shipping_cost and sale.shipping_cost > 0 %}
+                <hr>
+                <p><strong><i class="bi bi-truck"></i> Shipping:</strong> Rs.{{ "%.2f"|format(sale.shipping_cost) }}
+                    <span class="badge bg-{{ 'info' if sale.shipping_paid_by == 'supplier' else 'secondary' }}">{{ 'Supplier pays' if sale.shipping_paid_by == 'supplier' else 'Self' }}</span>
+                </p>
+                {% if sale.shipping_carrier %}<p><strong>Carrier:</strong> {{ sale.shipping_carrier }}</p>{% endif %}
+                {% if sale.shipping_tracking %}<p><strong>Tracking:</strong> {{ sale.shipping_tracking }}</p>{% endif %}
+                {% endif %}
                 {% if sale.notes %}<p><strong>Notes:</strong> {{ sale.notes }}</p>{% endif %}
             </div>
         </div>

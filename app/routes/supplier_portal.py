@@ -68,7 +68,18 @@ def portal_dashboard():
                 .filter_by(supplier_id=sid)
                 .order_by(SupplierPayment.payment_date.desc()).all())
 
-    balance = total_cost - total_paid
+    # Shipping credits (supplier owes for shipping)
+    from app.models import SaleOrder
+    shipping_credit = db.session.query(func.sum(SaleOrder.shipping_cost)).filter(
+        SaleOrder.shipping_paid_by == 'supplier', SaleOrder.shipping_cost > 0
+    ).scalar() or 0
+
+    shipping_settled = db.session.query(func.sum(SupplierPayment.shipping_deduction)).filter(
+        SupplierPayment.supplier_id == sid
+    ).scalar() or 0
+
+    shipping_pending = shipping_credit - shipping_settled
+    balance = total_cost - total_paid - shipping_pending
 
     # Stock by location
     locations = Location.query.filter_by(is_active=True).order_by(Location.state, Location.district).all()
@@ -106,6 +117,8 @@ def portal_dashboard():
                            total_cost=total_cost, total_taxable=total_taxable,
                            total_gst=total_gst, total_units=total_units,
                            total_paid=total_paid, balance=balance,
+                           shipping_credit=shipping_credit,
+                           shipping_pending=shipping_pending,
                            payments=payments,
                            location_stock=location_stock,
                            restock_needed=restock_needed,

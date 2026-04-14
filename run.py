@@ -180,6 +180,8 @@ with app.app_context():
             with db.engine.connect() as conn:
                 conn.execute(text("SELECT cost_at_sale FROM sale_item LIMIT 1"))
                 conn.execute(text("SELECT supplier_id FROM user LIMIT 1"))
+                conn.execute(text("SELECT shipping_cost FROM sale_order LIMIT 1"))
+                conn.execute(text("SELECT shipping_deduction FROM supplier_payment LIMIT 1"))
         except Exception as e:
             print(f"=== Schema mismatch ({e}), rebuilding DB ===")
             db.session.remove()

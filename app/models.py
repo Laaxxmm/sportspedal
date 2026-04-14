@@ -276,6 +276,10 @@ class SaleOrder(db.Model):
     discount_amount = db.Column(db.Float, default=0)
     is_package = db.Column(db.Boolean, default=False)
     package_type = db.Column(db.String(50))
+    shipping_cost = db.Column(db.Float, default=0)
+    shipping_carrier = db.Column(db.String(100))
+    shipping_tracking = db.Column(db.String(100))
+    shipping_paid_by = db.Column(db.String(20), default='self')  # self | supplier
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -368,6 +372,7 @@ class SupplierPayment(db.Model):
     supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=False)
     payment_date = db.Column(db.Date, nullable=False, default=date.today)
     amount = db.Column(db.Float, nullable=False)
+    shipping_deduction = db.Column(db.Float, default=0)  # Shipping credit deducted from this payment
     payment_mode = db.Column(db.String(50))  # cash | bank_transfer | upi | cheque
     reference_number = db.Column(db.String(100))
     notes = db.Column(db.Text)

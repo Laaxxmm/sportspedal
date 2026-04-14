@@ -24,12 +24,24 @@
             <div class="kpi-sub">Payments made so far</div>
         </div>
     </div>
+    {% if overall.shipping_credit > 0 %}
+    <div class="col-md-3">
+        <div class="kpi-card kpi-blue">
+            <div class="kpi-icon"><i class="bi bi-truck"></i></div>
+            <div class="kpi-label">Shipping Credit</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(overall.shipping_credit) }}</div>
+            <div class="kpi-sub">Pending: Rs.{{ "{:,.0f}".format(overall.shipping_pending) }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+    {% else %}
     <div class="col-md-4">
+    {% endif %}
         <div class="kpi-card {{ 'kpi-amber' if overall.balance > 0 else 'kpi-emerald' }}">
             <div class="kpi-icon"><i class="bi bi-wallet2"></i></div>
-            <div class="kpi-label">Balance Due</div>
+            <div class="kpi-label">Net Balance Due</div>
             <div class="kpi-value">Rs.{{ "{:,.0f}".format(overall.balance) }}</div>
-            <div class="kpi-sub">{{ 'Still payable' if overall.balance > 0 else 'Fully paid' }}</div>
+            <div class="kpi-sub">{{ 'after shipping credit' if overall.shipping_credit > 0 else ('still payable' if overall.balance > 0 else 'fully paid') }}</div>
         </div>
     </div>
 </div>

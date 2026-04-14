@@ -43,9 +43,11 @@
     <div class="col-md-3">
         <div class="kpi-card {{ 'kpi-amber' if balance > 0 else 'kpi-emerald' }}">
             <div class="kpi-icon"><i class="bi bi-wallet2"></i></div>
-            <div class="kpi-label">Balance Due</div>
+            <div class="kpi-label">Net Balance</div>
             <div class="kpi-value">Rs.{{ "{:,.0f}".format(balance) }}</div>
-            <div class="kpi-sub">{{ 'pending' if balance > 0 else 'settled' }}</div>
+            <div class="kpi-sub">
+                {% if shipping_pending > 0 %}after Rs.{{ "{:,.0f}".format(shipping_pending) }} shipping credit{% else %}{{ 'pending' if balance > 0 else 'settled' }}{% endif %}
+            </div>
         </div>
     </div>
 </div>

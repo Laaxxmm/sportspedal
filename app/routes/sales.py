@@ -109,6 +109,10 @@ def new_sale():
             transport_mode=request.form.get('transport_mode', ''),
             transport_charge=float(request.form.get('transport_charge', 0)),
             discount_amount=float(request.form.get('discount_amount', 0)),
+            shipping_cost=float(request.form.get('shipping_cost', 0)),
+            shipping_carrier=request.form.get('shipping_carrier', ''),
+            shipping_tracking=request.form.get('shipping_tracking', ''),
+            shipping_paid_by=request.form.get('shipping_paid_by', 'self'),
             notes=request.form.get('notes', ''),
         )
         db.session.add(sale)
@@ -225,6 +229,10 @@ def edit_sale(id):
         sale.transport_mode = request.form.get('transport_mode', '')
         sale.transport_charge = float(request.form.get('transport_charge', 0))
         sale.discount_amount = float(request.form.get('discount_amount', 0))
+        sale.shipping_cost = float(request.form.get('shipping_cost', 0))
+        sale.shipping_carrier = request.form.get('shipping_carrier', '')
+        sale.shipping_tracking = request.form.get('shipping_tracking', '')
+        sale.shipping_paid_by = request.form.get('shipping_paid_by', 'self')
         sale.notes = request.form.get('notes', '')
 
         # Delete old items and recreate

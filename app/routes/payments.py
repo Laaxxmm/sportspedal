@@ -10,11 +10,12 @@ bp = Blueprint('payments', __name__)
 
 
 def get_supplier_balance(supplier_id=None):
-    """Calculate supplier running account balance."""
+    """Calculate supplier running account balance including shipping credits."""
+    from app.models import PurchaseOrder, SaleOrder
+
     # Total owed = sum of all purchase items total_amount
     owed_query = db.session.query(func.sum(PurchaseItem.total_amount))
     if supplier_id:
-        from app.models import PurchaseOrder
         owed_query = owed_query.join(PurchaseOrder).filter(PurchaseOrder.supplier_id == supplier_id)
     total_owed = owed_query.scalar() or 0
 
@@ -24,7 +25,30 @@ def get_supplier_balance(supplier_id=None):
         paid_query = paid_query.filter(SupplierPayment.supplier_id == supplier_id)
     total_paid = paid_query.scalar() or 0
 
-    return {'owed': total_owed, 'paid': total_paid, 'balance': total_owed - total_paid}
+    # Shipping credits (supplier owes us for shipping they agreed to pay)
+    shipping_credit = db.session.query(func.sum(SaleOrder.shipping_cost)).filter(
+        SaleOrder.shipping_paid_by == 'supplier',
+        SaleOrder.shipping_cost > 0
+    ).scalar() or 0
+
+    # Shipping deductions already applied in payments
+    shipping_settled = db.session.query(func.sum(SupplierPayment.shipping_deduction))
+    if supplier_id:
+        shipping_settled = shipping_settled.filter(SupplierPayment.supplier_id == supplier_id)
+    shipping_settled = shipping_settled.scalar() or 0
+
+    shipping_pending = shipping_credit - shipping_settled
+
+    net_balance = total_owed - total_paid - shipping_pending
+
+    return {
+        'owed': total_owed,
+        'paid': total_paid,
+        'shipping_credit': shipping_credit,
+        'shipping_settled': shipping_settled,
+        'shipping_pending': shipping_pending,
+        'balance': net_balance,
+    }
 
 
 @bp.route('/')
@@ -49,10 +73,12 @@ def list_payments():
 @superadmin_required
 def new_payment():
     if request.method == 'POST':
+        shipping_ded = float(request.form.get('shipping_deduction', 0))
         payment = SupplierPayment(
             supplier_id=int(request.form['supplier_id']),
             payment_date=date.fromisoformat(request.form['payment_date']),
             amount=float(request.form['amount']),
+            shipping_deduction=shipping_ded,
             payment_mode=request.form.get('payment_mode', ''),
             reference_number=request.form.get('reference_number', ''),
             notes=request.form.get('notes', ''),
@@ -60,7 +86,10 @@ def new_payment():
         )
         db.session.add(payment)
         db.session.commit()
-        flash(f'Payment of Rs.{payment.amount:,.2f} recorded.', 'success')
+        msg = f'Payment of Rs.{payment.amount:,.2f} recorded.'
+        if shipping_ded > 0:
+            msg += f' (includes Rs.{shipping_ded:,.2f} shipping deduction)'
+        flash(msg, 'success')
         return redirect(url_for('payments.list_payments'))
 
     suppliers = Supplier.query.all()

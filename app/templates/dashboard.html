@@ -70,13 +70,16 @@
             <div class="p-3">
                 <div class="fin-row"><span class="fin-label">Total Owed</span><span class="fin-value" style="color:var(--accent-red)">Rs.{{ "{:,.0f}".format(supplier_balance.owed) }}</span></div>
                 <div class="fin-row"><span class="fin-label">Paid So Far</span><span class="fin-value" style="color:var(--accent-green)">Rs.{{ "{:,.0f}".format(supplier_balance.paid) }}</span></div>
+                {% if supplier_balance.shipping_credit > 0 %}
+                <div class="fin-row"><span class="fin-label"><i class="bi bi-truck"></i> Shipping Credit</span><span class="fin-value" style="color:var(--accent-blue)">Rs.{{ "{:,.0f}".format(supplier_balance.shipping_pending) }}</span></div>
+                {% endif %}
                 <div class="fin-row fin-total">
-                    <span class="fin-label">Still Due</span>
+                    <span class="fin-label">Net Due</span>
                     <span class="fin-value" style="color:{{ 'var(--accent-red)' if supplier_balance.balance > 0 else 'var(--accent-green)' }}; font-size:1.1rem;">Rs.{{ "{:,.0f}".format(supplier_balance.balance) }}</span>
                 </div>
                 {% if total_revenue > 0 %}
                 <div style="margin-top:10px; padding:8px 12px; background:#fafbfd; border-radius:var(--radius-sm); font-size:0.8rem; color:var(--text-secondary);">
-                    Revenue Rs.{{ "{:,.0f}".format(total_revenue) }} - Due Rs.{{ "{:,.0f}".format(supplier_balance.balance) }} = <strong style="color:{{ 'var(--accent-green)' if (total_revenue - supplier_balance.balance) >= 0 else 'var(--accent-red)' }}">Rs.{{ "{:,.0f}".format(total_revenue - supplier_balance.balance) }}</strong> in hand
+                    Revenue Rs.{{ "{:,.0f}".format(total_revenue) }} - Net Due Rs.{{ "{:,.0f}".format(supplier_balance.balance) }} = <strong style="color:{{ 'var(--accent-green)' if (total_revenue - supplier_balance.balance) >= 0 else 'var(--accent-red)' }}">Rs.{{ "{:,.0f}".format(total_revenue - supplier_balance.balance) }}</strong> in hand
                 </div>
                 {% endif %}
             </div>

@@ -28,6 +28,13 @@
                     <input type="number" name="amount" class="form-control" step="0.01" min="0.01" value="{{ payment.amount if payment else '' }}" required>
                 </div>
                 <div class="col-md-2">
+                    <label class="form-label">Shipping Deduction</label>
+                    <input type="number" name="shipping_deduction" class="form-control" step="0.01" value="{{ payment.shipping_deduction if payment else 0 }}" placeholder="0">
+                    <small class="text-muted">Shipping credit to deduct</small>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-2">
                     <label class="form-label">Payment Mode</label>
                     <select name="payment_mode" class="form-select">
                         <option value="">Select...</option>
