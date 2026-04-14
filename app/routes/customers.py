@@ -87,3 +87,18 @@ def edit_customer(id):
         return redirect(url_for('customers.list_customers'))
 
     return render_template('customers/form.html', customer=customer)
+
+
+@bp.route('/<int:id>/delete', methods=['POST'])
+@login_required
+def delete_customer(id):
+    customer = Customer.query.get_or_404(id)
+    # Check if customer has orders
+    if customer.sale_orders.count() > 0:
+        flash(f'Cannot delete "{customer.name}" - they have {customer.sale_orders.count()} order(s). Delete orders first.', 'danger')
+        return redirect(url_for('customers.list_customers'))
+    name = customer.name
+    db.session.delete(customer)
+    db.session.commit()
+    flash(f'Customer "{name}" deleted.', 'info')
+    return redirect(url_for('customers.list_customers'))
