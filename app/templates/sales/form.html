@@ -178,8 +178,8 @@ const packagePrices = {
     {% endfor %}
 };
 
-// Get unique product names (with stock > 0)
-const productNames = [...new Set(products.filter(p => p.stock > 0).map(p => p.name))];
+// Get unique product names (ALL active products)
+const productNames = [...new Set(products.map(p => p.name))];
 const productOptions = '<option value="">Select Product...</option>' + productNames.map(n => `<option value="${n}">${n}</option>`).join('');
 
 function getCustomerType() {
@@ -189,11 +189,11 @@ function getCustomerType() {
 }
 
 function getColorsForProduct(name) {
-    return [...new Set(products.filter(p => p.name === name && p.stock > 0 && p.color).map(p => p.color))];
+    return [...new Set(products.filter(p => p.name === name && p.color).map(p => p.color))];
 }
 
 function getSizesForProduct(name, color) {
-    return [...new Set(products.filter(p => p.name === name && p.stock > 0 && (p.color === color || (!p.color && !color)) && p.size).map(p => p.size))];
+    return [...new Set(products.filter(p => p.name === name && (p.color === color || (!p.color && !color)) && p.size).map(p => p.size))];
 }
 
 function findVariant(name, color, size) {
@@ -296,7 +296,7 @@ function updateVariantSelection(row) {
         row.querySelector('.gst-pct').value = v.gst;
     } else {
         // Try without size/color for products like bags
-        const simple = products.find(p => p.name === name && !p.color && !p.size && p.stock > 0);
+        const simple = products.find(p => p.name === name && !p.color && !p.size);
         if (simple) {
             hiddenInput.value = simple.vid;
             stockCell.textContent = simple.stock;
