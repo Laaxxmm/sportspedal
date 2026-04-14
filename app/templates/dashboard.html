@@ -33,8 +33,8 @@
             <div class="row">
                     <div class="col-6 col-lg flow-item">
                         <div class="flow-label">I Bought For</div>
-                        <div class="flow-value" style="color:#c0392b;">Rs.{{ "{:,.0f}".format(total_purchase_cost) }}</div>
-                        <div class="flow-sub">from supplier</div>
+                        <div class="flow-value" style="color:#c0392b;">Rs.{{ "{:,.0f}".format(purchase_taxable) }}</div>
+                        <div class="flow-sub">excl GST Rs.{{ "{:,.0f}".format(purchase_gst) }}</div>
                     </div>
                     <div class="col-6 col-lg flow-item">
                         <div class="flow-label">I Sold For</div>

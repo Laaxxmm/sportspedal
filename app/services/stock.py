@@ -71,11 +71,26 @@ def get_inventory_data(location_id=None):
                 .order_by(Product.category, Product.name, ProductVariant.color, ProductVariant.size)
                 .all())
 
+    # Weighted average purchase price per variant (excl GST)
+    avg_cost_q = (db.session.query(
+        PurchaseItem.variant_id,
+        func.sum(PurchaseItem.unit_price * PurchaseItem.quantity_received),
+        func.sum(PurchaseItem.quantity_received)
+    ).join(PurchaseOrder).filter(PurchaseOrder.status == 'delivered'))
+    if location_id:
+        avg_cost_q = avg_cost_q.filter(PurchaseOrder.location_id == location_id)
+    avg_cost_data = avg_cost_q.group_by(PurchaseItem.variant_id).all()
+    avg_cost_map = {}
+    for vid, total_cost, total_qty in avg_cost_data:
+        avg_cost_map[vid] = total_cost / total_qty if total_qty else 0
+
     result = []
     for variant, product in variants:
         inward = inward_map.get(variant.id, 0) or 0
         outward = outward_map.get(variant.id, 0) or 0
         stock = stock_map.get(variant.id, 0)
+        # Use actual purchase price if available, else product master price
+        actual_cost = avg_cost_map.get(variant.id, variant.effective_cost or 0)
         result.append({
             'variant_id': variant.id,
             'product_name': product.name,
@@ -87,8 +102,8 @@ def get_inventory_data(location_id=None):
             'inward': inward,
             'outward': outward,
             'stock': stock,
-            'cost_price': variant.effective_cost,
-            'stock_value': stock * (variant.effective_cost or 0),
+            'cost_price': actual_cost,
+            'stock_value': stock * actual_cost,
         })
     return result
 
