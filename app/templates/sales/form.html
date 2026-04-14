@@ -469,6 +469,7 @@ document.getElementById('save-new-customer').addEventListener('click', function(
     formData.append('city', document.getElementById('new-cust-city').value);
     formData.append('state', document.getElementById('new-cust-state').value);
 
+    formData.append('csrf_token', document.querySelector('meta[name="csrf-token"]').content);
     fetch('/customers/quick-add', { method: 'POST', body: formData })
         .then(r => r.json())
         .then(data => {
