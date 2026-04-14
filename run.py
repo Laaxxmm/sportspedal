@@ -175,12 +175,17 @@ with app.app_context():
     if os.path.exists(db_path):
         try:
             db.create_all()
-            User.query.count()  # Test new schema
-        except Exception:
-            print("=== Old schema detected, deleting DB ===")
+            # Test ALL new columns exist by querying them
+            from sqlalchemy import text
+            with db.engine.connect() as conn:
+                conn.execute(text("SELECT cost_at_sale FROM sale_item LIMIT 1"))
+                conn.execute(text("SELECT supplier_id FROM user LIMIT 1"))
+        except Exception as e:
+            print(f"=== Schema mismatch ({e}), rebuilding DB ===")
             db.session.remove()
             db.engine.dispose()
-            os.remove(db_path)
+            if os.path.exists(db_path):
+                os.remove(db_path)
 
     # Create tables and seed if needed
     db.create_all()
