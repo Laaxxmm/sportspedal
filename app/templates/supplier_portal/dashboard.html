@@ -14,9 +14,9 @@
     </div>
 </div>
 
-<!-- Row 1: Account Summary -->
+<!-- KPI Cards: even 3x2 grid -->
 <div class="row g-3 mb-4">
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="kpi-card kpi-blue">
             <div class="kpi-icon"><i class="bi bi-box-seam"></i></div>
             <div class="kpi-label">Total Units Sent</div>
@@ -24,7 +24,7 @@
             <div class="kpi-sub">across {{ orders|length }} orders</div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="kpi-card kpi-rose">
             <div class="kpi-icon"><i class="bi bi-receipt"></i></div>
             <div class="kpi-label">Total Invoice Value</div>
@@ -32,7 +32,7 @@
             <div class="kpi-sub">incl GST Rs.{{ "{:,.0f}".format(total_gst) }}</div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="kpi-card kpi-emerald">
             <div class="kpi-icon"><i class="bi bi-cash-coin"></i></div>
             <div class="kpi-label">Payments Received</div>
@@ -40,10 +40,6 @@
             <div class="kpi-sub">{{ payments|length }} payments</div>
         </div>
     </div>
-</div>
-
-<!-- Row 2: Sales & Cost of Sold -->
-<div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="kpi-card kpi-indigo">
             <div class="kpi-icon"><i class="bi bi-bag-check"></i></div>
