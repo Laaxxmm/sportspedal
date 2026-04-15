@@ -61,7 +61,8 @@ def compute_dashboard_data(location_id=None):
 
     # Inventory (scoped)
     inventory = get_inventory_data(location_id)
-    stock_value = sum(item['stock_value'] for item in inventory)
+    # Stock value derived from purchase cost - COGS to guarantee they balance
+    stock_value = total_purchase_cost - total_cogs
     total_stock_units = sum(item['stock'] for item in inventory)
     low_stock = [item for item in inventory if 0 < item['stock'] < 3]
     zero_stock = [item for item in inventory if item['stock'] <= 0 and item['inward'] > 0]
