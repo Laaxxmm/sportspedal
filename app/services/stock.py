@@ -71,10 +71,10 @@ def get_inventory_data(location_id=None):
                 .order_by(Product.category, Product.name, ProductVariant.color, ProductVariant.size)
                 .all())
 
-    # Weighted average purchase price per variant (excl GST)
+    # Weighted average landed cost per variant (incl GST - what you actually paid)
     avg_cost_q = (db.session.query(
         PurchaseItem.variant_id,
-        func.sum(PurchaseItem.unit_price * PurchaseItem.quantity_received),
+        func.sum(PurchaseItem.total_amount),
         func.sum(PurchaseItem.quantity_received)
     ).join(PurchaseOrder).filter(PurchaseOrder.status == 'delivered'))
     if location_id:
