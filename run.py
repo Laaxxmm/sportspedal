@@ -171,26 +171,49 @@ with app.app_context():
     from app.config import DATA_DIR
     db_path = os.path.join(DATA_DIR, 'sportspedal.db')
 
-    # If old DB exists with wrong schema, delete it
-    if os.path.exists(db_path):
-        try:
-            db.create_all()
-            # Test ALL new columns exist by querying them
-            from sqlalchemy import text
-            with db.engine.connect() as conn:
-                conn.execute(text("SELECT cost_at_sale FROM sale_item LIMIT 1"))
-                conn.execute(text("SELECT supplier_id FROM user LIMIT 1"))
-                conn.execute(text("SELECT shipping_cost FROM sale_order LIMIT 1"))
-                conn.execute(text("SELECT shipping_deduction FROM supplier_payment LIMIT 1"))
-        except Exception as e:
-            print(f"=== Schema mismatch ({e}), rebuilding DB ===")
-            db.session.remove()
-            db.engine.dispose()
-            if os.path.exists(db_path):
-                os.remove(db_path)
+    from sqlalchemy import text, inspect
 
-    # Create tables and seed if needed
+    # Create any brand new tables
     db.create_all()
+
+    # Migrate existing tables: add missing columns (preserves data!)
+    try:
+        changes = False
+        with db.engine.connect() as conn:
+            insp = inspect(db.engine)
+
+            def has_column(table, col):
+                return col in [c['name'] for c in insp.get_columns(table)]
+
+            migrations = [
+                ('sale_item', 'cost_at_sale', 'FLOAT', 0),
+                ('user', 'supplier_id', 'INTEGER', 'NULL'),
+                ('sale_order', 'shipping_cost', 'FLOAT', 0),
+                ('sale_order', 'shipping_carrier', 'VARCHAR(100)', 'NULL'),
+                ('sale_order', 'shipping_tracking', 'VARCHAR(100)', 'NULL'),
+                ('sale_order', 'shipping_paid_by', "VARCHAR(20)", "'self'"),
+                ('sale_order', 'location_id', 'INTEGER', 'NULL'),
+                ('sale_order', 'payment_status', "VARCHAR(20)", "'paid'"),
+                ('product', 'image_path', 'VARCHAR(200)', 'NULL'),
+                ('purchase_order', 'location_id', 'INTEGER', 'NULL'),
+                ('customer', 'location_id', 'INTEGER', 'NULL'),
+                ('supplier_payment', 'shipping_deduction', 'FLOAT', 0),
+            ]
+
+            for table, col, col_type, default in migrations:
+                try:
+                    if not has_column(table, col):
+                        conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type} DEFAULT {default}"))
+                        conn.commit()
+                        print(f"  Migrated: {table}.{col}")
+                        changes = True
+                except Exception:
+                    pass
+
+        if changes:
+            print("=== Schema migration complete (data preserved) ===")
+    except Exception as e:
+        print(f"=== Migration note: {e} ===")
     try:
         if User.query.count() == 0:
             print("=== Seeding database ===")
