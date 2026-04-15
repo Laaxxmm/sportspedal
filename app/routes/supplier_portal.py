@@ -102,20 +102,28 @@ def portal_dashboard():
 
     # Per-product summary: what was sent, current stock across all locations
     product_summary = {}
+    total_units_sold = 0
+    total_cogs = 0
     for item in all_inv:
         name = item['product_name']
         if name not in product_summary:
             product_summary[name] = {'name': name, 'category': item['category'],
                                       'image_url': item.get('image_url'),
-                                      'total_sent': 0, 'total_stock': 0, 'total_sold': 0}
+                                      'total_sent': 0, 'total_stock': 0, 'total_sold': 0,
+                                      'cost_of_sold': 0}
         product_summary[name]['total_sent'] += item['inward']
         product_summary[name]['total_stock'] += item['stock']
         product_summary[name]['total_sold'] += item['outward']
+        product_summary[name]['cost_of_sold'] += item['outward'] * item['cost_price']
+        total_units_sold += item['outward']
+        total_cogs += item['outward'] * item['cost_price']
 
     return render_template('supplier_portal/dashboard.html',
                            supplier=supplier, orders=orders,
                            total_cost=total_cost, total_taxable=total_taxable,
                            total_gst=total_gst, total_units=total_units,
+                           total_units_sold=total_units_sold,
+                           total_cogs=total_cogs,
                            total_paid=total_paid, balance=balance,
                            shipping_credit=shipping_credit,
                            shipping_pending=shipping_pending,
