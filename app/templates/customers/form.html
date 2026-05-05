@@ -15,8 +15,10 @@
                 <div class="col-md-3">
                     <label class="form-label">Customer Type</label>
                     <select name="customer_type" class="form-select">
-                        <option value="public" {{ 'selected' if not customer or customer.customer_type == 'public' }}>Public</option>
+                        <option value="public" {{ 'selected' if not customer or customer.customer_type == 'public' }}>Public (MRP)</option>
                         <option value="coach" {{ 'selected' if customer and customer.customer_type == 'coach' }}>Coach</option>
+                        <option value="bulk" {{ 'selected' if customer and customer.customer_type == 'bulk' }}>Bulk Buyer</option>
+                        <option value="dealer" {{ 'selected' if customer and customer.customer_type == 'dealer' }}>Dealer</option>
                     </select>
                 </div>
                 <div class="col-md-3">

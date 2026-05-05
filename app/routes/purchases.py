@@ -51,6 +51,8 @@ def new_purchase():
             location_id=loc_id,
             transporter=request.form.get('transporter', ''),
             status=request.form.get('status', 'ordered'),
+            bulk_discount=float(request.form.get('bulk_discount', 0) or 0),
+            discount_reason=request.form.get('discount_reason', ''),
             notes=request.form.get('notes', ''),
         )
         db.session.add(po)
@@ -113,6 +115,8 @@ def edit_purchase(id):
         po.location_id = request.form.get('location_id', type=int) or po.location_id
         po.transporter = request.form.get('transporter', '')
         po.status = request.form.get('status', 'ordered')
+        po.bulk_discount = float(request.form.get('bulk_discount', 0) or 0)
+        po.discount_reason = request.form.get('discount_reason', '')
         po.notes = request.form.get('notes', '')
 
         PurchaseItem.query.filter_by(purchase_order_id=po.id).delete()

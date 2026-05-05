@@ -79,7 +79,35 @@ def portal_dashboard():
     ).scalar() or 0
 
     shipping_pending = shipping_credit - shipping_settled
-    balance = total_cost - total_paid - shipping_pending
+
+    # Adjustment credits (promotional/damaged/returned where supplier covers cost)
+    from app.models import StockAdjustment, StockAdjustmentItem
+    adj_credit = db.session.query(
+        func.sum(StockAdjustmentItem.unit_cost * StockAdjustmentItem.quantity)
+    ).join(StockAdjustment).filter(
+        StockAdjustment.supplier_credit == True,
+        StockAdjustment.status == 'completed'
+    ).scalar() or 0
+
+    # Promotional / damaged breakdown
+    adj_breakdown = (db.session.query(
+        StockAdjustment.adjustment_type,
+        func.sum(StockAdjustmentItem.quantity),
+        func.sum(StockAdjustmentItem.unit_cost * StockAdjustmentItem.quantity)
+    ).join(StockAdjustmentItem)
+     .filter(StockAdjustment.status == 'completed')
+     .group_by(StockAdjustment.adjustment_type).all())
+
+    promo_qty, promo_value = 0, 0
+    damage_qty, damage_value = 0, 0
+    for atype, q, v in adj_breakdown:
+        if atype == 'promotional':
+            promo_qty, promo_value = q or 0, v or 0
+        elif atype in ('damaged', 'returned_to_supplier'):
+            damage_qty += q or 0
+            damage_value += v or 0
+
+    balance = total_cost - total_paid - shipping_pending - adj_credit
 
     # Stock by location
     locations = Location.query.filter_by(is_active=True).order_by(Location.state, Location.district).all()
@@ -127,6 +155,9 @@ def portal_dashboard():
                            total_paid=total_paid, balance=balance,
                            shipping_credit=shipping_credit,
                            shipping_pending=shipping_pending,
+                           adj_credit=adj_credit,
+                           promo_qty=promo_qty, promo_value=promo_value,
+                           damage_qty=damage_qty, damage_value=damage_value,
                            payments=payments,
                            location_stock=location_stock,
                            restock_needed=restock_needed,

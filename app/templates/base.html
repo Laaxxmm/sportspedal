@@ -62,6 +62,11 @@
                 {% endif %}
                 {% if current_user.has_permission('view_sales') %}
                 <li class="nav-item">
+                    <a class="nav-link {% if '/adjustments' in request.path %}active{% endif %}" href="{{ url_for('adjustments.list_adjustments') }}" title="Adjustments">
+                        <i class="bi bi-clipboard-minus"></i> <span class="nav-text">Adjustments</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {% if '/sales' in request.path %}active{% endif %}" href="{{ url_for('sales.list_sales') }}" title="Sales">
                         <i class="bi bi-receipt-cutoff"></i> <span class="nav-text">Sales</span>
                     </a>

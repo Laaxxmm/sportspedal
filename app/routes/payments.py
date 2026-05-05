@@ -10,14 +10,21 @@ bp = Blueprint('payments', __name__)
 
 
 def get_supplier_balance(supplier_id=None):
-    """Calculate supplier running account balance including shipping credits."""
-    from app.models import PurchaseOrder, SaleOrder
+    """Calculate supplier running account balance including shipping credits + adjustment credits."""
+    from app.models import PurchaseOrder, SaleOrder, StockAdjustment, StockAdjustmentItem
 
-    # Total owed = sum of all purchase items total_amount
-    owed_query = db.session.query(func.sum(PurchaseItem.total_amount))
+    # Total owed = sum of purchase items - bulk discounts
+    owed_query = db.session.query(func.sum(PurchaseItem.total_amount)).join(PurchaseOrder)
     if supplier_id:
-        owed_query = owed_query.join(PurchaseOrder).filter(PurchaseOrder.supplier_id == supplier_id)
-    total_owed = owed_query.scalar() or 0
+        owed_query = owed_query.filter(PurchaseOrder.supplier_id == supplier_id)
+    items_total = owed_query.scalar() or 0
+
+    discount_q = db.session.query(func.sum(PurchaseOrder.bulk_discount))
+    if supplier_id:
+        discount_q = discount_q.filter(PurchaseOrder.supplier_id == supplier_id)
+    bulk_discount_total = discount_q.scalar() or 0
+
+    total_owed = items_total - bulk_discount_total
 
     # Total paid
     paid_query = db.session.query(func.sum(SupplierPayment.amount))
@@ -25,13 +32,12 @@ def get_supplier_balance(supplier_id=None):
         paid_query = paid_query.filter(SupplierPayment.supplier_id == supplier_id)
     total_paid = paid_query.scalar() or 0
 
-    # Shipping credits (supplier owes us for shipping they agreed to pay)
+    # Shipping credits
     shipping_credit = db.session.query(func.sum(SaleOrder.shipping_cost)).filter(
         SaleOrder.shipping_paid_by == 'supplier',
         SaleOrder.shipping_cost > 0
     ).scalar() or 0
 
-    # Shipping deductions already applied in payments
     shipping_settled = db.session.query(func.sum(SupplierPayment.shipping_deduction))
     if supplier_id:
         shipping_settled = shipping_settled.filter(SupplierPayment.supplier_id == supplier_id)
@@ -39,14 +45,25 @@ def get_supplier_balance(supplier_id=None):
 
     shipping_pending = shipping_credit - shipping_settled
 
-    net_balance = total_owed - total_paid - shipping_pending
+    # Adjustment credits (promotional/damaged/returned where supplier covers cost)
+    adj_credit = db.session.query(
+        func.sum(StockAdjustmentItem.unit_cost * StockAdjustmentItem.quantity)
+    ).join(StockAdjustment).filter(
+        StockAdjustment.supplier_credit == True,
+        StockAdjustment.status == 'completed'
+    ).scalar() or 0
+
+    net_balance = total_owed - total_paid - shipping_pending - adj_credit
 
     return {
         'owed': total_owed,
+        'items_total': items_total,
+        'bulk_discount': bulk_discount_total,
         'paid': total_paid,
         'shipping_credit': shipping_credit,
         'shipping_settled': shipping_settled,
         'shipping_pending': shipping_pending,
+        'adjustment_credit': adj_credit,
         'balance': net_balance,
     }
 

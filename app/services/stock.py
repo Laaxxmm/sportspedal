@@ -1,6 +1,7 @@
 from app import db
 from app.models import (ProductVariant, Product, PurchaseItem, PurchaseOrder,
-                        SaleItem, SaleOrder, StockTransferItem, StockTransfer)
+                        SaleItem, SaleOrder, StockTransferItem, StockTransfer,
+                        StockAdjustment, StockAdjustmentItem)
 from sqlalchemy import func
 
 
@@ -19,6 +20,14 @@ def get_stock_map(location_id=None):
     if location_id:
         outward_q = outward_q.filter(SaleOrder.location_id == location_id)
     outward = dict(outward_q.group_by(SaleItem.variant_id).all())
+
+    # Outward from adjustments (promotional, damaged, returned, lost)
+    adj_q = (db.session.query(StockAdjustmentItem.variant_id, func.sum(StockAdjustmentItem.quantity))
+             .join(StockAdjustment)
+             .filter(StockAdjustment.status == 'completed'))
+    if location_id:
+        adj_q = adj_q.filter(StockAdjustment.location_id == location_id)
+    adjustments = dict(adj_q.group_by(StockAdjustmentItem.variant_id).all())
 
     # Transfers in (completed transfers TO this location)
     transfers_in = {}
@@ -45,7 +54,8 @@ def get_stock_map(location_id=None):
     stock = {}
     for v in all_variants:
         s = (inward.get(v.id, 0) or 0) + (transfers_in.get(v.id, 0) or 0) \
-            - (outward.get(v.id, 0) or 0) - (transfers_out.get(v.id, 0) or 0)
+            - (outward.get(v.id, 0) or 0) - (transfers_out.get(v.id, 0) or 0) \
+            - (adjustments.get(v.id, 0) or 0)
         stock[v.id] = s
     return stock
 

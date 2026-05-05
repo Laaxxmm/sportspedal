@@ -2,7 +2,8 @@ from flask import Blueprint, render_template, request
 from flask_login import login_required, current_user
 from app import db
 from app.models import (Product, ProductVariant, SaleOrder, SaleItem, PurchaseOrder,
-                        PurchaseItem, Location, SupplierPayment)
+                        PurchaseItem, Location, SupplierPayment, Customer,
+                        StockAdjustment, StockAdjustmentItem)
 from app.services.stock import get_inventory_data
 from app.routes.payments import get_supplier_balance
 from sqlalchemy import func
@@ -88,6 +89,36 @@ def compute_dashboard_data(location_id=None):
     # Supplier balance (global only, not scoped)
     supplier_balance = get_supplier_balance()
 
+    # Bulk orders
+    bulk_q = SaleOrder.query.filter_by(is_bulk=True)
+    if location_id:
+        bulk_q = bulk_q.filter_by(location_id=location_id)
+    bulk_orders = bulk_q.all()
+    bulk_data = {
+        'count': len(bulk_orders),
+        'qty': sum(sum(i.quantity for i in s.items) for s in bulk_orders),
+        'revenue': sum(s.grand_total for s in bulk_orders),
+    }
+
+    # Adjustments breakdown
+    adj_q = (db.session.query(StockAdjustment.adjustment_type,
+                              func.sum(StockAdjustmentItem.quantity),
+                              func.sum(StockAdjustmentItem.unit_cost * StockAdjustmentItem.quantity))
+             .join(StockAdjustmentItem)
+             .filter(StockAdjustment.status == 'completed'))
+    if location_id:
+        adj_q = adj_q.filter(StockAdjustment.location_id == location_id)
+    adj_breakdown = adj_q.group_by(StockAdjustment.adjustment_type).all()
+
+    promo_data = {'qty': 0, 'value': 0}
+    damage_data = {'qty': 0, 'value': 0}
+    for atype, qty, value in adj_breakdown:
+        if atype == 'promotional':
+            promo_data = {'qty': qty or 0, 'value': value or 0}
+        elif atype in ('damaged', 'returned_to_supplier'):
+            damage_data['qty'] += qty or 0
+            damage_data['value'] += value or 0
+
     return {
         'total_products': total_products, 'total_variants': total_variants,
         'recent_purchases': recent_purchases, 'recent_sales': recent_sales,
@@ -100,6 +131,9 @@ def compute_dashboard_data(location_id=None):
         'low_stock': low_stock, 'zero_stock': zero_stock,
         'coach_data': coach_data, 'public_data': public_data,
         'supplier_balance': supplier_balance,
+        'bulk_data': bulk_data,
+        'promo_data': promo_data,
+        'damage_data': damage_data,
     }
 
 

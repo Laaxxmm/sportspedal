@@ -43,11 +43,15 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label">Transport Mode</label>
-                    <input type="text" name="transport_mode" class="form-control" value="">
+                    <label class="form-label">Transport Type</label>
+                    <select name="transport_type" class="form-select" id="transport-type-select">
+                        <option value="self">Their / Self Pickup</option>
+                        <option value="local">Local Transport</option>
+                        <option value="direct">Direct Transport</option>
+                    </select>
                 </div>
                 <div class="col-md-1">
-                    <label class="form-label">Transport</label>
+                    <label class="form-label">Transport Cost</label>
                     <input type="number" name="transport_charge" class="form-control" step="0.01" value="0" id="transport-charge">
                 </div>
                 <div class="col-md-1">
@@ -180,16 +184,40 @@
 <script>
 const stockMap = {{ stock_map|tojson }};
 
-// Product catalog: nested structure for cascading selection
+// Product catalog: nested structure for cascading selection + price matrix
 const products = [
     {% for v, p in variants %}
     {vid: {{ v.id }}, pid: {{ p.id }}, name: "{{ p.name }}", category: "{{ p.category }}",
      color: "{{ v.color or '' }}", size: "{{ v.size or '' }}", sku: "{{ v.sku_code }}",
      cost: {{ v.effective_cost }}, coach: {{ v.effective_coach_price }}, mrp: {{ v.effective_mrp }},
      gst: {{ p.gst_percent }}, stock: {{ stock_map.get(v.id, 0) }},
-     image: "{{ p.image_url or '' }}"},
+     image: "{{ p.image_url or '' }}",
+     prices: {
+        public: {{ p.mrp or 0 }},
+        dealer: {{ p.dealer_price or p.mrp or 0 }},
+        coach_local: {{ p.coach_local or p.coach_price or 0 }},
+        coach_direct: {{ p.coach_direct or p.coach_price or 0 }},
+        coach_self: {{ p.coach_self or p.coach_price or 0 }},
+        bulk_local: {{ p.bulk_local or p.coach_price or 0 }},
+        bulk_direct: {{ p.bulk_direct or p.coach_price or 0 }},
+        bulk_self: {{ p.bulk_self or p.coach_price or 0 }},
+     }},
     {% endfor %}
 ];
+
+function getPriceForVariant(v, custType, transportType) {
+    if (!v) return 0;
+    if (custType === 'public') return v.prices.public;
+    if (custType === 'dealer') return v.prices.dealer;
+    if (custType === 'coach') return v.prices['coach_' + transportType] || v.prices.coach_self;
+    if (custType === 'bulk') return v.prices['bulk_' + transportType] || v.prices.bulk_self;
+    return v.prices.public;
+}
+
+function getTransportType() {
+    const sel = document.getElementById('transport-type-select');
+    return sel ? sel.value : 'self';
+}
 
 const packagePrices = {
     {% for pkg in packages %}
@@ -301,30 +329,29 @@ function updateVariantSelection(row) {
     // Find matching variant
     const v = findVariant(name, color, size);
     const isPkg = row.querySelector('.pkg-check').checked;
+    const custType = getCustomerType();
+    const transportType = getTransportType();
+
     if (v) {
         hiddenInput.value = v.vid;
         stockCell.textContent = v.stock;
-        const custType = getCustomerType();
         if (isPkg) {
-            // Apply package price proportionally
             const pkgPrice = getPackageUnitPrice(v, custType);
-            row.querySelector('.unit-price').value = pkgPrice || (custType === 'coach' ? v.coach : v.mrp);
+            row.querySelector('.unit-price').value = pkgPrice || getPriceForVariant(v, custType, transportType);
         } else {
-            row.querySelector('.unit-price').value = custType === 'coach' ? v.coach : v.mrp;
+            row.querySelector('.unit-price').value = getPriceForVariant(v, custType, transportType);
         }
         row.querySelector('.gst-pct').value = v.gst;
     } else {
-        // Try without size/color for products like bags
         const simple = products.find(p => p.name === name && !p.color && !p.size);
         if (simple) {
             hiddenInput.value = simple.vid;
             stockCell.textContent = simple.stock;
-            const custType = getCustomerType();
             if (isPkg) {
                 const pkgPrice = getPackageUnitPrice(simple, custType);
-                row.querySelector('.unit-price').value = pkgPrice || (custType === 'coach' ? simple.coach : simple.mrp);
+                row.querySelector('.unit-price').value = pkgPrice || getPriceForVariant(simple, custType, transportType);
             } else {
-                row.querySelector('.unit-price').value = custType === 'coach' ? simple.coach : simple.mrp;
+                row.querySelector('.unit-price').value = getPriceForVariant(simple, custType, transportType);
             }
             row.querySelector('.gst-pct').value = simple.gst;
         } else {
@@ -441,7 +468,11 @@ function bindEvents() {
 }
 
 document.getElementById('customer-select').addEventListener('change', function() {
-    // Re-price all rows when customer type changes
+    document.querySelectorAll('.item-row').forEach(row => {
+        updateVariantSelection(row);
+    });
+});
+document.getElementById('transport-type-select').addEventListener('change', function() {
     document.querySelectorAll('.item-row').forEach(row => {
         updateVariantSelection(row);
     });

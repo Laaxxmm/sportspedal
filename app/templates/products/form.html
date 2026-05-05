@@ -30,18 +30,96 @@
                 </div>
             </div>
 
-            <div class="row mb-3">
-                <div class="col-md-3">
-                    <label class="form-label">Cost Price (from supplier)</label>
-                    <input type="number" name="cost_price" class="form-control" step="0.01" value="{{ product.cost_price if product else 0 }}">
+            <!-- Buying Cost -->
+            <div class="card mb-3" style="border-color: var(--accent-rose) !important;">
+                <div class="card-header" style="background: #fff1f3;">
+                    <strong><i class="bi bi-cart-fill"></i> Buying Cost (from supplier)</strong>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Coach Price (fixed)</label>
-                    <input type="number" name="coach_price" class="form-control" step="0.01" value="{{ product.coach_price if product else 0 }}">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Cost Price (excl GST)</label>
+                            <input type="number" name="cost_price" class="form-control" step="0.01" value="{{ product.cost_price if product else 0 }}">
+                            <small class="text-muted">What you pay supplier per unit</small>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">MRP (public price)</label>
-                    <input type="number" name="mrp" class="form-control" step="0.01" value="{{ product.mrp if product else 0 }}">
+            </div>
+
+            <!-- Coach Pricing -->
+            <div class="card mb-3" style="border-color: var(--accent-blue) !important;">
+                <div class="card-header" style="background: #eef4ff;">
+                    <strong><i class="bi bi-person-badge"></i> Coach Pricing</strong>
+                    <small class="text-muted ms-2">Prices for coach customers based on transport</small>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">With Local Transport</label>
+                            <input type="number" name="coach_local" class="form-control" step="0.01" value="{{ product.coach_local if product else 0 }}">
+                            <small class="text-muted">We arrange local delivery</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">With Direct Transport</label>
+                            <input type="number" name="coach_direct" class="form-control" step="0.01" value="{{ product.coach_direct if product else 0 }}">
+                            <small class="text-muted">Courier / direct shipment</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">With Their Transport</label>
+                            <input type="number" name="coach_self" class="form-control" step="0.01" value="{{ product.coach_self if product else 0 }}">
+                            <small class="text-muted">Customer picks up</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bulk Pricing -->
+            <div class="card mb-3" style="border-color: var(--accent-purple) !important;">
+                <div class="card-header" style="background: #f0ecff;">
+                    <strong><i class="bi bi-box-seam"></i> Bulk Pricing</strong>
+                    <small class="text-muted ms-2">Prices for bulk buyers based on transport</small>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">With Local Transport</label>
+                            <input type="number" name="bulk_local" class="form-control" step="0.01" value="{{ product.bulk_local if product else 0 }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">With Direct Transport</label>
+                            <input type="number" name="bulk_direct" class="form-control" step="0.01" value="{{ product.bulk_direct if product else 0 }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">With Their Transport</label>
+                            <input type="number" name="bulk_self" class="form-control" step="0.01" value="{{ product.bulk_self if product else 0 }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other Prices -->
+            <div class="card mb-3" style="border-color: var(--accent-green) !important;">
+                <div class="card-header" style="background: #e8faf5;">
+                    <strong><i class="bi bi-tag-fill"></i> Other Prices</strong>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Dealer Price</label>
+                            <input type="number" name="dealer_price" class="form-control" step="0.01" value="{{ product.dealer_price if product else 0 }}">
+                            <small class="text-muted">For resellers / dealers</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">MRP (Public)</label>
+                            <input type="number" name="mrp" class="form-control" step="0.01" value="{{ product.mrp if product else 0 }}">
+                            <small class="text-muted">Maximum retail price for general public</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Legacy Coach Price</label>
+                            <input type="number" name="coach_price" class="form-control" step="0.01" value="{{ product.coach_price if product else 0 }}">
+                            <small class="text-muted">Old field (used as fallback)</small>
+                        </div>
+                    </div>
                 </div>
             </div>
 

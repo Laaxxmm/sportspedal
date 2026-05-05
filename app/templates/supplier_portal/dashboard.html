@@ -62,8 +62,36 @@
             <div class="kpi-label">Net Balance</div>
             <div class="kpi-value">Rs.{{ "{:,.0f}".format(balance) }}</div>
             <div class="kpi-sub">
-                {% if shipping_pending > 0 %}after Rs.{{ "{:,.0f}".format(shipping_pending) }} shipping credit{% else %}{{ 'pending' if balance > 0 else 'settled' }}{% endif %}
+                {% if balance > 0 %}pending payment{% else %}fully settled{% endif %}
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Adjustment Credits Row -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="kpi-card kpi-indigo">
+            <div class="kpi-icon"><i class="bi bi-gift"></i></div>
+            <div class="kpi-label">Promotional Given</div>
+            <div class="kpi-value">{{ "{:,.0f}".format(promo_qty) }} units</div>
+            <div class="kpi-sub">Rs.{{ "{:,.0f}".format(promo_value) }} value (sponsor / ads)</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi-card kpi-rose">
+            <div class="kpi-icon"><i class="bi bi-heart-pulse"></i></div>
+            <div class="kpi-label">Damaged / Returned</div>
+            <div class="kpi-value">{{ "{:,.0f}".format(damage_qty) }} units</div>
+            <div class="kpi-sub">Rs.{{ "{:,.0f}".format(damage_value) }} value</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi-card kpi-blue">
+            <div class="kpi-icon"><i class="bi bi-cash-stack"></i></div>
+            <div class="kpi-label">Adjustment Credit</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(adj_credit) }}</div>
+            <div class="kpi-sub">credit for promotional + damaged</div>
         </div>
     </div>
 </div>

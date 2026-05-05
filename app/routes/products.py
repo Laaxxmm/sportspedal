@@ -42,6 +42,13 @@ def new_product():
             cost_price=float(request.form.get('cost_price', 0)),
             coach_price=float(request.form.get('coach_price', 0)),
             mrp=float(request.form.get('mrp', 0)),
+            coach_local=float(request.form.get('coach_local', 0) or 0),
+            coach_direct=float(request.form.get('coach_direct', 0) or 0),
+            coach_self=float(request.form.get('coach_self', 0) or 0),
+            bulk_local=float(request.form.get('bulk_local', 0) or 0),
+            bulk_direct=float(request.form.get('bulk_direct', 0) or 0),
+            bulk_self=float(request.form.get('bulk_self', 0) or 0),
+            dealer_price=float(request.form.get('dealer_price', 0) or 0),
         )
 
         # Handle image upload
@@ -90,6 +97,13 @@ def edit_product(id):
         product.cost_price = float(request.form.get('cost_price', 0))
         product.coach_price = float(request.form.get('coach_price', 0))
         product.mrp = float(request.form.get('mrp', 0))
+        product.coach_local = float(request.form.get('coach_local', 0) or 0)
+        product.coach_direct = float(request.form.get('coach_direct', 0) or 0)
+        product.coach_self = float(request.form.get('coach_self', 0) or 0)
+        product.bulk_local = float(request.form.get('bulk_local', 0) or 0)
+        product.bulk_direct = float(request.form.get('bulk_direct', 0) or 0)
+        product.bulk_self = float(request.form.get('bulk_self', 0) or 0)
+        product.dealer_price = float(request.form.get('dealer_price', 0) or 0)
 
         # Handle image upload
         if 'image' in request.files:

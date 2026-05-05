@@ -40,7 +40,7 @@
             </div>
 
             <div class="row mb-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label">Location</label>
                     <select name="location_id" class="form-select">
                         {% for loc in locations %}
@@ -48,7 +48,16 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-8">
+                <div class="col-md-2">
+                    <label class="form-label">Bulk Discount</label>
+                    <input type="number" name="bulk_discount" class="form-control" step="0.01" value="{{ purchase.bulk_discount if purchase else 0 }}" placeholder="0">
+                    <small class="text-muted">Flat discount on this PO</small>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Discount Reason</label>
+                    <input type="text" name="discount_reason" class="form-control" value="{{ purchase.discount_reason if purchase else '' }}" placeholder="e.g., Bulk order">
+                </div>
+                <div class="col-md-4">
                     <label class="form-label">Notes</label>
                     <input type="text" name="notes" class="form-control" value="{{ purchase.notes if purchase else '' }}">
                 </div>

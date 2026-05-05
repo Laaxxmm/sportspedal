@@ -130,9 +130,19 @@ class Product(db.Model):
     hsn_code = db.Column(db.String(20))
     gst_percent = db.Column(db.Float, default=12.0)
     cost_price = db.Column(db.Float, default=0)
-    coach_price = db.Column(db.Float, default=0)
-    mrp = db.Column(db.Float, default=0)
-    image_path = db.Column(db.String(200))  # WebP thumbnail path
+    coach_price = db.Column(db.Float, default=0)  # Legacy fallback
+    mrp = db.Column(db.Float, default=0)  # Public price
+    # Coach pricing (3 transport variants)
+    coach_local = db.Column(db.Float, default=0)
+    coach_direct = db.Column(db.Float, default=0)
+    coach_self = db.Column(db.Float, default=0)
+    # Bulk pricing (3 transport variants)
+    bulk_local = db.Column(db.Float, default=0)
+    bulk_direct = db.Column(db.Float, default=0)
+    bulk_self = db.Column(db.Float, default=0)
+    # Dealer single price
+    dealer_price = db.Column(db.Float, default=0)
+    image_path = db.Column(db.String(200))
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -144,6 +154,28 @@ class Product(db.Model):
         if self.image_path:
             return f'/api/image/{self.image_path}'
         return None
+
+    def get_price(self, customer_type='public', transport_type='self'):
+        """Get the right price based on customer type + transport type."""
+        if customer_type == 'public':
+            return self.mrp or 0
+        if customer_type == 'dealer':
+            return self.dealer_price or self.mrp or 0
+        if customer_type == 'coach':
+            price_map = {
+                'local': self.coach_local,
+                'direct': self.coach_direct,
+                'self': self.coach_self,
+            }
+            return price_map.get(transport_type) or self.coach_price or 0
+        if customer_type == 'bulk':
+            price_map = {
+                'local': self.bulk_local,
+                'direct': self.bulk_direct,
+                'self': self.bulk_self,
+            }
+            return price_map.get(transport_type) or self.coach_price or self.mrp or 0
+        return self.mrp or 0
 
 
 class ProductVariant(db.Model):
@@ -229,6 +261,8 @@ class PurchaseOrder(db.Model):
     location_id = db.Column(db.Integer, db.ForeignKey('location.id'), nullable=True)
     transporter = db.Column(db.String(100))
     status = db.Column(db.String(20), default='ordered')
+    bulk_discount = db.Column(db.Float, default=0)  # Flat discount on this PO
+    discount_reason = db.Column(db.String(200))
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -236,8 +270,14 @@ class PurchaseOrder(db.Model):
     items = db.relationship('PurchaseItem', backref='purchase_order', lazy='dynamic', cascade='all, delete-orphan')
 
     @property
-    def total_amount(self):
+    def items_total(self):
+        """Sum of line items before discount."""
         return sum(i.total_amount or 0 for i in self.items)
+
+    @property
+    def total_amount(self):
+        """Net amount owed to supplier (after bulk discount)."""
+        return self.items_total - (self.bulk_discount or 0)
 
     @property
     def total_gst(self):
@@ -272,8 +312,10 @@ class SaleOrder(db.Model):
     status = db.Column(db.String(20), default='confirmed')
     payment_status = db.Column(db.String(20), default='paid')  # paid | pending | partial
     transport_mode = db.Column(db.String(50))
+    transport_type = db.Column(db.String(20), default='self')  # local | direct | self
     transport_charge = db.Column(db.Float, default=0)
     discount_amount = db.Column(db.Float, default=0)
+    is_bulk = db.Column(db.Boolean, default=False)
     is_package = db.Column(db.Boolean, default=False)
     package_type = db.Column(db.String(50))
     shipping_cost = db.Column(db.Float, default=0)
@@ -380,3 +422,57 @@ class SupplierPayment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     creator = db.relationship('User')
+
+
+# ===== Stock Adjustments (Promotional / Damaged / Returned / Lost) =====
+
+ADJUSTMENT_TYPES = {
+    'promotional': 'Promotional / Sponsor Giveaway',
+    'damaged': 'Damaged Goods',
+    'returned_to_supplier': 'Returned to Supplier',
+    'lost': 'Lost / Written Off',
+    'other': 'Other',
+}
+
+
+class StockAdjustment(db.Model):
+    __tablename__ = 'stock_adjustment'
+    id = db.Column(db.Integer, primary_key=True)
+    adjustment_number = db.Column(db.String(50))
+    adjustment_date = db.Column(db.Date, default=date.today)
+    location_id = db.Column(db.Integer, db.ForeignKey('location.id'), nullable=True)
+    adjustment_type = db.Column(db.String(30), nullable=False, default='promotional')
+    recipient = db.Column(db.String(200))
+    supplier_credit = db.Column(db.Boolean, default=True)
+    status = db.Column(db.String(20), default='completed')
+    notes = db.Column(db.Text)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    location = db.relationship('Location')
+    creator_user = db.relationship('User')
+    items = db.relationship('StockAdjustmentItem', backref='adjustment',
+                            lazy='dynamic', cascade='all, delete-orphan')
+
+    @property
+    def type_label(self):
+        return ADJUSTMENT_TYPES.get(self.adjustment_type, self.adjustment_type)
+
+    @property
+    def total_qty(self):
+        return sum(i.quantity for i in self.items)
+
+    @property
+    def total_value(self):
+        return sum((i.unit_cost or 0) * i.quantity for i in self.items)
+
+
+class StockAdjustmentItem(db.Model):
+    __tablename__ = 'stock_adjustment_item'
+    id = db.Column(db.Integer, primary_key=True)
+    adjustment_id = db.Column(db.Integer, db.ForeignKey('stock_adjustment.id'), nullable=False)
+    variant_id = db.Column(db.Integer, db.ForeignKey('product_variant.id'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    unit_cost = db.Column(db.Float, default=0)
+
+    variant = db.relationship('ProductVariant')

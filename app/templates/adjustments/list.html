@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Stock Adjustments - Sportspedal{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Stock Adjustments</h2>
+    <a href="{{ url_for('adjustments.new_adjustment') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Adjustment</a>
+</div>
+
+<!-- Summary KPIs -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="kpi-card kpi-indigo">
+            <div class="kpi-icon"><i class="bi bi-gift"></i></div>
+            <div class="kpi-label">Promotional</div>
+            <div class="kpi-value">{{ summary.promotional.qty }}</div>
+            <div class="kpi-sub">Rs.{{ "{:,.0f}".format(summary.promotional.value) }} given out</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="kpi-card kpi-rose">
+            <div class="kpi-icon"><i class="bi bi-heart-pulse"></i></div>
+            <div class="kpi-label">Damaged</div>
+            <div class="kpi-value">{{ summary.damaged.qty }}</div>
+            <div class="kpi-sub">Rs.{{ "{:,.0f}".format(summary.damaged.value) }} damaged</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="kpi-card kpi-amber">
+            <div class="kpi-icon"><i class="bi bi-arrow-return-left"></i></div>
+            <div class="kpi-label">Returned to Supplier</div>
+            <div class="kpi-value">{{ summary.returned_to_supplier.qty }}</div>
+            <div class="kpi-sub">Rs.{{ "{:,.0f}".format(summary.returned_to_supplier.value) }} returned</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="kpi-card kpi-blue">
+            <div class="kpi-icon"><i class="bi bi-question-circle"></i></div>
+            <div class="kpi-label">Lost / Other</div>
+            <div class="kpi-value">{{ summary.lost.qty + summary.other.qty }}</div>
+            <div class="kpi-sub">Rs.{{ "{:,.0f}".format(summary.lost.value + summary.other.value) }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter -->
+<div class="card mb-3">
+    <div class="card-body py-2 px-3">
+        <form method="GET" class="d-flex gap-2 align-items-center">
+            <label class="form-label mb-0 me-2">Filter by type:</label>
+            <select name="type" class="form-select form-select-sm" style="width:240px;" onchange="this.form.submit()">
+                <option value="">All Types</option>
+                {% for k, label in types.items() %}
+                <option value="{{ k }}" {{ 'selected' if type_filter == k }}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            {% if type_filter %}
+            <a href="{{ url_for('adjustments.list_adjustments') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr><th>Date</th><th>Adj #</th><th>Type</th><th>Recipient / Reason</th><th>Location</th><th class="text-center">Qty</th><th class="text-end">Value</th><th>Supplier Credit</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+            {% for a in adjustments %}
+            <tr>
+                <td>{{ a.adjustment_date }}</td>
+                <td><strong>{{ a.adjustment_number }}</strong></td>
+                <td><span class="badge bg-{{ 'primary' if a.adjustment_type == 'promotional' else ('danger' if a.adjustment_type == 'damaged' else ('warning' if a.adjustment_type == 'returned_to_supplier' else 'secondary')) }}">{{ a.type_label }}</span></td>
+                <td>{{ a.recipient or '-' }}</td>
+                <td><small>{{ a.location.display_name if a.location else '-' }}</small></td>
+                <td class="text-center"><strong>{{ a.total_qty }}</strong></td>
+                <td class="text-end">Rs.{{ "{:,.0f}".format(a.total_value) }}</td>
+                <td>
+                    {% if a.supplier_credit %}
+                    <span class="badge bg-success">Yes</span>
+                    {% else %}
+                    <span class="badge bg-secondary">No</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('adjustments.view_adjustment', id=a.id) }}" class="btn btn-sm btn-outline-info" title="View"><i class="bi bi-eye"></i></a>
+                    <form method="POST" action="{{ url_for('adjustments.delete_adjustment', id=a.id) }}" class="d-inline" onsubmit="return confirm('Delete adjustment {{ a.adjustment_number }}? Stock will be restored.')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="9" class="text-center text-muted py-4">No adjustments yet. <a href="{{ url_for('adjustments.new_adjustment') }}">Create one</a></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

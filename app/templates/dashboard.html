@@ -69,9 +69,15 @@
             </div>
             <div class="p-3">
                 <div class="fin-row"><span class="fin-label">Total Owed</span><span class="fin-value" style="color:var(--accent-red)">Rs.{{ "{:,.0f}".format(supplier_balance.owed) }}</span></div>
+                {% if supplier_balance.bulk_discount and supplier_balance.bulk_discount > 0 %}
+                <div class="fin-row"><span class="fin-label"><i class="bi bi-percent"></i> Bulk Discount</span><span class="fin-value" style="color:var(--accent-green)">−Rs.{{ "{:,.0f}".format(supplier_balance.bulk_discount) }}</span></div>
+                {% endif %}
                 <div class="fin-row"><span class="fin-label">Paid So Far</span><span class="fin-value" style="color:var(--accent-green)">Rs.{{ "{:,.0f}".format(supplier_balance.paid) }}</span></div>
-                {% if supplier_balance.shipping_credit > 0 %}
+                {% if supplier_balance.shipping_pending and supplier_balance.shipping_pending > 0 %}
                 <div class="fin-row"><span class="fin-label"><i class="bi bi-truck"></i> Shipping Credit</span><span class="fin-value" style="color:var(--accent-blue)">Rs.{{ "{:,.0f}".format(supplier_balance.shipping_pending) }}</span></div>
+                {% endif %}
+                {% if supplier_balance.adjustment_credit and supplier_balance.adjustment_credit > 0 %}
+                <div class="fin-row"><span class="fin-label"><i class="bi bi-clipboard-minus"></i> Adjustment Credit</span><span class="fin-value" style="color:var(--accent-blue)">Rs.{{ "{:,.0f}".format(supplier_balance.adjustment_credit) }}</span></div>
                 {% endif %}
                 <div class="fin-row fin-total">
                     <span class="fin-label">Net Due</span>
@@ -86,6 +92,34 @@
         </div>
     </div>
     {% endif %}
+</div>
+
+<!-- Bulk / Promotional / Damaged ribbons -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="kpi-card kpi-blue">
+            <div class="kpi-icon"><i class="bi bi-boxes"></i></div>
+            <div class="kpi-label">Bulk Orders</div>
+            <div class="kpi-value">{{ bulk_data.count }}</div>
+            <div class="kpi-sub">{{ bulk_data.qty }} units · Rs.{{ "{:,.0f}".format(bulk_data.revenue) }}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi-card kpi-indigo">
+            <div class="kpi-icon"><i class="bi bi-gift"></i></div>
+            <div class="kpi-label">Promotional / Sponsor</div>
+            <div class="kpi-value">{{ promo_data.qty }} units</div>
+            <div class="kpi-sub">Rs.{{ "{:,.0f}".format(promo_data.value) }} given out</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi-card kpi-rose">
+            <div class="kpi-icon"><i class="bi bi-heart-pulse"></i></div>
+            <div class="kpi-label">Damaged / Returned</div>
+            <div class="kpi-value">{{ damage_data.qty }} units</div>
+            <div class="kpi-sub">Rs.{{ "{:,.0f}".format(damage_data.value) }} written off</div>
+        </div>
+    </div>
 </div>
 
 <!-- Row 2: Coach vs Public Split -->

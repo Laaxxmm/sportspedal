@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}New Adjustment - Sportspedal{% endblock %}
+{% block content %}
+<h2 class="mb-4">New Stock Adjustment</h2>
+
+<div class="alert alert-info" style="font-size:0.85rem;">
+    <i class="bi bi-info-circle"></i> <strong>Stock Adjustments</strong> reduce inventory without a sale.
+    Use for promotional giveaways, damaged goods, returns to supplier, or lost stock.
+    Check "Supplier Credit" if the supplier has agreed to absorb the cost.
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">Type *</label>
+                    <select name="adjustment_type" class="form-select" id="type-select" required>
+                        {% for k, label in types.items() %}
+                        <option value="{{ k }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Date *</label>
+                    <input type="date" name="adjustment_date" class="form-control" value="" required>
+                </div>
+                {% if current_user.is_superadmin %}
+                <div class="col-md-3">
+                    <label class="form-label">Location</label>
+                    <select name="location_id" class="form-select">
+                        <option value="">Default</option>
+                        {% for l in locations %}
+                        <option value="{{ l.id }}">{{ l.display_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                <div class="col-md-4">
+                    <label class="form-label">Recipient / Reason *</label>
+                    <input type="text" name="recipient" class="form-control" placeholder="e.g. ABC Sports Club, Damaged in transit" required>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Notes</label>
+                    <input type="text" name="notes" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Supplier Credit?</label>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" name="supplier_credit" value="1" id="supplier-credit" checked>
+                        <label class="form-check-label" for="supplier-credit">Supplier covers this cost</label>
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+            <h5>Items to Adjust</h5>
+            <table class="table table-sm" id="items-table">
+                <thead>
+                    <tr>
+                        <th style="width:55%">Product / Variant</th>
+                        <th>Available Stock</th>
+                        <th>Adjust Qty</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="items-body"></tbody>
+            </table>
+            <button type="button" class="btn btn-sm btn-outline-success mb-3" id="add-row"><i class="bi bi-plus"></i> Add Item</button>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Create Adjustment</button>
+                <a href="{{ url_for('adjustments.list_adjustments') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const stockMap = {{ stock_map|tojson }};
+const variantOptions = `<option value="">Select...</option>
+{% for v, p in variants %}<option value="{{ v.id }}">{{ p.name }} - {{ v.color or '' }} {{ v.size or '' }} ({{ v.sku_code }})</option>
+{% endfor %}`;
+
+function newRow() {
+    return `<tr class="item-row">
+        <td><select name="variant_id[]" class="form-select form-select-sm variant-select" required>${variantOptions}</select></td>
+        <td class="stock-cell">-</td>
+        <td><input type="number" name="qty[]" class="form-control form-control-sm" value="1" min="1"></td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-trash"></i></button></td>
+    </tr>`;
+}
+
+document.getElementById('add-row').addEventListener('click', () => {
+    document.getElementById('items-body').insertAdjacentHTML('beforeend', newRow());
+    bindEvents();
+});
+
+function bindEvents() {
+    document.querySelectorAll('.remove-row').forEach(btn => {
+        btn.onclick = function() { this.closest('tr').remove(); };
+    });
+    document.querySelectorAll('.variant-select').forEach(sel => {
+        sel.onchange = function() {
+            const vid = this.value;
+            const cell = this.closest('tr').querySelector('.stock-cell');
+            cell.textContent = vid ? (stockMap[vid] || 0) : '-';
+        };
+    });
+}
+
+// Auto-toggle supplier_credit checkbox based on type
+document.getElementById('type-select').addEventListener('change', function() {
+    const cb = document.getElementById('supplier-credit');
+    cb.checked = ['promotional', 'damaged', 'returned_to_supplier'].includes(this.value);
+});
+
+bindEvents();
+document.getElementById('add-row').click();
+// Set today's date
+document.querySelector('input[name="adjustment_date"]').value = new Date().toISOString().split('T')[0];
+</script>
+{% endblock %}
