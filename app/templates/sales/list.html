@@ -60,8 +60,14 @@
             <tr data-type="{{ sale.customer.customer_type }}" data-status="{{ sale.status }}" data-payment="{{ sale.payment_status or 'paid' }}">
                 <td>{{ sale.sale_date }}</td>
                 <td><code>{{ sale.invoice_number }}</code></td>
-                <td>{{ sale.customer.name }}</td>
-                <td><span class="badge bg-{{ 'primary' if sale.customer.customer_type == 'coach' else 'secondary' }}">{{ sale.customer.customer_type }}</span></td>
+                <td>
+                    {{ sale.customer.name }}
+                    {% if sale.is_bulk %}<span class="badge" style="background:var(--accent-blue); font-size:0.62rem;">BULK</span>{% endif %}
+                </td>
+                <td>
+                    {% set ct = sale.customer.customer_type %}
+                    <span class="badge" style="background:{{ 'var(--accent-blue)' if ct == 'bulk' else ('var(--accent-green)' if ct == 'coach' else ('var(--accent-purple)' if ct == 'dealer' else 'var(--text-muted)')) }};">{{ ct }}</span>
+                </td>
                 <td>
                     {% set ps = sale.payment_status or 'paid' %}
                     <span class="badge bg-{{ 'success' if ps == 'paid' else ('danger' if ps == 'pending' else 'warning') }}">{{ ps }}</span>

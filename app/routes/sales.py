@@ -114,7 +114,7 @@ def new_sale():
             shipping_carrier=request.form.get('shipping_carrier', ''),
             shipping_tracking=request.form.get('shipping_tracking', ''),
             shipping_paid_by=request.form.get('shipping_paid_by', 'self'),
-            is_bulk=(customer.customer_type == 'bulk'),
+            is_bulk=(customer.customer_type == 'bulk' or request.form.get('is_bulk_override') == '1'),
             notes=request.form.get('notes', ''),
         )
         db.session.add(sale)

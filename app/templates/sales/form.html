@@ -8,19 +8,22 @@
         <form method="POST" id="sale-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="row mb-3">
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <label class="form-label">Customer</label>
                     <div class="input-group">
                         <select name="customer_id" class="form-select" id="customer-select" required>
                             <option value="">Select customer...</option>
                             {% for c in customers %}
-                            <option value="{{ c.id }}" data-type="{{ c.customer_type }}" data-state="{{ c.state or 'Karnataka' }}">{{ c.name }} ({{ c.customer_type }})</option>
+                            <option value="{{ c.id }}" data-type="{{ c.customer_type }}" data-state="{{ c.state or 'Karnataka' }}">
+                                {% if c.customer_type == 'bulk' %}🟦 BULK{% elif c.customer_type == 'coach' %}🟢 COACH{% elif c.customer_type == 'dealer' %}🟣 DEALER{% else %}⚪ PUBLIC{% endif %} — {{ c.name }}
+                            </option>
                             {% endfor %}
                         </select>
                         <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addCustomerModal" title="Add New Customer">
                             <i class="bi bi-person-plus"></i>
                         </button>
                     </div>
+                    <div id="customer-type-badge" class="mt-1" style="font-size:0.78rem;"></div>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Date</label>
@@ -57,6 +60,15 @@
                 <div class="col-md-1">
                     <label class="form-label">Discount</label>
                     <input type="number" name="discount_amount" class="form-control" step="0.01" value="0" id="discount-amt">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Mark as Bulk?</label>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" name="is_bulk_override" value="1" id="bulk-override">
+                        <label class="form-check-label" for="bulk-override" style="font-size:0.85rem;">
+                            <span id="bulk-status-text" class="text-muted">Auto from customer</span>
+                        </label>
+                    </div>
                 </div>
             </div>
 
@@ -468,9 +480,49 @@ function bindEvents() {
 }
 
 document.getElementById('customer-select').addEventListener('change', function() {
+    const opt = this.selectedOptions[0];
+    const type = opt ? (opt.dataset.type || '') : '';
+    const badge = document.getElementById('customer-type-badge');
+    const bulkStatus = document.getElementById('bulk-status-text');
+    const bulkOverride = document.getElementById('bulk-override');
+
+    // Update badge
+    if (type === 'bulk') {
+        badge.innerHTML = '<span class="badge" style="background:var(--accent-blue);">🟦 BULK BUYER — Bulk pricing will apply</span>';
+        bulkStatus.textContent = 'Auto: This is a Bulk Order ✓';
+        bulkStatus.style.color = 'var(--accent-blue)';
+    } else if (type === 'coach') {
+        badge.innerHTML = '<span class="badge" style="background:var(--accent-green);">🟢 COACH — Coach pricing</span>';
+        bulkStatus.textContent = 'Auto from customer (not bulk)';
+        bulkStatus.style.color = 'var(--text-muted)';
+    } else if (type === 'dealer') {
+        badge.innerHTML = '<span class="badge" style="background:var(--accent-purple);">🟣 DEALER — Dealer pricing</span>';
+        bulkStatus.textContent = 'Auto from customer (not bulk)';
+        bulkStatus.style.color = 'var(--text-muted)';
+    } else if (type === 'public') {
+        badge.innerHTML = '<span class="badge" style="background:var(--text-muted);">⚪ PUBLIC — MRP pricing</span>';
+        bulkStatus.textContent = 'Auto from customer (not bulk)';
+        bulkStatus.style.color = 'var(--text-muted)';
+    } else {
+        badge.innerHTML = '';
+        bulkStatus.textContent = 'Auto from customer';
+    }
+
+    // Re-price all rows
     document.querySelectorAll('.item-row').forEach(row => {
         updateVariantSelection(row);
     });
+});
+
+document.getElementById('bulk-override').addEventListener('change', function() {
+    const bulkStatus = document.getElementById('bulk-status-text');
+    if (this.checked) {
+        bulkStatus.textContent = 'Manually marked as Bulk ✓';
+        bulkStatus.style.color = 'var(--accent-blue)';
+    } else {
+        // Re-trigger customer change to restore auto status
+        document.getElementById('customer-select').dispatchEvent(new Event('change'));
+    }
 });
 document.getElementById('transport-type-select').addEventListener('change', function() {
     document.querySelectorAll('.item-row').forEach(row => {
