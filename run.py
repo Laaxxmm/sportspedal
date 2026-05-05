@@ -167,53 +167,43 @@ def seed_and_import():
     print(f"=== Login: admin / admin123 ===")
 
 
-with app.app_context():
-    from app.config import DATA_DIR
-    db_path = os.path.join(DATA_DIR, 'sportspedal.db')
+def init_database():
+    """Initialize DB with tables, migrations, and seeding. Defensive - never raises."""
+    print("=== Initializing database ===")
 
-    from sqlalchemy import text, inspect
-
-    # Create any brand new tables
-    db.create_all()
-
-    # Migrate existing tables: add missing columns (preserves data!)
+    # Step 1: Create tables for any new models
     try:
-        changes = False
-        with db.engine.connect() as conn:
-            insp = inspect(db.engine)
-
-            def has_column(table, col):
-                return col in [c['name'] for c in insp.get_columns(table)]
-
-            migrations = [
-                ('sale_item', 'cost_at_sale', 'FLOAT', 0),
-                ('user', 'supplier_id', 'INTEGER', 'NULL'),
-                ('sale_order', 'shipping_cost', 'FLOAT', 0),
-                ('sale_order', 'shipping_carrier', 'VARCHAR(100)', 'NULL'),
-                ('sale_order', 'shipping_tracking', 'VARCHAR(100)', 'NULL'),
-                ('sale_order', 'shipping_paid_by', "VARCHAR(20)", "'self'"),
-                ('sale_order', 'location_id', 'INTEGER', 'NULL'),
-                ('sale_order', 'payment_status', "VARCHAR(20)", "'paid'"),
-                ('product', 'image_path', 'VARCHAR(200)', 'NULL'),
-                ('purchase_order', 'location_id', 'INTEGER', 'NULL'),
-                ('customer', 'location_id', 'INTEGER', 'NULL'),
-                ('supplier_payment', 'shipping_deduction', 'FLOAT', 0),
-            ]
-
-            for table, col, col_type, default in migrations:
-                try:
-                    if not has_column(table, col):
-                        conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type} DEFAULT {default}"))
-                        conn.commit()
-                        print(f"  Migrated: {table}.{col}")
-                        changes = True
-                except Exception:
-                    pass
-
-        if changes:
-            print("=== Schema migration complete (data preserved) ===")
+        db.create_all()
+        print("  db.create_all() OK")
     except Exception as e:
-        print(f"=== Migration note: {e} ===")
+        print(f"  create_all error: {e}")
+
+    # Step 2: Add missing columns to existing tables (preserves data)
+    migrations = [
+        ('sale_item', 'cost_at_sale', 'FLOAT DEFAULT 0'),
+        ('user', 'supplier_id', 'INTEGER'),
+        ('sale_order', 'shipping_cost', 'FLOAT DEFAULT 0'),
+        ('sale_order', 'shipping_carrier', 'VARCHAR(100)'),
+        ('sale_order', 'shipping_tracking', 'VARCHAR(100)'),
+        ('sale_order', 'shipping_paid_by', "VARCHAR(20) DEFAULT 'self'"),
+        ('sale_order', 'location_id', 'INTEGER'),
+        ('sale_order', 'payment_status', "VARCHAR(20) DEFAULT 'paid'"),
+        ('product', 'image_path', 'VARCHAR(200)'),
+        ('purchase_order', 'location_id', 'INTEGER'),
+        ('customer', 'location_id', 'INTEGER'),
+        ('supplier_payment', 'shipping_deduction', 'FLOAT DEFAULT 0'),
+    ]
+
+    from sqlalchemy import text
+    for table, col, col_def in migrations:
+        try:
+            with db.engine.begin() as conn:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_def}"))
+            print(f"  Added column: {table}.{col}")
+        except Exception:
+            pass  # Column already exists - this is fine
+
+    # Step 3: Seed if empty
     try:
         if User.query.count() == 0:
             print("=== Seeding database ===")
@@ -221,7 +211,14 @@ with app.app_context():
         else:
             print(f"=== DB ready: {User.query.count()} users, {Product.query.count()} products ===")
     except Exception as e:
-        print(f"=== Seed error: {e} ===")
+        print(f"  Seed check error: {e}")
+
+
+with app.app_context():
+    try:
+        init_database()
+    except Exception as e:
+        print(f"=== DB init failed (continuing anyway): {e} ===")
 
 if __name__ == '__main__':
     debug = os.environ.get('FLASK_ENV') != 'production'
