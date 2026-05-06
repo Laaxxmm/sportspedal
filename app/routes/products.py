@@ -34,21 +34,29 @@ def list_products():
 @login_required
 def new_product():
     if request.method == 'POST':
+      try:
+        def fnum(key, default=0):
+            v = request.form.get(key, default)
+            try:
+                return float(v) if v not in (None, '') else float(default)
+            except (ValueError, TypeError):
+                return float(default)
+
         product = Product(
-            name=request.form['name'],
+            name=request.form['name'].strip(),
             category=request.form['category'],
             hsn_code=request.form.get('hsn_code', ''),
-            gst_percent=float(request.form.get('gst_percent', 12.0)),
-            cost_price=float(request.form.get('cost_price', 0)),
-            coach_price=float(request.form.get('coach_price', 0)),
-            mrp=float(request.form.get('mrp', 0)),
-            coach_local=float(request.form.get('coach_local', 0) or 0),
-            coach_direct=float(request.form.get('coach_direct', 0) or 0),
-            coach_self=float(request.form.get('coach_self', 0) or 0),
-            bulk_local=float(request.form.get('bulk_local', 0) or 0),
-            bulk_direct=float(request.form.get('bulk_direct', 0) or 0),
-            bulk_self=float(request.form.get('bulk_self', 0) or 0),
-            dealer_price=float(request.form.get('dealer_price', 0) or 0),
+            gst_percent=fnum('gst_percent', 12.0),
+            cost_price=fnum('cost_price'),
+            coach_price=fnum('coach_price'),
+            mrp=fnum('mrp'),
+            coach_local=fnum('coach_local'),
+            coach_direct=fnum('coach_direct'),
+            coach_self=fnum('coach_self'),
+            bulk_local=fnum('bulk_local'),
+            bulk_direct=fnum('bulk_direct'),
+            bulk_self=fnum('bulk_self'),
+            dealer_price=fnum('dealer_price'),
         )
 
         # Handle image upload
@@ -81,6 +89,10 @@ def new_product():
         db.session.commit()
         flash(f'Product "{product.name}" created with {product.variants.count()} variant(s).', 'success')
         return redirect(url_for('products.list_products'))
+      except Exception as e:
+        db.session.rollback()
+        flash(f'Error creating product: {str(e)}', 'danger')
+        return redirect(url_for('products.new_product'))
 
     return render_template('products/form.html', product=None, colors=COLORS, sizes=SIZES, categories=CATEGORIES)
 
