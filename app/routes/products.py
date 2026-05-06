@@ -20,7 +20,15 @@ def generate_sku(product_name, color, size):
         parts.append(color_part)
     if size_part:
         parts.append(size_part)
-    return '-'.join(parts)
+    base_sku = '-'.join(parts)
+
+    # Ensure uniqueness - append counter if SKU exists
+    sku = base_sku
+    counter = 2
+    while ProductVariant.query.filter_by(sku_code=sku).first():
+        sku = f"{base_sku}-{counter}"
+        counter += 1
+    return sku
 
 
 @bp.route('/')
