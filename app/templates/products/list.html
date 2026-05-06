@@ -59,16 +59,26 @@
             <tr class="collapse" id="variants-{{ product.id }}">
                 <td colspan="10" class="bg-light p-3">
                     <table class="table table-sm mb-0">
-                        <thead><tr><th>SKU</th><th>Color</th><th>Size</th><th>Cost Override</th><th>Coach Override</th><th>MRP Override</th></tr></thead>
+                        <thead><tr><th>SKU</th><th>Color</th><th>Size</th><th>Status</th><th>Action</th></tr></thead>
                         <tbody>
-                        {% for v in product.variants.filter_by(is_active=True).all() %}
-                        <tr>
+                        {% for v in product.variants.all() %}
+                        <tr {% if not v.is_active %}style="opacity:0.5;"{% endif %}>
                             <td><code>{{ v.sku_code }}</code></td>
                             <td>{{ v.color or '-' }}</td>
                             <td>{{ v.size or '-' }}</td>
-                            <td>{{ v.cost_price_override or '-' }}</td>
-                            <td>{{ v.coach_price_override or '-' }}</td>
-                            <td>{{ v.mrp_override or '-' }}</td>
+                            <td>
+                                {% if v.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('products.delete_variant', vid=v.id) }}" class="d-inline" onsubmit="return confirm('Delete variant {{ v.sku_code }}? If it has order history, it will be deactivated instead.')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </td>
                         </tr>
                         {% endfor %}
                         </tbody>
