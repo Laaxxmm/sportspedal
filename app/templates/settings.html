@@ -90,6 +90,24 @@
     </div>
 </div>
 
+<!-- Backup & Restore -->
+<div class="card mt-4" style="border-color: var(--accent-amber) !important;">
+    <div class="card-header" style="background: #fffbeb;">
+        <strong><i class="bi bi-cloud-arrow-down"></i> Backup &amp; Restore</strong>
+    </div>
+    <div class="card-body">
+        <p class="text-muted small mb-3">Download a complete backup (database + product images) or restore from a previous backup. Useful for migrating to a new server.</p>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('settings.download_backup') }}" class="btn btn-success">
+                <i class="bi bi-download"></i> Download Backup (.zip)
+            </a>
+            <a href="{{ url_for('settings.restore_backup') }}" class="btn btn-outline-warning">
+                <i class="bi bi-upload"></i> Restore from Backup
+            </a>
+        </div>
+    </div>
+</div>
+
 {% if packages %}
 <div class="card mt-4">
     <div class="card-header"><strong>Package Prices</strong></div>

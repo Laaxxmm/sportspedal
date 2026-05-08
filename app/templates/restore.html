@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Restore Backup - Sportspedal{% endblock %}
+{% block content %}
+<h2 class="mb-4">Restore from Backup</h2>
+
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle"></i> <strong>Warning:</strong> This will overwrite the current database and product images.
+    Make sure you have a backup of the current data first.
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+                <label class="form-label">Backup ZIP File</label>
+                <input type="file" name="backup_file" class="form-control" accept=".zip" required>
+                <small class="text-muted">Upload a backup .zip file downloaded from the Backup page</small>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-warning" onclick="return confirm('This will REPLACE the current database. Continue?')">
+                    <i class="bi bi-upload"></i> Upload & Restore
+                </button>
+                <a href="{{ url_for('settings.business_settings') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-body">
+        <h6>Steps to migrate to a new Railway account:</h6>
+        <ol class="small">
+            <li>On <strong>old account</strong>: Go to Settings → click "Download Backup" to get the .zip</li>
+            <li>Set up the app on the <strong>new Railway account</strong> with a volume mounted at /app/data</li>
+            <li>Login to the new app (default: admin / admin123)</li>
+            <li>Come to this page and upload the .zip from step 1</li>
+            <li>Restart the Railway service for changes to take effect</li>
+        </ol>
+    </div>
+</div>
+{% endblock %}
