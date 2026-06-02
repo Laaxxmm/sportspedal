@@ -75,6 +75,23 @@ def get_inventory_data(location_id=None):
         outward_q = outward_q.filter(SaleOrder.location_id == location_id)
     outward_map = dict(outward_q.group_by(SaleItem.variant_id).all())
 
+    # Adjustments by type per variant
+    promo_q = (db.session.query(StockAdjustmentItem.variant_id, func.sum(StockAdjustmentItem.quantity))
+               .join(StockAdjustment)
+               .filter(StockAdjustment.status == 'completed',
+                       StockAdjustment.adjustment_type == 'promotional'))
+    if location_id:
+        promo_q = promo_q.filter(StockAdjustment.location_id == location_id)
+    promo_map = dict(promo_q.group_by(StockAdjustmentItem.variant_id).all())
+
+    damage_q = (db.session.query(StockAdjustmentItem.variant_id, func.sum(StockAdjustmentItem.quantity))
+                .join(StockAdjustment)
+                .filter(StockAdjustment.status == 'completed',
+                        StockAdjustment.adjustment_type.in_(['damaged', 'returned_to_supplier', 'lost', 'other'])))
+    if location_id:
+        damage_q = damage_q.filter(StockAdjustment.location_id == location_id)
+    damage_map = dict(damage_q.group_by(StockAdjustmentItem.variant_id).all())
+
     variants = (db.session.query(ProductVariant, Product)
                 .join(Product)
                 .filter(ProductVariant.is_active == True, Product.is_active == True)
@@ -98,8 +115,9 @@ def get_inventory_data(location_id=None):
     for variant, product in variants:
         inward = inward_map.get(variant.id, 0) or 0
         outward = outward_map.get(variant.id, 0) or 0
+        promo = promo_map.get(variant.id, 0) or 0
+        damaged = damage_map.get(variant.id, 0) or 0
         stock = stock_map.get(variant.id, 0)
-        # Use actual purchase price if available, else product master price
         actual_cost = avg_cost_map.get(variant.id, variant.effective_cost or 0)
         result.append({
             'variant_id': variant.id,
@@ -111,6 +129,9 @@ def get_inventory_data(location_id=None):
             'image_url': product.image_url,
             'inward': inward,
             'outward': outward,
+            'promo': promo,
+            'damaged': damaged,
+            'total_out': outward + promo + damaged,
             'stock': stock,
             'cost_price': actual_cost,
             'stock_value': stock * actual_cost,

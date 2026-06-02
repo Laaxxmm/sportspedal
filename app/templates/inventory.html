@@ -77,8 +77,11 @@
                     <th>Color</th>
                     <th>Size</th>
                     <th>SKU</th>
-                    <th class="text-center">Inward</th>
-                    <th class="text-center">Outward</th>
+                    <th class="text-center" title="Stock received from supplier">Inward</th>
+                    <th class="text-center" title="Sold to customers">Sold</th>
+                    <th class="text-center" title="Given as promotional / sponsor">Promo</th>
+                    <th class="text-center" title="Damaged / returned / lost">Damaged</th>
+                    <th class="text-center" title="Total out (sold + promo + damaged)">Total Out</th>
                     <th class="text-center">Stock</th>
                     <th class="text-end">Cost Price</th>
                     <th class="text-end">Stock Value</th>
@@ -104,6 +107,13 @@
                 <td class="text-center">{{ item.inward }}</td>
                 <td class="text-center">{{ item.outward }}</td>
                 <td class="text-center">
+                    {% if item.promo > 0 %}<span class="badge" style="background: var(--accent-purple); font-size: 0.7rem;">{{ item.promo }}</span>{% else %}<span class="text-muted">0</span>{% endif %}
+                </td>
+                <td class="text-center">
+                    {% if item.damaged > 0 %}<span class="badge" style="background: var(--accent-red); font-size: 0.7rem;">{{ item.damaged }}</span>{% else %}<span class="text-muted">0</span>{% endif %}
+                </td>
+                <td class="text-center"><strong>{{ item.total_out }}</strong></td>
+                <td class="text-center">
                     {% if item.stock <= 0 and item.inward > 0 %}
                     <span class="badge" style="background: var(--accent-red); font-size: 0.85rem;">0 - RESTOCK</span>
                     {% elif item.stock <= 0 %}
@@ -126,7 +136,7 @@
             {% if inventory %}
             <tfoot class="table-light">
                 <tr>
-                    <td colspan="8" class="text-end"><strong>Totals:</strong></td>
+                    <td colspan="11" class="text-end"><strong>Totals:</strong></td>
                     <td class="text-center"><strong>{{ ns.total_stock }}</strong></td>
                     <td></td>
                     <td class="text-end"><strong>{{ "%.2f"|format(ns.total_value) }}</strong></td>
