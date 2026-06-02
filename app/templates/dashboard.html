@@ -166,7 +166,7 @@
                 {% endif %}
             </div>
             <div class="detail-body">
-                <table class="table"><thead><tr><th>Product</th><th>Variant</th><th>SKU</th><th class="text-center">Sold</th><th>Action</th></tr></thead>
+                <table class="table mobile-stack"><thead><tr><th>Product</th><th>Variant</th><th>SKU</th><th class="text-center">Sold</th><th>Action</th></tr></thead>
                 <tbody>
                 {% for item in zero_stock %}
                 <tr style="background:#fff1f3;">
@@ -188,7 +188,7 @@
         <div class="detail-card alert-card">
             <div class="detail-header"><span><i class="bi bi-exclamation-triangle-fill"></i> Low Stock - {{ low_stock|length }} items</span></div>
             <div class="detail-body">
-                <table class="table"><thead><tr><th>Product</th><th>Variant</th><th class="text-center">Stock</th></tr></thead>
+                <table class="table mobile-stack"><thead><tr><th>Product</th><th>Variant</th><th class="text-center">Stock</th></tr></thead>
                 <tbody>
                 {% for item in low_stock %}
                 <tr class="stock-low"><td><strong>{{ item.product_name }}</strong></td><td>{{ item.color }} {{ item.size }}</td><td class="text-center"><strong>{{ item.stock }}</strong></td></tr>
@@ -209,7 +209,7 @@
                 {% if current_user.has_permission('edit_sales') %}<a href="{{ url_for('sales.new_sale') }}" class="btn btn-sm btn-success"><i class="bi bi-plus"></i></a>{% endif %}
             </div>
             <div class="detail-body">
-                <table class="table">
+                <table class="table mobile-stack">
                     <thead><tr><th>Date</th><th>Customer</th><th>Payment</th><th class="text-end">Amount</th></tr></thead>
                     <tbody>
                     {% for sale in recent_sales %}
@@ -234,7 +234,7 @@
                 {% if current_user.has_permission('edit_purchases') %}<a href="{{ url_for('purchases.new_purchase') }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus"></i></a>{% endif %}
             </div>
             <div class="detail-body">
-                <table class="table">
+                <table class="table mobile-stack">
                     <thead><tr><th>Date</th><th>Supplier</th><th>Status</th><th class="text-end">Amount</th></tr></thead>
                     <tbody>
                     {% for po in recent_purchases %}

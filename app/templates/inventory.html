@@ -46,7 +46,7 @@
         <a href="{{ url_for('purchases.new_purchase') }}" class="btn btn-sm btn-danger"><i class="bi bi-cart-plus"></i> Create Purchase Order</a>
     </div>
     <div class="detail-body">
-        <table class="table mb-0">
+        <table class="table mobile-stack mb-0">
             <thead><tr><th>Product</th><th>Color</th><th>Size</th><th>SKU</th><th class="text-center">Was In Stock</th><th class="text-center">Sold Out</th><th>Priority</th></tr></thead>
             <tbody>
             {% for item in zero_items %}

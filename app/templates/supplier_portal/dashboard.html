@@ -102,7 +102,7 @@
         <div class="detail-card">
             <div class="detail-header"><span><i class="bi bi-box-seam-fill"></i> Product Summary</span></div>
             <div class="detail-body">
-                <table class="table">
+                <table class="table mobile-stack">
                     <thead>
                         <tr>
                             <th style="width:40px"></th>
@@ -168,7 +168,7 @@
                 <span><i class="bi bi-exclamation-octagon-fill"></i> Restock Required - {{ restock_needed|length }} items at zero stock</span>
             </div>
             <div class="detail-body">
-                <table class="table">
+                <table class="table mobile-stack">
                     <thead><tr><th>Product</th><th>Color</th><th>Size</th><th>SKU</th><th class="text-center">Previously Sent</th><th class="text-center">All Sold</th></tr></thead>
                     <tbody>
                     {% for item in restock_needed %}
@@ -201,7 +201,7 @@
                         <strong><i class="bi bi-pin-map"></i> {{ loc_data.location.display_name }}</strong>
                         <span>{{ loc_data.stock }} units (Rs.{{ "{:,.0f}".format(loc_data.value) }})</span>
                     </div>
-                    <table class="table table-sm mb-0">
+                    <table class="table table-sm mobile-stack mb-0">
                         <thead><tr><th>Product</th><th>Color</th><th>Size</th><th class="text-center">Inward</th><th class="text-center">Sold</th><th class="text-center">Stock</th></tr></thead>
                         <tbody>
                         {% for item in loc_data.stock_items %}
@@ -228,7 +228,7 @@
         <div class="detail-card">
             <div class="detail-header"><span><i class="bi bi-clock-history"></i> Order History</span></div>
             <div class="detail-body">
-                <table class="table">
+                <table class="table mobile-stack">
                     <thead><tr><th>Date</th><th>Order #</th><th>Location</th><th>Transporter</th><th>Status</th><th class="text-end">Amount</th></tr></thead>
                     <tbody>
                     {% for po in orders %}
@@ -259,7 +259,7 @@
                 <span class="badge bg-{{ 'danger' if balance > 0 else 'success' }}">Balance: Rs.{{ "{:,.0f}".format(balance) }}</span>
             </div>
             <div class="detail-body">
-                <table class="table">
+                <table class="table mobile-stack">
                     <thead><tr><th>Date</th><th>Mode</th><th>Reference</th><th class="text-end">Amount</th><th>Notes</th></tr></thead>
                     <tbody>
                     {% for p in payments %}

@@ -213,6 +213,25 @@ if (toggle && sidebar && overlay) {
         });
     });
 }
+
+// Auto-label table cells from headers (only for opt-in .mobile-stack tables)
+function autoLabelTables() {
+    document.querySelectorAll('table.mobile-stack').forEach(table => {
+        const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+        if (headers.length === 0) return;
+        table.querySelectorAll('tbody tr').forEach(row => {
+            Array.from(row.children).forEach((cell, i) => {
+                if (cell.tagName !== 'TD') return;
+                if (cell.hasAttribute('data-label')) return;
+                const label = headers[i];
+                if (label && label.length > 0 && label !== '#' && !cell.hasAttribute('colspan')) {
+                    cell.setAttribute('data-label', label);
+                }
+            });
+        });
+    });
+}
+autoLabelTables();
 </script>
 {% block extra_js %}{% endblock %}
 </body>

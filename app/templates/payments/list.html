@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>Supplier Payments</h2>
-    <a href="{{ url_for('payments.new_payment') }}" class="btn btn-primary"><i class="bi bi-cash-stack"></i> Record Payment</a>
+    <a href="{{ url_for('payments.new_payment') }}" class="btn btn-primary btn-sm"><i class="bi bi-cash-stack"></i> Record Payment</a>
 </div>
 
 <!-- Running Balance Summary -->
@@ -51,7 +51,7 @@
 <div class="card mb-4">
     <div class="card-header"><strong>Per Supplier</strong></div>
     <div class="card-body p-0">
-        <table class="table table-sm mb-0">
+        <table class="table table-sm mobile-stack mb-0">
             <thead class="table-light">
                 <tr><th>Supplier</th><th class="text-end">Owed</th><th class="text-end">Paid</th><th class="text-end">Balance</th></tr>
             </thead>
@@ -75,7 +75,7 @@
 <div class="card">
     <div class="card-header"><strong>Payment History</strong></div>
     <div class="card-body p-0">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mobile-stack mb-0">
             <thead class="table-light">
                 <tr><th>Date</th><th>Supplier</th><th>Mode</th><th>Reference</th><th class="text-end">Amount</th><th>Notes</th><th>Actions</th></tr>
             </thead>

@@ -686,6 +686,181 @@ code { font-size: 0.8rem; color: var(--accent-purple); background: rgba(124,92,2
     .row.g-3 > .col-md-3 { flex: 0 0 100% !important; max-width: 100% !important; }
 }
 
+/* ===== Header action button alignment ===== */
+@media (max-width: 991px) {
+    .d-flex.justify-content-between.align-items-center.mb-4 {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px;
+    }
+    .d-flex.justify-content-between.align-items-center.mb-4 > div {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    .d-flex.justify-content-between.align-items-center.mb-4 > div .btn {
+        flex: 1;
+        min-width: 0;
+        padding: 8px 10px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+    /* Pages with just one heading + one button */
+    .d-flex.justify-content-between.align-items-center.mb-4 > a.btn,
+    .d-flex.justify-content-between.align-items-center.mb-4 > div > a.btn {
+        white-space: nowrap;
+    }
+}
+
+/* ===== Opt-in Table-to-Card transformation on mobile ===== */
+@media (max-width: 991px) {
+    .table.mobile-stack thead { display: none; }
+
+    .table.mobile-stack,
+    .table.mobile-stack tbody,
+    .table.mobile-stack tr {
+        display: block !important;
+        width: 100% !important;
+    }
+
+    .table.mobile-stack tbody tr {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 12px;
+        margin: 0 0 10px 0;
+        box-shadow: var(--shadow-sm);
+        min-width: 0 !important;
+    }
+
+    .table.mobile-stack tbody td {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center;
+        text-align: left !important;
+        padding: 7px 0 !important;
+        border-bottom: 1px solid #f4f5f9 !important;
+        gap: 8px;
+        white-space: normal !important;
+        word-break: break-word;
+        font-size: 0.85rem !important;
+        min-width: 0;
+    }
+
+    .table.mobile-stack tbody td:last-child {
+        border-bottom: none !important;
+        padding-top: 10px !important;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .table.mobile-stack tbody td[data-label]::before {
+        content: attr(data-label);
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--text-muted);
+        flex-shrink: 0;
+        margin-right: 8px;
+    }
+
+    .table.mobile-stack tbody td:last-child::before { display: none; }
+    .table.mobile-stack tfoot { display: none; }
+
+    .table.mobile-stack tbody td .btn-sm {
+        padding: 6px 10px;
+        font-size: 0.78rem;
+        min-height: 34px;
+    }
+
+    .table.mobile-stack tbody td[colspan] {
+        text-align: center !important;
+        justify-content: center !important;
+    }
+    .table.mobile-stack tbody td[colspan]::before { display: none !important; }
+
+    .table.mobile-stack tbody td code {
+        font-size: 0.78rem;
+        word-break: break-all;
+    }
+
+    /* Card containing mobile-stack table - remove min-width / overflow */
+    .card .card-body.p-0 .table.mobile-stack { min-width: 0 !important; }
+    .table-scroll-wrap:has(.mobile-stack), .card-body.p-0:has(.mobile-stack) {
+        overflow-x: visible !important;
+    }
+
+    /* Products list: hide variant collapse rows and chevron on mobile */
+    .table.mobile-stack tr.collapse,
+    .table.mobile-stack tr.collapsing { display: none !important; }
+    .table.mobile-stack tbody td:first-child:has(button[data-bs-toggle="collapse"]) {
+        display: none !important;
+    }
+}
+
+/* ===== Product form variant section (mobile) ===== */
+@media (max-width: 991px) {
+    .variant-row, .variant-card {
+        display: block !important;
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 12px;
+        margin-bottom: 10px;
+        box-shadow: var(--shadow-sm);
+    }
+    .variant-row .row, .variant-card .row {
+        --bs-gutter-x: 0.5rem;
+    }
+    .variant-row [class*="col-"], .variant-card [class*="col-"] {
+        margin-bottom: 8px;
+    }
+    .variant-row label, .variant-card label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 3px;
+    }
+}
+
+/* ===== Product variant edit table (special handling) ===== */
+@media (max-width: 991px) {
+    /* Don't auto-card the variant edit table - it has its own structure */
+    .variant-edit-table thead { display: none; }
+    .variant-edit-table, .variant-edit-table tbody, .variant-edit-table tr {
+        display: block; width: 100%;
+    }
+    .variant-edit-table tr {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 12px;
+        margin-bottom: 10px;
+    }
+    .variant-edit-table td, .variant-edit-table form td {
+        display: flex !important;
+        flex-direction: column;
+        align-items: stretch !important;
+        text-align: left !important;
+        padding: 6px 0 !important;
+        border: none !important;
+        gap: 4px;
+    }
+    .variant-edit-table td::before {
+        content: attr(data-label);
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+    .variant-edit-table input, .variant-edit-table select {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
 /* ===== Form Sections (mobile-friendly grouping) ===== */
 .form-section {
     background: var(--white);
