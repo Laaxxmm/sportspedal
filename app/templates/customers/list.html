@@ -27,7 +27,8 @@
     </div>
 </div>
 
-<div class="card">
+<!-- Desktop table -->
+<div class="card desktop-only">
     <div class="card-body p-0">
         <table class="table table-hover mb-0" id="cust-table">
             <thead class="table-light">
@@ -64,6 +65,39 @@
         </table>
     </div>
 </div>
+
+<!-- Mobile cards -->
+<div class="mobile-card-list">
+    {% for c in customers %}
+    {% set ct = c.customer_type %}
+    {% set order_count = c.sale_orders.count() %}
+    <div class="mobile-card" data-type="{{ ct }}">
+        <div class="mc-header">
+            <div>
+                <div class="mc-title">{{ c.name }}</div>
+                <div class="mc-sub">
+                    <span class="badge" style="background:{{ 'var(--accent-blue)' if ct == 'bulk' else ('var(--accent-green)' if ct == 'coach' else ('var(--accent-purple)' if ct == 'dealer' else 'var(--text-muted)')) }}; font-size:0.6rem;">{{ ct }}</span>
+                    {% if order_count > 0 %}<span class="badge bg-info" style="font-size:0.6rem; margin-left:4px;">{{ order_count }} orders</span>{% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="mc-body">
+            {% if c.phone %}<div class="mc-row"><span class="mc-label">Phone</span><span class="mc-value">{{ c.phone }}</span></div>{% endif %}
+            {% if c.city %}<div class="mc-row"><span class="mc-label">City</span><span class="mc-value">{{ c.city }}</span></div>{% endif %}
+            {% if c.state %}<div class="mc-row"><span class="mc-label">State</span><span class="mc-value">{{ c.state }}</span></div>{% endif %}
+        </div>
+        <div class="mc-actions">
+            <a href="{{ url_for('customers.edit_customer', id=c.id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil"></i> Edit</a>
+            <form method="POST" action="{{ url_for('customers.delete_customer', id=c.id) }}" class="d-inline" onsubmit="return confirm('Delete customer {{ c.name }}?')" style="flex:0 0 auto;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-4">No customers yet</div>
+    {% endfor %}
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -71,12 +105,14 @@
 function filterTable() {
     const search = document.getElementById('search-input').value.toLowerCase();
     const type = document.getElementById('filter-type').value;
-    document.querySelectorAll('#cust-table tbody tr').forEach(row => {
-        const text = row.textContent.toLowerCase();
+    const apply = (el) => {
+        const text = el.textContent.toLowerCase();
         const matchSearch = !search || text.includes(search);
-        const matchType = !type || row.dataset.type === type;
-        row.style.display = (matchSearch && matchType) ? '' : 'none';
-    });
+        const matchType = !type || el.dataset.type === type;
+        el.style.display = (matchSearch && matchType) ? '' : 'none';
+    };
+    document.querySelectorAll('#cust-table tbody tr').forEach(apply);
+    document.querySelectorAll('.mobile-card-list .mobile-card').forEach(apply);
 }
 document.getElementById('search-input').addEventListener('input', filterTable);
 document.getElementById('filter-type').addEventListener('change', filterTable);

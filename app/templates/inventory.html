@@ -66,8 +66,9 @@
 </div>
 {% endif %}
 
-<div class="card">
-    <div class="card-body p-0">
+<!-- Desktop table -->
+<div class="card desktop-only">
+    <div class="card-body p-0 table-scroll-wrap">
         <table class="table table-hover mb-0">
             <thead class="table-light">
                 <tr>
@@ -145,6 +146,72 @@
             {% endif %}
         </table>
     </div>
+</div>
+
+<!-- Mobile card view -->
+<div class="mobile-card-list">
+    {% for item in inventory %}
+    {% set out_of_stock = item.stock <= 0 and item.inward > 0 %}
+    <div class="mobile-card" {% if out_of_stock %}style="border-left: 4px solid var(--accent-red);"{% endif %}>
+        <div class="mc-header">
+            <div style="display:flex; gap:10px; align-items:center; flex:1;">
+                {% if item.image_url %}
+                <img src="{{ item.image_url }}" style="width:44px; height:44px; object-fit:cover; border-radius:8px;">
+                {% else %}
+                <div style="width:44px; height:44px; background:#f4f5f9; border-radius:8px; display:flex; align-items:center; justify-content:center;"><i class="bi bi-image text-muted"></i></div>
+                {% endif %}
+                <div>
+                    <div class="mc-title">{{ item.product_name }}</div>
+                    <div class="mc-sub">{{ item.color }} · {{ item.size }} · <code style="font-size:0.7rem;">{{ item.sku }}</code></div>
+                </div>
+            </div>
+            <div style="text-align:right;">
+                {% if out_of_stock %}
+                <span class="badge" style="background:var(--accent-red); font-size:0.7rem;">0 RESTOCK</span>
+                {% elif item.stock <= 0 %}
+                <div style="font-weight:700; color:var(--text-muted); font-size:1.2rem;">0</div>
+                {% elif item.stock < 3 %}
+                <div style="font-weight:700; color:var(--accent-amber); font-size:1.2rem;">{{ item.stock }}</div>
+                {% else %}
+                <div style="font-weight:700; color:var(--accent-green); font-size:1.2rem;">{{ item.stock }}</div>
+                {% endif %}
+                <div style="font-size:0.65rem; color:var(--text-muted);">In Stock</div>
+            </div>
+        </div>
+        <div class="mc-body">
+            <div class="mc-row">
+                <span class="mc-label">Inward</span>
+                <span class="mc-value">{{ item.inward }}</span>
+            </div>
+            <div class="mc-row">
+                <span class="mc-label">Sold</span>
+                <span class="mc-value">{{ item.outward }}</span>
+            </div>
+            {% if item.promo > 0 %}
+            <div class="mc-row">
+                <span class="mc-label">Promo</span>
+                <span class="mc-value" style="color:var(--accent-purple);">{{ item.promo }}</span>
+            </div>
+            {% endif %}
+            {% if item.damaged > 0 %}
+            <div class="mc-row">
+                <span class="mc-label">Damaged</span>
+                <span class="mc-value" style="color:var(--accent-red);">{{ item.damaged }}</span>
+            </div>
+            {% endif %}
+            <div class="mc-row">
+                <span class="mc-label">Cost / Unit</span>
+                <span class="mc-value">Rs.{{ "%.0f"|format(item.cost_price) }}</span>
+            </div>
+            <div class="mc-row">
+                <span class="mc-label">Stock Value</span>
+                <span class="mc-value">Rs.{{ "{:,.0f}".format(item.stock_value) }}</span>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-4">No inventory items</div>
+    {% endfor %}
 </div>
 
 <div class="mt-2">
