@@ -666,10 +666,8 @@ code { font-size: 0.8rem; color: var(--accent-purple); background: rgba(124,92,2
     }
     .form-label { font-size: 0.78rem; margin-bottom: 4px; font-weight: 600; }
     .row.mb-3 > [class*="col-md-"] {
-        flex: 0 0 100% !important; max-width: 100% !important; margin-bottom: 10px;
+        flex: 0 0 100% !important; max-width: 100% !important; margin-bottom: 12px;
     }
-    /* Small fields like qty/price can stay 50% to save space */
-    .row.mb-3 > .col-md-1 { flex: 0 0 50% !important; max-width: 50% !important; }
 
     /* Cards */
     .card { border-radius: var(--radius-sm) !important; }
@@ -686,4 +684,152 @@ code { font-size: 0.8rem; color: var(--accent-purple); background: rgba(124,92,2
 @media (max-width: 380px) {
     .money-flow-card [class*="col"] { flex: 0 0 100% !important; max-width: 100% !important; }
     .row.g-3 > .col-md-3 { flex: 0 0 100% !important; max-width: 100% !important; }
+}
+
+/* ===== Form Sections (mobile-friendly grouping) ===== */
+.form-section {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-sm);
+}
+.form-section-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.form-section-title i { color: var(--accent-blue); font-size: 1rem; }
+
+/* ===== Line items: convert table to cards on mobile ===== */
+@media (max-width: 991px) {
+    /* Hide table header on mobile */
+    #items-table thead, #items-table tfoot { display: none; }
+
+    /* Each row becomes a card */
+    #items-table, #items-table tbody, #items-table tr {
+        display: block; width: 100%;
+    }
+    #items-table .item-row {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 14px;
+        margin-bottom: 12px;
+        box-shadow: var(--shadow-sm);
+        position: relative;
+    }
+
+    /* Item card counter */
+    #items-table .item-row::before {
+        content: "Item " counter(item-counter);
+        counter-increment: item-counter;
+        position: absolute;
+        top: -8px;
+        left: 12px;
+        background: var(--accent-blue);
+        color: white;
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 2px 10px;
+        border-radius: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    #items-body { counter-reset: item-counter; }
+
+    /* Each cell becomes a labeled row */
+    #items-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border);
+        gap: 10px;
+    }
+    #items-table td:last-child { border-bottom: none; padding-top: 12px; }
+    #items-table td > select,
+    #items-table td > input { flex: 1; max-width: 65%; }
+
+    /* Add labels via data-label */
+    #items-table td::before {
+        content: attr(data-label);
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        flex-shrink: 0;
+    }
+
+    /* Stock / GST Amt / Total cells (read-only) */
+    #items-table td.stock-cell,
+    #items-table td.gst-amt,
+    #items-table td.row-total {
+        justify-content: space-between;
+        font-weight: 600;
+    }
+
+    /* Total row should stand out */
+    #items-table td.row-total {
+        font-size: 1.05rem;
+        color: var(--accent-green);
+        font-weight: 800;
+        background: linear-gradient(90deg, transparent, rgba(34,201,151,0.06));
+        margin-top: 4px;
+        padding: 10px 8px !important;
+        border-radius: var(--radius-xs);
+    }
+
+    /* Hide Pkg cell label workaround - keep checkbox visible */
+    #items-table td .form-check-input { margin: 0; }
+
+    /* Delete button row */
+    #items-table tr td:last-child {
+        justify-content: flex-end;
+    }
+    #items-table tr td:last-child::before { display: none; }
+    #items-table .remove-row {
+        width: 100%; padding: 8px;
+        background: var(--accent-red); color: white; border: none;
+        border-radius: var(--radius-xs);
+    }
+
+    /* Add item button: prominent on mobile */
+    #add-row { width: 100%; padding: 12px; font-size: 1rem; font-weight: 600; }
+
+    /* Totals card (visible only on mobile) */
+    .mobile-totals {
+        display: block;
+        background: linear-gradient(135deg, #eef4ff 0%, #f0ecff 100%);
+        border-radius: var(--radius);
+        padding: 16px;
+        margin-bottom: 14px;
+    }
+    .mobile-totals .mt-row {
+        display: flex; justify-content: space-between;
+        padding: 6px 0;
+        font-size: 0.9rem; color: var(--text-secondary);
+    }
+    .mobile-totals .mt-row.mt-grand {
+        border-top: 2px solid var(--border);
+        padding-top: 10px; margin-top: 6px;
+        font-size: 1.2rem; font-weight: 800; color: var(--text-primary);
+    }
+
+    /* Hide form's own footer button row in favor of sticky bar */
+    .form-footer-buttons { display: none; }
+}
+
+@media (min-width: 992px) {
+    .mobile-totals { display: none; }
 }

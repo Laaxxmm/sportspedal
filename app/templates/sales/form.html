@@ -5,7 +5,7 @@
 
 <div class="card">
     <div class="card-body">
-        <form method="POST" id="sale-form">
+        <form method="POST" id="sale-form" class="mobile-form-padded">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="row mb-3">
                 <div class="col-md-4">
@@ -136,14 +136,27 @@
                     </tr>
                 </tfoot>
             </table>
-            <button type="button" class="btn btn-sm btn-outline-success mb-3" id="add-row"><i class="bi bi-plus"></i> Add Item</button>
+            <button type="button" class="btn btn-outline-success mb-3" id="add-row"><i class="bi bi-plus-circle"></i> Add Item</button>
 
-            <div class="d-flex gap-2">
+            <!-- Mobile-only Totals card -->
+            <div class="mobile-totals">
+                <div class="mt-row"><span>Subtotal</span><span id="mt-subtotal">Rs.0.00</span></div>
+                <div class="mt-row"><span>GST</span><span id="mt-gst">Rs.0.00</span></div>
+                <div class="mt-row mt-grand"><span>Grand Total</span><span id="mt-grand">Rs.0.00</span></div>
+            </div>
+
+            <div class="form-footer-buttons d-flex gap-2">
                 <button type="submit" class="btn btn-success">Create Sale</button>
                 <a href="{{ url_for('sales.list_sales') }}" class="btn btn-outline-secondary">Cancel</a>
             </div>
         </form>
     </div>
+</div>
+
+<!-- Sticky bottom save bar (mobile only) -->
+<div class="sticky-save-bar">
+    <a href="{{ url_for('sales.list_sales') }}" class="btn btn-outline-secondary">Cancel</a>
+    <button type="submit" form="sale-form" class="btn btn-success"><i class="bi bi-check-lg"></i> Save Sale</button>
 </div>
 <!-- Add Customer Modal -->
 <div class="modal fade" id="addCustomerModal" tabindex="-1">
@@ -303,19 +316,19 @@ function getAvgPrice(category, custType) {
 
 function newRow() {
     return `<tr class="item-row">
-        <td><select class="form-select form-select-sm product-select" required>${productOptions}</select></td>
-        <td><select class="form-select form-select-sm color-select"><option value="">-</option></select></td>
-        <td><select class="form-select form-select-sm size-select"><option value="">-</option></select></td>
-        <td class="stock-cell">-</td>
-        <td><input type="number" name="qty[]" class="form-control form-control-sm qty" value="1" min="1"></td>
-        <td><input type="number" name="unit_price[]" class="form-control form-control-sm unit-price" step="0.01" value="0"></td>
-        <td class="text-center"><input type="checkbox" class="form-check-input pkg-check" title="Apply package price"></td>
-        <td><input type="number" name="gst_percent[]" class="form-control form-control-sm gst-pct" step="0.1" value="0"></td>
-        <td class="gst-amt">0.00</td>
-        <td class="row-total">0.00</td>
+        <td data-label="Product"><select class="form-select form-select-sm product-select" required>${productOptions}</select></td>
+        <td data-label="Color"><select class="form-select form-select-sm color-select"><option value="">-</option></select></td>
+        <td data-label="Size"><select class="form-select form-select-sm size-select"><option value="">-</option></select></td>
+        <td data-label="Stock" class="stock-cell">-</td>
+        <td data-label="Qty"><input type="number" name="qty[]" class="form-control form-control-sm qty" value="1" min="1"></td>
+        <td data-label="Unit Price"><input type="number" name="unit_price[]" class="form-control form-control-sm unit-price" step="0.01" value="0"></td>
+        <td data-label="Package Price" class="text-center"><input type="checkbox" class="form-check-input pkg-check" title="Apply package price"></td>
+        <td data-label="GST %"><input type="number" name="gst_percent[]" class="form-control form-control-sm gst-pct" step="0.1" value="0"></td>
+        <td data-label="GST Amount" class="gst-amt">0.00</td>
+        <td data-label="Item Total" class="row-total">0.00</td>
         <td>
             <input type="hidden" name="variant_id[]" class="variant-id-hidden" value="">
-            <button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-trash"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-trash"></i> Remove Item</button>
         </td>
     </tr>`;
 }
@@ -392,7 +405,16 @@ function recalc() {
 
     const transport = parseFloat(document.getElementById('transport-charge').value || 0);
     const discount = parseFloat(document.getElementById('discount-amt').value || 0);
-    document.getElementById('grand-total').innerHTML = `<strong>${(subtotal + transport - discount).toFixed(2)}</strong>`;
+    const grand = subtotal + transport - discount;
+    document.getElementById('grand-total').innerHTML = `<strong>${grand.toFixed(2)}</strong>`;
+
+    // Update mobile totals card
+    const mts = document.getElementById('mt-subtotal');
+    if (mts) {
+        mts.textContent = 'Rs.' + (subtotal - totalGst).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('mt-gst').textContent = 'Rs.' + totalGst.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('mt-grand').textContent = 'Rs.' + grand.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
 
     checkPackage();
 }
