@@ -1,8 +1,9 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 from app import db
-from app.models import SaleOrder, SaleItem, Customer, ProductVariant, Product, BusinessProfile, PackagePrice
+from app.models import SaleOrder, SaleItem, Customer, ProductVariant, Product, BusinessProfile, PackagePrice, Supplier
 from app.services.stock import get_stock_map
+from app.services.customer_account import customer_advance_map as _customer_advance_map
 from datetime import date
 
 
@@ -110,6 +111,10 @@ def new_sale():
             transport_type=request.form.get('transport_type', 'self'),
             transport_charge=float(request.form.get('transport_charge', 0)),
             discount_amount=float(request.form.get('discount_amount', 0)),
+            supplier_discount=float(request.form.get('supplier_discount', 0) or 0),
+            discount_supplier_id=(int(request.form['discount_supplier_id'])
+                                  if request.form.get('discount_supplier_id') else None),
+            discount_reason=request.form.get('discount_reason', ''),
             shipping_cost=float(request.form.get('shipping_cost', 0)),
             shipping_carrier=request.form.get('shipping_carrier', ''),
             shipping_tracking=request.form.get('shipping_tracking', ''),
@@ -205,8 +210,11 @@ def new_sale():
     loc_id = current_user.location_id if not current_user.is_superadmin else None
     stock_map = get_stock_map(location_id=loc_id)
     packages = PackagePrice.query.all()
+    suppliers = Supplier.query.order_by(Supplier.name).all()
+    advance_map = _customer_advance_map()
     return render_template('sales/form.html', sale=None, customers=customers,
-                           variants=variants, stock_map=stock_map, packages=packages)
+                           variants=variants, stock_map=stock_map, packages=packages,
+                           suppliers=suppliers, advance_map=advance_map)
 
 
 @bp.route('/<int:id>')
@@ -231,6 +239,10 @@ def edit_sale(id):
         sale.transport_mode = request.form.get('transport_mode', '')
         sale.transport_charge = float(request.form.get('transport_charge', 0))
         sale.discount_amount = float(request.form.get('discount_amount', 0))
+        sale.supplier_discount = float(request.form.get('supplier_discount', 0) or 0)
+        sale.discount_supplier_id = (int(request.form['discount_supplier_id'])
+                                     if request.form.get('discount_supplier_id') else None)
+        sale.discount_reason = request.form.get('discount_reason', '')
         sale.shipping_cost = float(request.form.get('shipping_cost', 0))
         sale.shipping_carrier = request.form.get('shipping_carrier', '')
         sale.shipping_tracking = request.form.get('shipping_tracking', '')
@@ -278,8 +290,11 @@ def edit_sale(id):
                 .all())
     stock_map = get_stock_map()
     packages = PackagePrice.query.all()
+    suppliers = Supplier.query.order_by(Supplier.name).all()
+    advance_map = _customer_advance_map()
     return render_template('sales/edit.html', sale=sale, customers=customers,
-                           variants=variants, stock_map=stock_map, packages=packages)
+                           variants=variants, stock_map=stock_map, packages=packages,
+                           suppliers=suppliers, advance_map=advance_map)
 
 
 @bp.route('/<int:id>/delete', methods=['POST'])

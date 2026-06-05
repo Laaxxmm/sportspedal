@@ -79,6 +79,9 @@
                 {% if supplier_balance.adjustment_credit and supplier_balance.adjustment_credit > 0 %}
                 <div class="fin-row"><span class="fin-label"><i class="bi bi-clipboard-minus"></i> Adjustment Credit</span><span class="fin-value" style="color:var(--accent-blue)">Rs.{{ "{:,.0f}".format(supplier_balance.adjustment_credit) }}</span></div>
                 {% endif %}
+                {% if supplier_balance.sale_discount and supplier_balance.sale_discount > 0 %}
+                <div class="fin-row"><span class="fin-label"><i class="bi bi-percent"></i> Bulk Sale Discount</span><span class="fin-value" style="color:var(--accent-green)">−Rs.{{ "{:,.0f}".format(supplier_balance.sale_discount) }}</span></div>
+                {% endif %}
                 <div class="fin-row fin-total">
                     <span class="fin-label">Net Due</span>
                     <span class="fin-value" style="color:{{ 'var(--accent-red)' if supplier_balance.balance > 0 else 'var(--accent-green)' }}; font-size:1.1rem;">Rs.{{ "{:,.0f}".format(supplier_balance.balance) }}</span>
@@ -88,6 +91,25 @@
                     Cost Recovered Rs.{{ "{:,.0f}".format(total_cogs) }} - Net Due Rs.{{ "{:,.0f}".format(supplier_balance.balance) }} = <strong style="color:{{ 'var(--accent-green)' if (total_cogs - supplier_balance.balance) >= 0 else 'var(--accent-red)' }}">Rs.{{ "{:,.0f}".format(total_cogs - supplier_balance.balance) }}</strong> in hand
                 </div>
                 {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if current_user.is_superadmin and (buyer_advance_held > 0 or buyer_advance_due > 0) %}
+    <div class="col-md-4">
+        <div class="detail-card" style="height:100%; border-left: 4px solid var(--accent-green);">
+            <div class="detail-header"><span><i class="bi bi-wallet2"></i> Buyer Advances</span>
+                <a href="{{ url_for('customers.accounts') }}" class="btn btn-sm btn-outline-info"><i class="bi bi-list"></i> View</a>
+            </div>
+            <div class="p-3">
+                <div class="fin-row"><span class="fin-label">Advance Held</span><span class="fin-value" style="color:var(--accent-green)">Rs.{{ "{:,.0f}".format(buyer_advance_held) }}</span></div>
+                {% if buyer_advance_due > 0 %}
+                <div class="fin-row"><span class="fin-label">Overdrawn (due)</span><span class="fin-value" style="color:var(--accent-red)">Rs.{{ "{:,.0f}".format(buyer_advance_due) }}</span></div>
+                {% endif %}
+                <div style="margin-top:10px; padding:8px 12px; background:#fafbfd; border-radius:var(--radius-sm); font-size:0.8rem; color:var(--text-secondary);">
+                    Prepaid balances buyers can draw future orders against.
+                </div>
             </div>
         </div>
     </div>

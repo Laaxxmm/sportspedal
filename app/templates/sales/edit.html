@@ -74,6 +74,36 @@
                 </div>
             </div>
 
+            <!-- Bulk discount borne by supplier -->
+            <div class="card mb-3" style="border-color: var(--accent-purple) !important;">
+                <div class="card-header py-2" style="background:#f0ecff;">
+                    <strong style="font-size:0.9rem;"><i class="bi bi-percent"></i> Bulk Discount Borne by Supplier</strong>
+                    <small class="text-muted ms-2">Reduces what you owe that supplier. Does NOT change the buyer's invoice.</small>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label">Discount Amount (Rs.)</label>
+                            <input type="number" name="supplier_discount" id="supplier-discount" class="form-control" step="0.01" value="{{ sale.supplier_discount or 0 }}">
+                            <small id="discount-suggest" class="text-muted d-block mt-1"></small>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Given by Supplier</label>
+                            <select name="discount_supplier_id" id="discount-supplier" class="form-select">
+                                <option value="">— Select —</option>
+                                {% for s in suppliers %}
+                                <option value="{{ s.id }}" {{ 'selected' if sale.discount_supplier_id == s.id }}>{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Reason / Note</label>
+                            <input type="text" name="discount_reason" class="form-control" value="{{ sale.discount_reason or '' }}" placeholder="e.g. Bulk deal — supplier agreed to absorb">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <hr>
             <h5>Line Items</h5>
             <table class="table table-sm" id="items-table">
@@ -175,10 +205,32 @@ function recalc() {
     const transport = parseFloat(document.getElementById('transport-charge').value || 0);
     const discount = parseFloat(document.getElementById('discount-amt').value || 0);
     document.getElementById('grand-total').innerHTML = `<strong>${(subtotal + transport - discount).toFixed(2)}</strong>`;
+
+    // Supplier-discount suggestion (sum of below-cost gaps)
+    let suggested = 0;
+    document.querySelectorAll('.item-row').forEach(row => {
+        const sel = row.querySelector('.variant-select');
+        const opt = sel ? sel.selectedOptions[0] : null;
+        const cost = opt ? parseFloat(opt.dataset.cost || 0) : 0;
+        const price = parseFloat(row.querySelector('.unit-price')?.value || 0);
+        const qty = parseFloat(row.querySelector('.qty')?.value || 0);
+        if (cost > 0 && price < cost) suggested += (cost - price) * qty;
+    });
+    const el = document.getElementById('discount-suggest');
+    if (el) {
+        if (suggested > 0) {
+            el.innerHTML = `Sold below cost by <strong>Rs.${suggested.toFixed(2)}</strong> · <a href="#" id="apply-suggest">apply</a>`;
+            const a = document.getElementById('apply-suggest');
+            if (a) a.onclick = (e) => { e.preventDefault(); document.getElementById('supplier-discount').value = suggested.toFixed(2); };
+        } else {
+            el.textContent = 'No items priced below cost.';
+        }
+    }
 }
 
 function bindEvents() {
     document.querySelectorAll('.qty, .unit-price, .gst-pct').forEach(el => { el.oninput = recalc; });
+    document.querySelectorAll('.variant-select').forEach(el => { el.onchange = recalc; });
     document.querySelectorAll('.remove-row').forEach(btn => {
         btn.onclick = function() { this.closest('tr').remove(); recalc(); };
     });

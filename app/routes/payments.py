@@ -53,7 +53,15 @@ def get_supplier_balance(supplier_id=None):
         StockAdjustment.status == 'completed'
     ).scalar() or 0
 
-    net_balance = total_owed - total_paid - shipping_pending - adj_credit
+    # Bulk sale discounts borne by this supplier (reduces payable)
+    sale_disc_q = db.session.query(func.sum(SaleOrder.supplier_discount)).filter(
+        SaleOrder.supplier_discount > 0
+    )
+    if supplier_id:
+        sale_disc_q = sale_disc_q.filter(SaleOrder.discount_supplier_id == supplier_id)
+    sale_discount = sale_disc_q.scalar() or 0
+
+    net_balance = total_owed - total_paid - shipping_pending - adj_credit - sale_discount
 
     return {
         'owed': total_owed,
@@ -64,6 +72,7 @@ def get_supplier_balance(supplier_id=None):
         'shipping_settled': shipping_settled,
         'shipping_pending': shipping_pending,
         'adjustment_credit': adj_credit,
+        'sale_discount': sale_discount,
         'balance': net_balance,
     }
 

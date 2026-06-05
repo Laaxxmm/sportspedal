@@ -89,6 +89,12 @@ def compute_dashboard_data(location_id=None):
     # Supplier balance (global only, not scoped)
     supplier_balance = get_supplier_balance()
 
+    # Buyer advances (global) - prepaid balances and overdrawn dues
+    from app.services.customer_account import customer_advance_map
+    adv = customer_advance_map()
+    buyer_advance_held = sum(v for v in adv.values() if v > 0)
+    buyer_advance_due = sum(-v for v in adv.values() if v < 0)
+
     # Bulk orders
     bulk_q = SaleOrder.query.filter_by(is_bulk=True)
     if location_id:
@@ -131,6 +137,8 @@ def compute_dashboard_data(location_id=None):
         'low_stock': low_stock, 'zero_stock': zero_stock,
         'coach_data': coach_data, 'public_data': public_data,
         'supplier_balance': supplier_balance,
+        'buyer_advance_held': buyer_advance_held,
+        'buyer_advance_due': buyer_advance_due,
         'bulk_data': bulk_data,
         'promo_data': promo_data,
         'damage_data': damage_data,

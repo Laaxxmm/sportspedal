@@ -101,8 +101,13 @@
             <ul class="nav flex-column">
                 {% if current_user.is_superadmin %}
                 <li class="nav-item">
-                    <a class="nav-link {% if '/payments' in request.path %}active{% endif %}" href="{{ url_for('payments.list_payments') }}" title="Payments">
-                        <i class="bi bi-cash-stack"></i> <span class="nav-text">Payments</span>
+                    <a class="nav-link {% if '/accounts' in request.path %}active{% endif %}" href="{{ url_for('customers.accounts') }}" title="Buyer Accounts">
+                        <i class="bi bi-wallet2"></i> <span class="nav-text">Buyer Accounts</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if '/payments' in request.path %}active{% endif %}" href="{{ url_for('payments.list_payments') }}" title="Supplier Payments">
+                        <i class="bi bi-cash-stack"></i> <span class="nav-text">Supplier Payments</span>
                     </a>
                 </li>
                 <li class="nav-item">

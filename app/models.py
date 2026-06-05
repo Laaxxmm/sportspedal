@@ -248,6 +248,8 @@ class Customer(db.Model):
 
     location = db.relationship('Location')
     sale_orders = db.relationship('SaleOrder', backref='customer', lazy='dynamic')
+    payments = db.relationship('CustomerPayment', backref='customer', lazy='dynamic',
+                               cascade='all, delete-orphan')
 
 
 # ===== Purchase Orders =====
@@ -315,6 +317,10 @@ class SaleOrder(db.Model):
     transport_type = db.Column(db.String(20), default='self')  # local | direct | self
     transport_charge = db.Column(db.Float, default=0)
     discount_amount = db.Column(db.Float, default=0)
+    # Bulk discount borne by the supplier (reduces supplier payable, not the buyer invoice)
+    supplier_discount = db.Column(db.Float, default=0)
+    discount_supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)
+    discount_reason = db.Column(db.String(200))
     is_bulk = db.Column(db.Boolean, default=False)
     is_package = db.Column(db.Boolean, default=False)
     package_type = db.Column(db.String(50))
@@ -326,6 +332,7 @@ class SaleOrder(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     location = db.relationship('Location')
+    discount_supplier = db.relationship('Supplier')
     items = db.relationship('SaleItem', backref='sale_order', lazy='dynamic', cascade='all, delete-orphan')
 
     @property
@@ -415,6 +422,24 @@ class SupplierPayment(db.Model):
     payment_date = db.Column(db.Date, nullable=False, default=date.today)
     amount = db.Column(db.Float, nullable=False)
     shipping_deduction = db.Column(db.Float, default=0)  # Shipping credit deducted from this payment
+    payment_mode = db.Column(db.String(50))  # cash | bank_transfer | upi | cheque
+    reference_number = db.Column(db.String(100))
+    notes = db.Column(db.Text)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    creator = db.relationship('User')
+
+
+# ===== Customer Payments / Advances =====
+
+class CustomerPayment(db.Model):
+    __tablename__ = 'customer_payment'
+    id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=False)
+    payment_date = db.Column(db.Date, nullable=False, default=date.today)
+    amount = db.Column(db.Float, nullable=False)
+    payment_type = db.Column(db.String(20), default='advance')  # advance | payment
     payment_mode = db.Column(db.String(50))  # cash | bank_transfer | upi | cheque
     reference_number = db.Column(db.String(100))
     notes = db.Column(db.Text)

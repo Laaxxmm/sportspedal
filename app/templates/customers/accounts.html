@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Buyer Accounts - Sportspedal{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Buyer Accounts</h2>
+    <a href="{{ url_for('customers.list_customers') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-people"></i> All Customers</a>
+</div>
+
+<!-- Summary KPIs -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="kpi-card kpi-emerald">
+            <div class="kpi-icon"><i class="bi bi-wallet2"></i></div>
+            <div class="kpi-label">Advance Held</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(totals.advance_held) }}</div>
+            <div class="kpi-sub">Prepaid balance not yet billed</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi-card kpi-rose">
+            <div class="kpi-icon"><i class="bi bi-hourglass-split"></i></div>
+            <div class="kpi-label">Amount Due</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(totals.due) }}</div>
+            <div class="kpi-sub">Billed beyond advance / unpaid</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi-card kpi-blue">
+            <div class="kpi-icon"><i class="bi bi-cash-coin"></i></div>
+            <div class="kpi-label">Total Received</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(totals.received) }}</div>
+            <div class="kpi-sub">Billed Rs.{{ "{:,.0f}".format(totals.billed) }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mobile-stack mb-0">
+            <thead class="table-light">
+                <tr><th>Buyer</th><th>Type</th><th class="text-end">Received</th><th class="text-end">Billed</th><th class="text-center">Orders</th><th class="text-end">Balance</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+            {% for r in rows %}
+            {% set rem = r.bal.remaining %}
+            <tr>
+                <td><strong>{{ r.customer.name }}</strong></td>
+                <td><span class="badge bg-{{ 'primary' if r.customer.customer_type == 'bulk' else 'secondary' }}">{{ r.customer.customer_type }}</span></td>
+                <td class="text-end text-success">Rs.{{ "{:,.0f}".format(r.bal.received) }}</td>
+                <td class="text-end">Rs.{{ "{:,.0f}".format(r.bal.billed) }}</td>
+                <td class="text-center">{{ r.bal.order_count }}</td>
+                <td class="text-end fw-bold">
+                    {% if rem > 0 %}
+                    <span class="text-success">Rs.{{ "{:,.0f}".format(rem) }} <small class="fw-normal">advance</small></span>
+                    {% elif rem < 0 %}
+                    <span class="text-danger">Rs.{{ "{:,.0f}".format(-rem) }} <small class="fw-normal">due</small></span>
+                    {% else %}
+                    <span class="text-muted">Settled</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('customers.account_detail', id=r.customer.id) }}" class="btn btn-sm btn-outline-info">View</a>
+                    <a href="{{ url_for('customers.record_payment', id=r.customer.id) }}" class="btn btn-sm btn-outline-success">+ Payment</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center text-muted py-4">No buyer advances or billing yet.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

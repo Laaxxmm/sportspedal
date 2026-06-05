@@ -3,7 +3,12 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>Customers</h2>
-    <a href="{{ url_for('customers.new_customer') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add Customer</a>
+    <div>
+        {% if current_user.is_superadmin %}
+        <a href="{{ url_for('customers.accounts') }}" class="btn btn-outline-info btn-sm"><i class="bi bi-wallet2"></i> Buyer Accounts</a>
+        {% endif %}
+        <a href="{{ url_for('customers.new_customer') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add Customer</a>
+    </div>
 </div>
 
 <!-- Search -->

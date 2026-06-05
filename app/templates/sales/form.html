@@ -24,6 +24,7 @@
                         </button>
                     </div>
                     <div id="customer-type-badge" class="mt-1" style="font-size:0.78rem;"></div>
+                    <div id="advance-hint" class="mt-1" style="font-size:0.78rem;"></div>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Date</label>
@@ -95,6 +96,36 @@
                 <div class="col-md-4">
                     <label class="form-label">Notes</label>
                     <input type="text" name="notes" class="form-control" value="">
+                </div>
+            </div>
+
+            <!-- Bulk discount borne by supplier -->
+            <div class="card mb-3" id="supplier-discount-section" style="border-color: var(--accent-purple) !important;">
+                <div class="card-header py-2" style="background:#f0ecff;">
+                    <strong style="font-size:0.9rem;"><i class="bi bi-percent"></i> Bulk Discount Borne by Supplier</strong>
+                    <small class="text-muted ms-2">Use when you sell below supplier cost — reduces what you owe that supplier. Does NOT change the buyer's invoice.</small>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label">Discount Amount (Rs.)</label>
+                            <input type="number" name="supplier_discount" id="supplier-discount" class="form-control" step="0.01" value="0">
+                            <small id="discount-suggest" class="text-muted d-block mt-1"></small>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Given by Supplier</label>
+                            <select name="discount_supplier_id" id="discount-supplier" class="form-select">
+                                <option value="">— Select —</option>
+                                {% for s in suppliers %}
+                                <option value="{{ s.id }}" {{ 'selected' if suppliers|length == 1 }}>{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Reason / Note</label>
+                            <input type="text" name="discount_reason" class="form-control" placeholder="e.g. Bulk deal — supplier agreed to absorb">
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -208,6 +239,7 @@
 {% block extra_js %}
 <script>
 const stockMap = {{ stock_map|tojson }};
+const advanceMap = {{ advance_map|tojson }};
 
 // Product catalog: nested structure for cascading selection + price matrix
 const products = [
@@ -321,7 +353,7 @@ function newRow() {
         <td data-label="Size"><select class="form-select form-select-sm size-select"><option value="">-</option></select></td>
         <td data-label="Stock" class="stock-cell">-</td>
         <td data-label="Qty"><input type="number" name="qty[]" class="form-control form-control-sm qty" value="1" min="1"></td>
-        <td data-label="Unit Price"><input type="number" name="unit_price[]" class="form-control form-control-sm unit-price" step="0.01" value="0"></td>
+        <td data-label="Unit Price"><input type="number" name="unit_price[]" class="form-control form-control-sm unit-price" step="0.01" value="0"><small class="cost-hint text-muted d-block" style="font-size:0.65rem;"></small></td>
         <td data-label="Package Price" class="text-center"><input type="checkbox" class="form-check-input pkg-check" title="Apply package price"></td>
         <td data-label="GST %"><input type="number" name="gst_percent[]" class="form-control form-control-sm gst-pct" step="0.1" value="0"></td>
         <td data-label="GST Amount" class="gst-amt">0.00</td>
@@ -384,6 +416,16 @@ function updateVariantSelection(row) {
             stockCell.textContent = '-';
         }
     }
+    // Cost reference for supplier-discount calc
+    const chosen = products.find(p => p.vid == hiddenInput.value);
+    const costHint = row.querySelector('.cost-hint');
+    if (chosen) {
+        row.dataset.cost = chosen.cost;
+        if (costHint) costHint.textContent = 'cost Rs.' + chosen.cost;
+    } else {
+        row.dataset.cost = 0;
+        if (costHint) costHint.textContent = '';
+    }
     recalc();
 }
 
@@ -408,6 +450,8 @@ function recalc() {
     const grand = subtotal + transport - discount;
     document.getElementById('grand-total').innerHTML = `<strong>${grand.toFixed(2)}</strong>`;
 
+    updateSupplierDiscountSuggestion();
+
     // Update mobile totals card
     const mts = document.getElementById('mt-subtotal');
     if (mts) {
@@ -417,6 +461,25 @@ function recalc() {
     }
 
     checkPackage();
+}
+
+function updateSupplierDiscountSuggestion() {
+    let suggested = 0;
+    document.querySelectorAll('.item-row').forEach(row => {
+        const cost = parseFloat(row.dataset.cost || 0);
+        const price = parseFloat(row.querySelector('.unit-price')?.value || 0);
+        const qty = parseFloat(row.querySelector('.qty')?.value || 0);
+        if (cost > 0 && price < cost) suggested += (cost - price) * qty;
+    });
+    const el = document.getElementById('discount-suggest');
+    if (!el) return;
+    if (suggested > 0) {
+        el.innerHTML = `Sold below cost by <strong>Rs.${suggested.toFixed(2)}</strong> · <a href="#" id="apply-suggest">apply as supplier discount</a>`;
+        const a = document.getElementById('apply-suggest');
+        if (a) a.onclick = (e) => { e.preventDefault(); document.getElementById('supplier-discount').value = suggested.toFixed(2); };
+    } else {
+        el.textContent = 'No items priced below cost.';
+    }
 }
 
 function checkPackage() {
@@ -528,6 +591,19 @@ document.getElementById('customer-select').addEventListener('change', function()
     } else {
         badge.innerHTML = '';
         bulkStatus.textContent = 'Auto from customer';
+    }
+
+    // Advance / dues hint
+    const advHint = document.getElementById('advance-hint');
+    const adv = advanceMap[this.value];
+    if (advHint) {
+        if (adv !== undefined && adv > 0) {
+            advHint.innerHTML = `<span class="badge bg-success"><i class="bi bi-wallet2"></i> Advance available: Rs.${adv.toLocaleString('en-IN')}</span>`;
+        } else if (adv !== undefined && adv < 0) {
+            advHint.innerHTML = `<span class="badge bg-danger">Amount due: Rs.${(-adv).toLocaleString('en-IN')}</span>`;
+        } else {
+            advHint.innerHTML = '';
+        }
     }
 
     // Re-price all rows

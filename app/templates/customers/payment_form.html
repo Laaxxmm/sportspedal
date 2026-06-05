@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Record Payment - {{ customer.name }}{% endblock %}
+{% block content %}
+<h2 class="mb-4">Record Payment — {{ customer.name }}</h2>
+
+{% set rem = bal.remaining %}
+<div class="alert {{ 'alert-success' if rem >= 0 else 'alert-warning' }}">
+    {% if rem > 0 %}
+    Current advance remaining: <strong>Rs.{{ "{:,.2f}".format(rem) }}</strong>
+    {% elif rem < 0 %}
+    Current amount due from buyer: <strong>Rs.{{ "{:,.2f}".format(-rem) }}</strong>
+    {% else %}
+    Account is fully settled.
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('customers.record_payment', id=customer.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Date</label>
+                    <input type="date" name="payment_date" class="form-control" value="{{ today }}" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Amount (Rs.)</label>
+                    <input type="number" name="amount" class="form-control" step="0.01" min="0.01" required autofocus>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Type</label>
+                    <select name="payment_type" class="form-select">
+                        <option value="advance">Advance (prepaid)</option>
+                        <option value="payment">Payment (against dues)</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Mode</label>
+                    <select name="payment_mode" class="form-select">
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="upi">UPI</option>
+                        <option value="cash">Cash</option>
+                        <option value="cheque">Cheque</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Reference #</label>
+                    <input type="text" name="reference_number" class="form-control" placeholder="UTR / txn / cheque no.">
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label">Notes</label>
+                    <input type="text" name="notes" class="form-control">
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Save Payment</button>
+                <a href="{{ url_for('customers.account_detail', id=customer.id) }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
