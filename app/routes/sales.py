@@ -13,6 +13,32 @@ def scope_sale(sale):
         if sale.location_id != current_user.location_id:
             abort(403)
 
+
+def parse_transport(form):
+    """Map the unified Transport Cost + 'who bears it' inputs to the stored columns.
+
+    customer -> amount goes on the invoice (transport_charge)
+    self     -> we pay it (shipping_cost, paid_by self) - off invoice, no supplier credit
+    supplier -> reduces that supplier's dues (shipping_cost, paid_by supplier)
+    """
+    borne = form.get('transport_borne_by', 'customer')
+    amount = float(form.get('transport_cost', 0) or 0)
+    transport_charge = amount if borne == 'customer' else 0
+    shipping_cost = amount if borne in ('self', 'supplier') else 0
+    shipping_paid_by = 'supplier' if borne == 'supplier' else 'self'
+    transport_supplier_id = None
+    if borne == 'supplier' and form.get('transport_supplier_id'):
+        transport_supplier_id = int(form['transport_supplier_id'])
+    return {
+        'transport_borne_by': borne,
+        'transport_charge': transport_charge,
+        'shipping_cost': shipping_cost,
+        'shipping_paid_by': shipping_paid_by,
+        'transport_supplier_id': transport_supplier_id,
+        'shipping_carrier': form.get('shipping_carrier', ''),
+        'shipping_tracking': form.get('shipping_tracking', ''),
+    }
+
 bp = Blueprint('sales', __name__)
 
 
@@ -99,6 +125,7 @@ def new_sale():
         from app.models import Location
         loc_id = current_user.location_id or Location.query.first().id if Location.query.first() else None
 
+        t = parse_transport(request.form)
         sale = SaleOrder(
             invoice_number=generate_invoice_number(),
             challan_number=generate_challan_number(),
@@ -109,16 +136,18 @@ def new_sale():
             payment_status=request.form.get('payment_status', 'paid'),
             transport_mode=request.form.get('transport_mode', ''),
             transport_type=request.form.get('transport_type', 'self'),
-            transport_charge=float(request.form.get('transport_charge', 0)),
+            transport_charge=t['transport_charge'],
+            transport_borne_by=t['transport_borne_by'],
+            transport_supplier_id=t['transport_supplier_id'],
             discount_amount=float(request.form.get('discount_amount', 0)),
             supplier_discount=float(request.form.get('supplier_discount', 0) or 0),
             discount_supplier_id=(int(request.form['discount_supplier_id'])
                                   if request.form.get('discount_supplier_id') else None),
             discount_reason=request.form.get('discount_reason', ''),
-            shipping_cost=float(request.form.get('shipping_cost', 0)),
-            shipping_carrier=request.form.get('shipping_carrier', ''),
-            shipping_tracking=request.form.get('shipping_tracking', ''),
-            shipping_paid_by=request.form.get('shipping_paid_by', 'self'),
+            shipping_cost=t['shipping_cost'],
+            shipping_carrier=t['shipping_carrier'],
+            shipping_tracking=t['shipping_tracking'],
+            shipping_paid_by=t['shipping_paid_by'],
             is_bulk=(customer.customer_type == 'bulk' or request.form.get('is_bulk_override') == '1'),
             notes=request.form.get('notes', ''),
         )
@@ -237,16 +266,20 @@ def edit_sale(id):
         sale.status = request.form.get('status', sale.status)
         sale.payment_status = request.form.get('payment_status', sale.payment_status)
         sale.transport_mode = request.form.get('transport_mode', '')
-        sale.transport_charge = float(request.form.get('transport_charge', 0))
+        sale.transport_type = request.form.get('transport_type', sale.transport_type)
+        t = parse_transport(request.form)
+        sale.transport_charge = t['transport_charge']
+        sale.transport_borne_by = t['transport_borne_by']
+        sale.transport_supplier_id = t['transport_supplier_id']
+        sale.shipping_cost = t['shipping_cost']
+        sale.shipping_carrier = t['shipping_carrier']
+        sale.shipping_tracking = t['shipping_tracking']
+        sale.shipping_paid_by = t['shipping_paid_by']
         sale.discount_amount = float(request.form.get('discount_amount', 0))
         sale.supplier_discount = float(request.form.get('supplier_discount', 0) or 0)
         sale.discount_supplier_id = (int(request.form['discount_supplier_id'])
                                      if request.form.get('discount_supplier_id') else None)
         sale.discount_reason = request.form.get('discount_reason', '')
-        sale.shipping_cost = float(request.form.get('shipping_cost', 0))
-        sale.shipping_carrier = request.form.get('shipping_carrier', '')
-        sale.shipping_tracking = request.form.get('shipping_tracking', '')
-        sale.shipping_paid_by = request.form.get('shipping_paid_by', 'self')
         sale.notes = request.form.get('notes', '')
 
         # Delete old items and recreate

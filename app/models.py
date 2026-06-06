@@ -315,7 +315,10 @@ class SaleOrder(db.Model):
     payment_status = db.Column(db.String(20), default='paid')  # paid | pending | partial
     transport_mode = db.Column(db.String(50))
     transport_type = db.Column(db.String(20), default='self')  # local | direct | self
-    transport_charge = db.Column(db.Float, default=0)
+    transport_charge = db.Column(db.Float, default=0)  # amount added to invoice when customer-borne
+    # Who bears the transport cost: customer (on invoice) | self (we pay) | supplier (reduce dues)
+    transport_borne_by = db.Column(db.String(20), default='customer')
+    transport_supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)
     discount_amount = db.Column(db.Float, default=0)
     # Bulk discount borne by the supplier (reduces supplier payable, not the buyer invoice)
     supplier_discount = db.Column(db.Float, default=0)
@@ -332,7 +335,8 @@ class SaleOrder(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     location = db.relationship('Location')
-    discount_supplier = db.relationship('Supplier')
+    discount_supplier = db.relationship('Supplier', foreign_keys=[discount_supplier_id])
+    transport_supplier = db.relationship('Supplier', foreign_keys=[transport_supplier_id])
     items = db.relationship('SaleItem', backref='sale_order', lazy='dynamic', cascade='all, delete-orphan')
 
     @property

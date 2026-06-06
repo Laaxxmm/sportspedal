@@ -206,6 +206,8 @@ def init_database():
         ('sale_order', 'supplier_discount', 'FLOAT DEFAULT 0'),
         ('sale_order', 'discount_supplier_id', 'INTEGER'),
         ('sale_order', 'discount_reason', 'VARCHAR(200)'),
+        ('sale_order', 'transport_borne_by', "VARCHAR(20) DEFAULT 'customer'"),
+        ('sale_order', 'transport_supplier_id', 'INTEGER'),
     ]
 
     from sqlalchemy import text
@@ -216,6 +218,26 @@ def init_database():
             print(f"  Added column: {table}.{col}")
         except Exception:
             pass  # Column already exists - this is fine
+
+    # Step 2b: Backfill transport_borne_by from legacy shipping fields (idempotent via guards)
+    try:
+        sup = Supplier.query.first()
+        sup_id = sup.id if sup else None
+        with db.engine.begin() as conn:
+            if sup_id:
+                conn.execute(text(
+                    "UPDATE sale_order SET transport_borne_by='supplier', transport_supplier_id=:sid "
+                    "WHERE shipping_paid_by='supplier' AND shipping_cost>0 AND transport_supplier_id IS NULL"
+                ), {'sid': sup_id})
+            conn.execute(text(
+                "UPDATE sale_order SET transport_borne_by='self' "
+                "WHERE transport_borne_by='customer' AND shipping_cost>0 "
+                "AND (shipping_paid_by IS NULL OR shipping_paid_by<>'supplier') "
+                "AND (transport_charge IS NULL OR transport_charge=0)"
+            ))
+        print("  transport_borne_by backfill OK")
+    except Exception as e:
+        print(f"  transport backfill skipped: {e}")
 
     # Step 3: Seed if empty
     try:

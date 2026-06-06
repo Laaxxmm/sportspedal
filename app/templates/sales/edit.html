@@ -39,36 +39,58 @@
                     <label class="form-label">Transport Mode</label>
                     <input type="text" name="transport_mode" class="form-control" value="{{ sale.transport_mode or '' }}">
                 </div>
-                <div class="col-md-1">
-                    <label class="form-label">Transport</label>
-                    <input type="number" name="transport_charge" class="form-control" step="0.01" value="{{ sale.transport_charge or 0 }}" id="transport-charge">
-                </div>
-                <div class="col-md-1">
-                    <label class="form-label">Discount</label>
+                <div class="col-md-2">
+                    <label class="form-label">Order Discount</label>
                     <input type="number" name="discount_amount" class="form-control" step="0.01" value="{{ sale.discount_amount or 0 }}" id="discount-amt">
                 </div>
             </div>
+
+            {% set t_borne = sale.transport_borne_by or 'customer' %}
+            {% set t_cost = sale.transport_charge if t_borne == 'customer' else sale.shipping_cost %}
+            <!-- Transport / Delivery -->
+            <div class="card mb-3" style="border-color: var(--accent-blue) !important;">
+                <div class="card-header py-2" style="background:#eef4ff;">
+                    <strong style="font-size:0.9rem;"><i class="bi bi-truck"></i> Transport / Delivery</strong>
+                    <small class="text-muted ms-2">Set the transport cost and who pays it.</small>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-2">
+                            <label class="form-label">Transport Cost (Rs.)</label>
+                            <input type="number" name="transport_cost" class="form-control" step="0.01" value="{{ t_cost or 0 }}" id="transport-cost">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Who bears it?</label>
+                            <select name="transport_borne_by" class="form-select" id="transport-borne-by">
+                                <option value="customer" {{ 'selected' if t_borne == 'customer' }}>Customer (add to invoice)</option>
+                                <option value="self" {{ 'selected' if t_borne == 'self' }}>We pay it</option>
+                                <option value="supplier" {{ 'selected' if t_borne == 'supplier' }}>Supplier (deduct from dues)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3" id="transport-supplier-wrap" style="display:none;">
+                            <label class="form-label">Supplier</label>
+                            <select name="transport_supplier_id" class="form-select" id="transport-supplier">
+                                <option value="">— Select —</option>
+                                {% for s in suppliers %}
+                                <option value="{{ s.id }}" {{ 'selected' if sale.transport_supplier_id == s.id or (not sale.transport_supplier_id and suppliers|length == 1) }}>{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Carrier</label>
+                            <input type="text" name="shipping_carrier" class="form-control" value="{{ sale.shipping_carrier or '' }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Tracking #</label>
+                            <input type="text" name="shipping_tracking" class="form-control" value="{{ sale.shipping_tracking or '' }}">
+                        </div>
+                    </div>
+                    <small id="transport-hint" class="text-muted d-block mt-2"></small>
+                </div>
+            </div>
+
             <div class="row mb-3">
-                <div class="col-md-2">
-                    <label class="form-label">Shipping Cost</label>
-                    <input type="number" name="shipping_cost" class="form-control" step="0.01" value="{{ sale.shipping_cost or 0 }}">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Carrier</label>
-                    <input type="text" name="shipping_carrier" class="form-control" value="{{ sale.shipping_carrier or '' }}">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Tracking #</label>
-                    <input type="text" name="shipping_tracking" class="form-control" value="{{ sale.shipping_tracking or '' }}">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Shipping Paid By</label>
-                    <select name="shipping_paid_by" class="form-select">
-                        <option value="self" {{ 'selected' if not sale.shipping_paid_by or sale.shipping_paid_by == 'self' }}>Self</option>
-                        <option value="supplier" {{ 'selected' if sale.shipping_paid_by == 'supplier' }}>Supplier (credit)</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
+                <div class="col-md-12">
                     <label class="form-label">Notes</label>
                     <input type="text" name="notes" class="form-control" value="{{ sale.notes or '' }}">
                 </div>
@@ -202,7 +224,9 @@ function recalc() {
     });
     document.getElementById('total-gst').innerHTML = `<strong>${totalGst.toFixed(2)}</strong>`;
     document.getElementById('subtotal').innerHTML = `<strong>${subtotal.toFixed(2)}</strong>`;
-    const transport = parseFloat(document.getElementById('transport-charge').value || 0);
+    const borne = document.getElementById('transport-borne-by').value;
+    const transportCost = parseFloat(document.getElementById('transport-cost').value || 0);
+    const transport = (borne === 'customer') ? transportCost : 0;
     const discount = parseFloat(document.getElementById('discount-amt').value || 0);
     document.getElementById('grand-total').innerHTML = `<strong>${(subtotal + transport - discount).toFixed(2)}</strong>`;
 
@@ -236,9 +260,22 @@ function bindEvents() {
     });
 }
 
-document.getElementById('transport-charge').addEventListener('input', recalc);
+function updateTransportUI() {
+    const borne = document.getElementById('transport-borne-by').value;
+    const cost = parseFloat(document.getElementById('transport-cost').value || 0);
+    document.getElementById('transport-supplier-wrap').style.display = (borne === 'supplier') ? '' : 'none';
+    const hint = document.getElementById('transport-hint');
+    if (hint) {
+        if (borne === 'customer') hint.innerHTML = 'Added to the customer\'s invoice total.';
+        else if (borne === 'self') hint.innerHTML = 'You bear this cost — not on the invoice, not deducted from the supplier.';
+        else hint.innerHTML = `<span class="text-success"><i class="bi bi-arrow-down"></i> Rs.${cost.toFixed(2)} will be deducted from the selected supplier's dues. Not on the customer invoice.</span>`;
+    }
+    recalc();
+}
+document.getElementById('transport-borne-by').addEventListener('change', updateTransportUI);
+document.getElementById('transport-cost').addEventListener('input', updateTransportUI);
 document.getElementById('discount-amt').addEventListener('input', recalc);
 bindEvents();
-recalc();
+updateTransportUI();
 </script>
 {% endblock %}

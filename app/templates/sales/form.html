@@ -55,14 +55,10 @@
                     </select>
                 </div>
                 <div class="col-md-1">
-                    <label class="form-label">Transport Cost</label>
-                    <input type="number" name="transport_charge" class="form-control" step="0.01" value="0" id="transport-charge">
-                </div>
-                <div class="col-md-1">
-                    <label class="form-label">Discount</label>
+                    <label class="form-label">Order Discount</label>
                     <input type="number" name="discount_amount" class="form-control" step="0.01" value="0" id="discount-amt">
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label class="form-label">Mark as Bulk?</label>
                     <div class="form-check mt-2">
                         <input class="form-check-input" type="checkbox" name="is_bulk_override" value="1" id="bulk-override">
@@ -73,27 +69,50 @@
                 </div>
             </div>
 
+            <!-- Transport / Delivery -->
+            <div class="card mb-3" style="border-color: var(--accent-blue) !important;">
+                <div class="card-header py-2" style="background:#eef4ff;">
+                    <strong style="font-size:0.9rem;"><i class="bi bi-truck"></i> Transport / Delivery</strong>
+                    <small class="text-muted ms-2">Set the transport cost and who pays it.</small>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-2">
+                            <label class="form-label">Transport Cost (Rs.)</label>
+                            <input type="number" name="transport_cost" class="form-control" step="0.01" value="0" id="transport-cost">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Who bears it?</label>
+                            <select name="transport_borne_by" class="form-select" id="transport-borne-by">
+                                <option value="customer">Customer (add to invoice)</option>
+                                <option value="self">We pay it</option>
+                                <option value="supplier">Supplier (deduct from dues)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3" id="transport-supplier-wrap" style="display:none;">
+                            <label class="form-label">Supplier</label>
+                            <select name="transport_supplier_id" class="form-select" id="transport-supplier">
+                                <option value="">— Select —</option>
+                                {% for s in suppliers %}
+                                <option value="{{ s.id }}" {{ 'selected' if suppliers|length == 1 }}>{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Carrier</label>
+                            <input type="text" name="shipping_carrier" class="form-control" placeholder="Delhivery, DTDC...">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Tracking #</label>
+                            <input type="text" name="shipping_tracking" class="form-control" placeholder="AWB / Tracking">
+                        </div>
+                    </div>
+                    <small id="transport-hint" class="text-muted d-block mt-2"></small>
+                </div>
+            </div>
+
             <div class="row mb-3">
-                <div class="col-md-2">
-                    <label class="form-label">Shipping Cost</label>
-                    <input type="number" name="shipping_cost" class="form-control" step="0.01" value="0" id="shipping-cost">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Carrier</label>
-                    <input type="text" name="shipping_carrier" class="form-control" placeholder="Delhivery, DTDC...">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Tracking #</label>
-                    <input type="text" name="shipping_tracking" class="form-control" placeholder="AWB / Tracking">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Shipping Paid By</label>
-                    <select name="shipping_paid_by" class="form-select">
-                        <option value="self">Self</option>
-                        <option value="supplier">Supplier (credit)</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
+                <div class="col-md-12">
                     <label class="form-label">Notes</label>
                     <input type="text" name="notes" class="form-control" value="">
                 </div>
@@ -445,7 +464,9 @@ function recalc() {
     document.getElementById('total-gst').innerHTML = `<strong>${totalGst.toFixed(2)}</strong>`;
     document.getElementById('subtotal').innerHTML = `<strong>${subtotal.toFixed(2)}</strong>`;
 
-    const transport = parseFloat(document.getElementById('transport-charge').value || 0);
+    const borne = document.getElementById('transport-borne-by').value;
+    const transportCost = parseFloat(document.getElementById('transport-cost').value || 0);
+    const transport = (borne === 'customer') ? transportCost : 0;
     const discount = parseFloat(document.getElementById('discount-amt').value || 0);
     const grand = subtotal + transport - discount;
     document.getElementById('grand-total').innerHTML = `<strong>${grand.toFixed(2)}</strong>`;
@@ -627,8 +648,23 @@ document.getElementById('transport-type-select').addEventListener('change', func
         updateVariantSelection(row);
     });
 });
-document.getElementById('transport-charge').addEventListener('input', recalc);
+
+function updateTransportUI() {
+    const borne = document.getElementById('transport-borne-by').value;
+    const cost = parseFloat(document.getElementById('transport-cost').value || 0);
+    document.getElementById('transport-supplier-wrap').style.display = (borne === 'supplier') ? '' : 'none';
+    const hint = document.getElementById('transport-hint');
+    if (hint) {
+        if (borne === 'customer') hint.innerHTML = 'Added to the customer\'s invoice total.';
+        else if (borne === 'self') hint.innerHTML = 'You bear this cost — not on the invoice, not deducted from the supplier.';
+        else hint.innerHTML = `<span class="text-success"><i class="bi bi-arrow-down"></i> Rs.${cost.toFixed(2)} will be deducted from the selected supplier's dues. Not on the customer invoice.</span>`;
+    }
+    recalc();
+}
+document.getElementById('transport-borne-by').addEventListener('change', updateTransportUI);
+document.getElementById('transport-cost').addEventListener('input', updateTransportUI);
 document.getElementById('discount-amt').addEventListener('input', recalc);
+updateTransportUI();
 // Show package tip on first load
 document.getElementById('package-info').classList.remove('d-none');
 

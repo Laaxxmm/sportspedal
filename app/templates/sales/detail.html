@@ -28,8 +28,12 @@
                 {% if sale.transport_mode %}<p><strong>Transport:</strong> {{ sale.transport_mode }}</p>{% endif %}
                 {% if sale.shipping_cost and sale.shipping_cost > 0 %}
                 <hr>
-                <p><strong><i class="bi bi-truck"></i> Shipping:</strong> Rs.{{ "%.2f"|format(sale.shipping_cost) }}
-                    <span class="badge bg-{{ 'info' if sale.shipping_paid_by == 'supplier' else 'secondary' }}">{{ 'Supplier pays' if sale.shipping_paid_by == 'supplier' else 'Self' }}</span>
+                <p><strong><i class="bi bi-truck"></i> Transport:</strong> Rs.{{ "%.2f"|format(sale.shipping_cost) }}
+                    {% if sale.shipping_paid_by == 'supplier' %}
+                    <span class="badge bg-info">Borne by supplier — deducted from dues</span>
+                    {% else %}
+                    <span class="badge bg-secondary">We bear it</span>
+                    {% endif %}
                 </p>
                 {% if sale.shipping_carrier %}<p><strong>Carrier:</strong> {{ sale.shipping_carrier }}</p>{% endif %}
                 {% if sale.shipping_tracking %}<p><strong>Tracking:</strong> {{ sale.shipping_tracking }}</p>{% endif %}

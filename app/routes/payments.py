@@ -32,11 +32,14 @@ def get_supplier_balance(supplier_id=None):
         paid_query = paid_query.filter(SupplierPayment.supplier_id == supplier_id)
     total_paid = paid_query.scalar() or 0
 
-    # Shipping credits
-    shipping_credit = db.session.query(func.sum(SaleOrder.shipping_cost)).filter(
+    # Transport/shipping credits borne by supplier
+    shipping_q = db.session.query(func.sum(SaleOrder.shipping_cost)).filter(
         SaleOrder.shipping_paid_by == 'supplier',
         SaleOrder.shipping_cost > 0
-    ).scalar() or 0
+    )
+    if supplier_id:
+        shipping_q = shipping_q.filter(SaleOrder.transport_supplier_id == supplier_id)
+    shipping_credit = shipping_q.scalar() or 0
 
     shipping_settled = db.session.query(func.sum(SupplierPayment.shipping_deduction))
     if supplier_id:
