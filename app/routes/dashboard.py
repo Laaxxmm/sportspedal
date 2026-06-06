@@ -95,6 +95,22 @@ def compute_dashboard_data(location_id=None):
     buyer_advance_held = sum(v for v in adv.values() if v > 0)
     buyer_advance_due = sum(-v for v in adv.values() if v < 0)
 
+    # Transport costs (scoped) - by who bears them
+    tq = db.session.query(func.sum(SaleOrder.shipping_cost)).filter(
+        SaleOrder.shipping_paid_by == 'supplier', SaleOrder.shipping_cost > 0)
+    tq_self = db.session.query(func.sum(SaleOrder.shipping_cost)).filter(
+        SaleOrder.shipping_cost > 0,
+        (SaleOrder.shipping_paid_by.is_(None)) | (SaleOrder.shipping_paid_by != 'supplier'))
+    tq_cust = db.session.query(func.sum(SaleOrder.transport_charge)).filter(SaleOrder.transport_charge > 0)
+    if location_id:
+        tq = tq.filter(SaleOrder.location_id == location_id)
+        tq_self = tq_self.filter(SaleOrder.location_id == location_id)
+        tq_cust = tq_cust.filter(SaleOrder.location_id == location_id)
+    transport_supplier = tq.scalar() or 0
+    transport_self = tq_self.scalar() or 0
+    transport_customer = tq_cust.scalar() or 0
+    transport_total = transport_supplier + transport_self + transport_customer
+
     # Bulk orders
     bulk_q = SaleOrder.query.filter_by(is_bulk=True)
     if location_id:
@@ -139,6 +155,10 @@ def compute_dashboard_data(location_id=None):
         'supplier_balance': supplier_balance,
         'buyer_advance_held': buyer_advance_held,
         'buyer_advance_due': buyer_advance_due,
+        'transport_supplier': transport_supplier,
+        'transport_self': transport_self,
+        'transport_customer': transport_customer,
+        'transport_total': transport_total,
         'bulk_data': bulk_data,
         'promo_data': promo_data,
         'damage_data': damage_data,

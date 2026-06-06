@@ -116,9 +116,9 @@
     {% endif %}
 </div>
 
-<!-- Bulk / Promotional / Damaged ribbons -->
+<!-- Bulk / Promotional / Damaged / Transport ribbons -->
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="kpi-card kpi-blue">
             <div class="kpi-icon"><i class="bi bi-boxes"></i></div>
             <div class="kpi-label">Bulk Orders</div>
@@ -126,7 +126,7 @@
             <div class="kpi-sub">{{ bulk_data.qty }} units · Rs.{{ "{:,.0f}".format(bulk_data.revenue) }}</div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="kpi-card kpi-indigo">
             <div class="kpi-icon"><i class="bi bi-gift"></i></div>
             <div class="kpi-label">Promotional / Sponsor</div>
@@ -134,12 +134,22 @@
             <div class="kpi-sub">Rs.{{ "{:,.0f}".format(promo_data.value) }} given out</div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="kpi-card kpi-rose">
             <div class="kpi-icon"><i class="bi bi-heart-pulse"></i></div>
             <div class="kpi-label">Damaged / Returned</div>
             <div class="kpi-value">{{ damage_data.qty }} units</div>
             <div class="kpi-sub">Rs.{{ "{:,.0f}".format(damage_data.value) }} written off</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="kpi-card kpi-emerald">
+            <div class="kpi-icon"><i class="bi bi-truck"></i></div>
+            <div class="kpi-label">Transport Cost</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(transport_total) }}</div>
+            <div class="kpi-sub">
+                {% if transport_supplier > 0 %}Supplier-borne Rs.{{ "{:,.0f}".format(transport_supplier) }}{% else %}No supplier-borne yet{% endif %}
+            </div>
         </div>
     </div>
 </div>
