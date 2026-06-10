@@ -148,7 +148,7 @@
             <div class="kpi-label">Transport Cost</div>
             <div class="kpi-value">Rs.{{ "{:,.0f}".format(transport_total) }}</div>
             <div class="kpi-sub">
-                {% if transport_supplier > 0 %}Supplier-borne Rs.{{ "{:,.0f}".format(transport_supplier) }}{% else %}No supplier-borne yet{% endif %}
+                Customer Rs.{{ "{:,.0f}".format(transport_customer) }} · We pay Rs.{{ "{:,.0f}".format(transport_self) }} · Supplier Rs.{{ "{:,.0f}".format(transport_supplier) }}
             </div>
         </div>
     </div>
