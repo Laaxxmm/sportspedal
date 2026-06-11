@@ -54,9 +54,13 @@
                         <option value="direct">Direct Transport</option>
                     </select>
                 </div>
-                <div class="col-md-1">
-                    <label class="form-label">Order Discount</label>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label class="form-label">Customer Discount (Rs.)</label>
                     <input type="number" name="discount_amount" class="form-control" step="0.01" value="0" id="discount-amt">
+                    <small class="text-muted">Reduces what the customer pays (shown on the invoice).</small>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Mark as Bulk?</label>
@@ -67,13 +71,23 @@
                         </label>
                     </div>
                 </div>
+                <div class="col-md-6">
+                    <label class="form-label">Notes</label>
+                    <input type="text" name="notes" class="form-control" value="">
+                </div>
+            </div>
+
+            <!-- Optional sections (hidden until needed) -->
+            <div class="mb-3 d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-sm btn-outline-primary opt-toggle" id="toggle-transport" data-target="transport-section"><i class="bi bi-truck"></i> Transport / Delivery</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary opt-toggle" id="toggle-supdisc" data-target="supplier-discount-section"><i class="bi bi-percent"></i> Supplier-Borne Discount</button>
             </div>
 
             <!-- Transport / Delivery -->
-            <div class="card mb-3" style="border-color: var(--accent-blue) !important;">
+            <div class="card mb-3" id="transport-section" style="display:none; border-color: var(--accent-blue) !important;">
                 <div class="card-header py-2" style="background:#eef4ff;">
                     <strong style="font-size:0.9rem;"><i class="bi bi-truck"></i> Transport / Delivery</strong>
-                    <small class="text-muted ms-2">Set the transport cost and who pays it.</small>
+                    <small class="text-muted ms-2">Cost of getting goods to the customer, and who pays it.</small>
                 </div>
                 <div class="card-body">
                     <div class="row g-3 align-items-end">
@@ -111,18 +125,11 @@
                 </div>
             </div>
 
-            <div class="row mb-3">
-                <div class="col-md-12">
-                    <label class="form-label">Notes</label>
-                    <input type="text" name="notes" class="form-control" value="">
-                </div>
-            </div>
-
             <!-- Bulk discount borne by supplier -->
-            <div class="card mb-3" id="supplier-discount-section" style="border-color: var(--accent-purple) !important;">
+            <div class="card mb-3" id="supplier-discount-section" style="display:none; border-color: var(--accent-purple) !important;">
                 <div class="card-header py-2" style="background:#f0ecff;">
-                    <strong style="font-size:0.9rem;"><i class="bi bi-percent"></i> Bulk Discount Borne by Supplier</strong>
-                    <small class="text-muted ms-2">Use when you sell below supplier cost — reduces what you owe that supplier. Does NOT change the buyer's invoice.</small>
+                    <strong style="font-size:0.9rem;"><i class="bi bi-percent"></i> Supplier-Borne Discount</strong>
+                    <small class="text-muted ms-2">Different from Customer Discount above. Use when you sell below supplier cost — it reduces what you owe the supplier and does NOT change the buyer's invoice.</small>
                 </div>
                 <div class="card-body">
                     <div class="row g-3 align-items-end">
@@ -498,8 +505,19 @@ function updateSupplierDiscountSuggestion() {
         el.innerHTML = `Sold below cost by <strong>Rs.${suggested.toFixed(2)}</strong> · <a href="#" id="apply-suggest">apply as supplier discount</a>`;
         const a = document.getElementById('apply-suggest');
         if (a) a.onclick = (e) => { e.preventDefault(); document.getElementById('supplier-discount').value = suggested.toFixed(2); };
+        // Auto-reveal the section so the user notices the below-cost sale
+        showOptionalSection('supplier-discount-section', 'toggle-supdisc');
     } else {
         el.textContent = 'No items priced below cost.';
+    }
+}
+
+function showOptionalSection(secId, btnId) {
+    const s = document.getElementById(secId);
+    if (s && s.style.display === 'none') {
+        s.style.display = '';
+        const b = document.getElementById(btnId);
+        if (b) b.classList.add('active');
     }
 }
 
@@ -665,6 +683,17 @@ document.getElementById('transport-borne-by').addEventListener('change', updateT
 document.getElementById('transport-cost').addEventListener('input', updateTransportUI);
 document.getElementById('discount-amt').addEventListener('input', recalc);
 updateTransportUI();
+
+// Optional-section toggles
+document.querySelectorAll('.opt-toggle').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const s = document.getElementById(this.dataset.target);
+        if (!s) return;
+        const show = s.style.display === 'none';
+        s.style.display = show ? '' : 'none';
+        this.classList.toggle('active', show);
+    });
+});
 // Show package tip on first load
 document.getElementById('package-info').classList.remove('d-none');
 

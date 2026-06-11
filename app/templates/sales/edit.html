@@ -39,19 +39,26 @@
                     <label class="form-label">Transport Mode</label>
                     <input type="text" name="transport_mode" class="form-control" value="{{ sale.transport_mode or '' }}">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">Order Discount</label>
+                <div class="col-md-3">
+                    <label class="form-label">Customer Discount (Rs.)</label>
                     <input type="number" name="discount_amount" class="form-control" step="0.01" value="{{ sale.discount_amount or 0 }}" id="discount-amt">
+                    <small class="text-muted">Reduces what the customer pays (shown on the invoice).</small>
                 </div>
             </div>
 
             {% set t_borne = sale.transport_borne_by or 'customer' %}
             {% set t_cost = sale.transport_charge if t_borne == 'customer' else sale.shipping_cost %}
+            <!-- Optional sections toggles -->
+            <div class="mb-3 d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-sm btn-outline-primary opt-toggle" data-target="transport-section"><i class="bi bi-truck"></i> Transport / Delivery</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary opt-toggle" data-target="supplier-discount-section"><i class="bi bi-percent"></i> Supplier-Borne Discount</button>
+            </div>
+
             <!-- Transport / Delivery -->
-            <div class="card mb-3" style="border-color: var(--accent-blue) !important;">
+            <div class="card mb-3" id="transport-section" style="{{ 'display:none;' if not (t_cost and t_cost > 0) }} border-color: var(--accent-blue) !important;">
                 <div class="card-header py-2" style="background:#eef4ff;">
                     <strong style="font-size:0.9rem;"><i class="bi bi-truck"></i> Transport / Delivery</strong>
-                    <small class="text-muted ms-2">Set the transport cost and who pays it.</small>
+                    <small class="text-muted ms-2">Cost of getting goods to the customer, and who pays it.</small>
                 </div>
                 <div class="card-body">
                     <div class="row g-3 align-items-end">
@@ -97,10 +104,10 @@
             </div>
 
             <!-- Bulk discount borne by supplier -->
-            <div class="card mb-3" style="border-color: var(--accent-purple) !important;">
+            <div class="card mb-3" id="supplier-discount-section" style="{{ 'display:none;' if not (sale.supplier_discount and sale.supplier_discount > 0) }} border-color: var(--accent-purple) !important;">
                 <div class="card-header py-2" style="background:#f0ecff;">
-                    <strong style="font-size:0.9rem;"><i class="bi bi-percent"></i> Bulk Discount Borne by Supplier</strong>
-                    <small class="text-muted ms-2">Reduces what you owe that supplier. Does NOT change the buyer's invoice.</small>
+                    <strong style="font-size:0.9rem;"><i class="bi bi-percent"></i> Supplier-Borne Discount</strong>
+                    <small class="text-muted ms-2">Different from Customer Discount above. Reduces what you owe the supplier; does NOT change the buyer's invoice.</small>
                 </div>
                 <div class="card-body">
                     <div class="row g-3 align-items-end">
@@ -277,5 +284,17 @@ document.getElementById('transport-cost').addEventListener('input', updateTransp
 document.getElementById('discount-amt').addEventListener('input', recalc);
 bindEvents();
 updateTransportUI();
+
+// Optional-section toggles
+document.querySelectorAll('.opt-toggle').forEach(btn => {
+    const s = document.getElementById(btn.dataset.target);
+    if (s && s.style.display !== 'none') btn.classList.add('active');
+    btn.addEventListener('click', function() {
+        if (!s) return;
+        const show = s.style.display === 'none';
+        s.style.display = show ? '' : 'none';
+        this.classList.toggle('active', show);
+    });
+});
 </script>
 {% endblock %}
