@@ -109,6 +109,13 @@ def compute_dashboard_data(location_id=None):
     transport_supplier = tq.scalar() or 0
     transport_self = tq_self.scalar() or 0
     transport_customer = tq_cust.scalar() or 0
+    # Standalone transport expenses (not tied to a sale) - global, add on the all-locations view
+    if not location_id:
+        from app.models import TransportExpense
+        transport_supplier += db.session.query(func.sum(TransportExpense.amount)).filter(
+            TransportExpense.borne_by == 'supplier').scalar() or 0
+        transport_self += db.session.query(func.sum(TransportExpense.amount)).filter(
+            TransportExpense.borne_by == 'self').scalar() or 0
     transport_total = transport_supplier + transport_self + transport_customer
 
     # Bulk orders

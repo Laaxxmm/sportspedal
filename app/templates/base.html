@@ -111,6 +111,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {% if '/transport-expenses' in request.path %}active{% endif %}" href="{{ url_for('transport_expense.list_expenses') }}" title="Transport Expenses">
+                        <i class="bi bi-truck"></i> <span class="nav-text">Transport Expenses</span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {% if '/users' in request.path %}active{% endif %}" href="{{ url_for('users.list_users') }}" title="Users">
                         <i class="bi bi-person-gear"></i> <span class="nav-text">Users</span>
                     </a>

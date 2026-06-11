@@ -143,13 +143,16 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="kpi-card kpi-emerald">
+        <div class="kpi-card kpi-emerald" style="position:relative;">
             <div class="kpi-icon"><i class="bi bi-truck"></i></div>
             <div class="kpi-label">Transport Cost</div>
             <div class="kpi-value">Rs.{{ "{:,.0f}".format(transport_total) }}</div>
             <div class="kpi-sub">
                 Customer Rs.{{ "{:,.0f}".format(transport_customer) }} · We pay Rs.{{ "{:,.0f}".format(transport_self) }} · Supplier Rs.{{ "{:,.0f}".format(transport_supplier) }}
             </div>
+            {% if current_user.is_superadmin %}
+            <a href="{{ url_for('transport_expense.new_expense') }}" class="btn btn-sm btn-outline-success mt-2"><i class="bi bi-plus"></i> Log Transport</a>
+            {% endif %}
         </div>
     </div>
 </div>

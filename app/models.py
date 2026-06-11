@@ -435,6 +435,25 @@ class SupplierPayment(db.Model):
     creator = db.relationship('User')
 
 
+# ===== Transport / Freight Expenses (standalone, not tied to a sale) =====
+
+class TransportExpense(db.Model):
+    __tablename__ = 'transport_expense'
+    id = db.Column(db.Integer, primary_key=True)
+    expense_date = db.Column(db.Date, nullable=False, default=date.today)
+    amount = db.Column(db.Float, nullable=False)
+    borne_by = db.Column(db.String(20), default='supplier')  # supplier (reduce dues) | self (our cost)
+    supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)
+    carrier = db.Column(db.String(100))
+    reference_number = db.Column(db.String(100))
+    notes = db.Column(db.Text)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    supplier = db.relationship('Supplier')
+    creator = db.relationship('User')
+
+
 # ===== Customer Payments / Advances =====
 
 class CustomerPayment(db.Model):

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Log Transport Expense - Sportspedal{% endblock %}
+{% block content %}
+<h2 class="mb-4">Log Transport Expense</h2>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('transport_expense.new_expense') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Date</label>
+                    <input type="date" name="expense_date" class="form-control" value="{{ today }}" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Amount (Rs.)</label>
+                    <input type="number" name="amount" class="form-control" step="0.01" min="0.01" required autofocus>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Who bears it?</label>
+                    <select name="borne_by" class="form-select" id="borne-by">
+                        <option value="supplier">Supplier (deduct from dues)</option>
+                        <option value="self">We bear it (our cost)</option>
+                    </select>
+                </div>
+                <div class="col-md-3" id="supplier-wrap">
+                    <label class="form-label">Supplier</label>
+                    <select name="supplier_id" class="form-select">
+                        <option value="">— Select —</option>
+                        {% for s in suppliers %}
+                        <option value="{{ s.id }}" {{ 'selected' if suppliers|length == 1 }}>{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Carrier</label>
+                    <input type="text" name="carrier" class="form-control" placeholder="Delhivery, DTDC, lorry...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Reference / Bill #</label>
+                    <input type="text" name="reference_number" class="form-control" placeholder="LR / bill no.">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Notes</label>
+                    <input type="text" name="notes" class="form-control" placeholder="e.g. Freight for stock inward from supplier">
+                </div>
+            </div>
+            <small id="hint" class="text-muted d-block mt-2"></small>
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Save Expense</button>
+                <a href="{{ url_for('transport_expense.list_expenses') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function upd() {
+    const borne = document.getElementById('borne-by').value;
+    document.getElementById('supplier-wrap').style.display = (borne === 'supplier') ? '' : 'none';
+    const h = document.getElementById('hint');
+    h.innerHTML = (borne === 'supplier')
+        ? '<span class="text-success"><i class="bi bi-arrow-down"></i> This amount will be deducted from the selected supplier\'s Net Due.</span>'
+        : 'Recorded as your own transport cost (shown in Transport total, not deducted from any supplier).';
+}
+document.getElementById('borne-by').addEventListener('change', upd);
+upd();
+</script>
+{% endblock %}

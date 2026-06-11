@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Transport Expenses - Sportspedal{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Transport Expenses</h2>
+    <a href="{{ url_for('transport_expense.new_expense') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Log Transport</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="kpi-card kpi-blue">
+            <div class="kpi-icon"><i class="bi bi-truck"></i></div>
+            <div class="kpi-label">Supplier-Borne (reduces dues)</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(total_supplier) }}</div>
+            <div class="kpi-sub">Deducted from supplier Net Due</div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="kpi-card kpi-amber">
+            <div class="kpi-icon"><i class="bi bi-wallet"></i></div>
+            <div class="kpi-label">We Bear (our cost)</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(total_self) }}</div>
+            <div class="kpi-sub">Own transport spend</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mobile-stack mb-0">
+            <thead class="table-light">
+                <tr><th>Date</th><th>Carrier</th><th>Reference</th><th>Who bears</th><th>Supplier</th><th class="text-end">Amount</th><th>Notes</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+            {% for e in expenses %}
+            <tr>
+                <td>{{ e.expense_date }}</td>
+                <td>{{ e.carrier or '-' }}</td>
+                <td>{{ e.reference_number or '-' }}</td>
+                <td>
+                    {% if e.borne_by == 'supplier' %}
+                    <span class="badge bg-info">Supplier</span>
+                    {% else %}
+                    <span class="badge bg-secondary">We bear</span>
+                    {% endif %}
+                </td>
+                <td>{{ e.supplier.name if e.supplier else '-' }}</td>
+                <td class="text-end fw-bold">Rs.{{ "{:,.2f}".format(e.amount) }}</td>
+                <td>{{ e.notes or '-' }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('transport_expense.delete_expense', id=e.id) }}" class="d-inline" onsubmit="return confirm('Delete this transport expense of Rs.{{ '{:,.0f}'.format(e.amount) }}?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" class="text-center text-muted py-4">No transport expenses logged yet. <a href="{{ url_for('transport_expense.new_expense') }}">Log one</a>.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
