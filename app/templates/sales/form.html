@@ -112,11 +112,11 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2 ct-field">
                             <label class="form-label">Carrier</label>
                             <input type="text" name="shipping_carrier" class="form-control" placeholder="Delhivery, DTDC...">
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-2 ct-field">
                             <label class="form-label">Tracking #</label>
                             <input type="text" name="shipping_tracking" class="form-control" placeholder="AWB / Tracking">
                         </div>
@@ -671,6 +671,7 @@ function updateTransportUI() {
     const borne = document.getElementById('transport-borne-by').value;
     const cost = parseFloat(document.getElementById('transport-cost').value || 0);
     document.getElementById('transport-supplier-wrap').style.display = (borne === 'supplier') ? '' : 'none';
+    document.querySelectorAll('.ct-field').forEach(el => el.style.display = (cost > 0) ? '' : 'none');
     const hint = document.getElementById('transport-hint');
     if (hint) {
         if (borne === 'customer') hint.innerHTML = 'Added to the customer\'s invoice total.';
