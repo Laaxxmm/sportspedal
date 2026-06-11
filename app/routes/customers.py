@@ -104,8 +104,8 @@ def accounts():
     totals = {'received': 0, 'billed': 0, 'advance_held': 0, 'due': 0}
     for c in customers:
         bal = get_customer_balance(c.id)
-        # Only show buyers who have any money movement
-        if bal['received'] == 0 and bal['billed'] == 0:
+        # Only show buyers who have actually paid an advance / payment
+        if bal['received'] == 0:
             continue
         rows.append({'customer': c, 'bal': bal})
         totals['received'] += bal['received']
