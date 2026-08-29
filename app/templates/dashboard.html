@@ -77,7 +77,10 @@
                 <div class="fin-row"><span class="fin-label"><i class="bi bi-truck"></i> Transport (Supplier-borne)</span><span class="fin-value" style="color:var(--accent-blue)">−Rs.{{ "{:,.0f}".format(supplier_balance.shipping_pending) }}</span></div>
                 {% endif %}
                 {% if supplier_balance.adjustment_credit and supplier_balance.adjustment_credit > 0 %}
-                <div class="fin-row"><span class="fin-label"><i class="bi bi-clipboard-minus"></i> Adjustment Credit</span><span class="fin-value" style="color:var(--accent-blue)">Rs.{{ "{:,.0f}".format(supplier_balance.adjustment_credit) }}</span></div>
+                <div class="fin-row"><span class="fin-label"><i class="bi bi-clipboard-minus"></i> Adjustment Credit</span><span class="fin-value" style="color:var(--accent-blue)">-Rs.{{ "{:,.0f}".format(supplier_balance.adjustment_credit) }}</span></div>
+                {% endif %}
+                {% if supplier_balance.expense_credit and supplier_balance.expense_credit > 0 %}
+                <div class="fin-row"><span class="fin-label"><i class="bi bi-receipt"></i> Expenses</span><span class="fin-value" style="color:var(--accent-green)">-Rs.{{ "{:,.0f}".format(supplier_balance.expense_credit) }}</span></div>
                 {% endif %}
                 {% if supplier_balance.sale_discount and supplier_balance.sale_discount > 0 %}
                 <div class="fin-row"><span class="fin-label"><i class="bi bi-percent"></i> Bulk Sale Discount</span><span class="fin-value" style="color:var(--accent-green)">−Rs.{{ "{:,.0f}".format(supplier_balance.sale_discount) }}</span></div>
@@ -116,9 +119,9 @@
     {% endif %}
 </div>
 
-<!-- Bulk / Promotional / Damaged / Transport ribbons -->
+<!-- Bulk / Promotional / Damaged / Transport / Discount ribbons -->
 <div class="row g-3 mb-4">
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="kpi-card kpi-blue">
             <div class="kpi-icon"><i class="bi bi-boxes"></i></div>
             <div class="kpi-label">Bulk Orders</div>
@@ -126,7 +129,7 @@
             <div class="kpi-sub">{{ bulk_data.qty }} units · Rs.{{ "{:,.0f}".format(bulk_data.revenue) }}</div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="kpi-card kpi-indigo">
             <div class="kpi-icon"><i class="bi bi-gift"></i></div>
             <div class="kpi-label">Promotional / Sponsor</div>
@@ -134,7 +137,7 @@
             <div class="kpi-sub">Rs.{{ "{:,.0f}".format(promo_data.value) }} given out</div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="kpi-card kpi-rose">
             <div class="kpi-icon"><i class="bi bi-heart-pulse"></i></div>
             <div class="kpi-label">Damaged / Returned</div>
@@ -142,7 +145,7 @@
             <div class="kpi-sub">Rs.{{ "{:,.0f}".format(damage_data.value) }} written off</div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="kpi-card kpi-emerald" style="position:relative;">
             <div class="kpi-icon"><i class="bi bi-truck"></i></div>
             <div class="kpi-label">Transport Cost</div>
@@ -155,6 +158,28 @@
             {% endif %}
         </div>
     </div>
+    <div class="col-md-4">
+        <a href="{{ url_for('sales.discount_report') }}" class="text-decoration-none">
+            <div class="kpi-card kpi-amber" style="height:100%;">
+                <div class="kpi-icon"><i class="bi bi-tags"></i></div>
+                <div class="kpi-label">Customer Discounts</div>
+                <div class="kpi-value">Rs.{{ "{:,.0f}".format(customer_discount_total) }}</div>
+                <div class="kpi-sub">{{ customer_discount_count }} order(s) &middot; click to see who</div>
+            </div>
+        </a>
+    </div>
+    {% if current_user.is_superadmin %}
+    <div class="col-md-4">
+        <a href="{{ url_for('expenses.list_expenses') }}" class="text-decoration-none">
+            <div class="kpi-card kpi-rose" style="height:100%;">
+                <div class="kpi-icon"><i class="bi bi-receipt"></i></div>
+                <div class="kpi-label">Expenses</div>
+                <div class="kpi-value">Rs.{{ "{:,.0f}".format(expense_total) }}</div>
+                <div class="kpi-sub">Rs.{{ "{:,.0f}".format(expense_supplier_deducted) }} deducted from supplier</div>
+            </div>
+        </a>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Row 2: Coach vs Public Split -->

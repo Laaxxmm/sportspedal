@@ -75,6 +75,7 @@ def create_app():
     from app.routes.supplier_portal import bp as supplier_portal_bp
     from app.routes.adjustments import bp as adjustments_bp
     from app.routes.transport_expense import bp as transport_expense_bp
+    from app.routes.expenses import bp as expenses_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -92,5 +93,6 @@ def create_app():
     app.register_blueprint(supplier_portal_bp)
     app.register_blueprint(adjustments_bp, url_prefix='/adjustments')
     app.register_blueprint(transport_expense_bp, url_prefix='/transport-expenses')
+    app.register_blueprint(expenses_bp, url_prefix='/expenses')
 
     return app

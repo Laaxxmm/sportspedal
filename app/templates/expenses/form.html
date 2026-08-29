@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Add Expense - Sportspedal{% endblock %}
+{% block content %}
+<h2 class="mb-4">Add Expense</h2>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('expenses.new_expense') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Date</label>
+                    <input type="date" name="expense_date" class="form-control" value="{{ today }}" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Amount (Rs.)</label>
+                    <input type="number" name="amount" class="form-control" step="0.01" min="0.01" required autofocus>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Category</label>
+                    <select name="category_id" class="form-select" id="cat-select">
+                        <option value="">— Select —</option>
+                        {% for c in categories %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Or create new category</label>
+                    <input type="text" name="new_category" class="form-control" placeholder="e.g. Photography">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Description</label>
+                    <input type="text" name="description" class="form-control" placeholder="e.g. Website redesign - phase 1">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Reference / Bill #</label>
+                    <input type="text" name="reference_number" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Notes</label>
+                    <input type="text" name="notes" class="form-control">
+                </div>
+            </div>
+
+            <div class="card mt-3" style="border-color: var(--accent-blue) !important;">
+                <div class="card-body">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="deduct_from_supplier"
+                               value="1" id="deduct-check" checked>
+                        <label class="form-check-label" for="deduct-check">
+                            <strong>Deduct this from what I owe the supplier</strong>
+                        </label>
+                    </div>
+                    <div class="row g-3 mt-1" id="supplier-wrap">
+                        <div class="col-md-4">
+                            <label class="form-label">Supplier</label>
+                            <select name="supplier_id" class="form-select">
+                                <option value="">— Select —</option>
+                                {% for s in suppliers %}
+                                <option value="{{ s.id }}" {{ 'selected' if suppliers|length == 1 }}>{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <small id="hint" class="text-muted d-block mt-2"></small>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Save Expense</button>
+                <a href="{{ url_for('expenses.list_expenses') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function upd() {
+    const on = document.getElementById('deduct-check').checked;
+    document.getElementById('supplier-wrap').style.display = on ? '' : 'none';
+    document.getElementById('hint').innerHTML = on
+        ? '<span class="text-success"><i class="bi bi-arrow-down"></i> Reduces the selected supplier\'s Net Due by this amount.</span>'
+        : 'Recorded as your own business cost only. Supplier dues unchanged.';
+}
+document.getElementById('deduct-check').addEventListener('change', upd);
+upd();
+</script>
+{% endblock %}

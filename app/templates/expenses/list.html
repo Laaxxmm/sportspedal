@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Expenses - Sportspedal{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Expenses</h2>
+    <a href="{{ url_for('expenses.new_expense') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add Expense</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="kpi-card kpi-rose">
+            <div class="kpi-icon"><i class="bi bi-receipt"></i></div>
+            <div class="kpi-label">Total Expenses</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(total) }}</div>
+            <div class="kpi-sub">{{ expenses|length }} entries</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi-card kpi-blue">
+            <div class="kpi-icon"><i class="bi bi-arrow-down-circle"></i></div>
+            <div class="kpi-label">Deducted from Supplier</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(total_deducted) }}</div>
+            <div class="kpi-sub">Reduces supplier Net Due</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="kpi-card kpi-amber">
+            <div class="kpi-icon"><i class="bi bi-wallet"></i></div>
+            <div class="kpi-label">Our Own Cost</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(total_own) }}</div>
+            <div class="kpi-sub">Not deducted from supplier</div>
+        </div>
+    </div>
+</div>
+
+{% if rollup %}
+<div class="card mb-4">
+    <div class="card-header"><strong>By Category</strong></div>
+    <div class="card-body p-0">
+        <table class="table table-sm mobile-stack mb-0">
+            <thead class="table-light"><tr><th>Category</th><th class="text-center">Entries</th><th class="text-end">Total</th></tr></thead>
+            <tbody>
+            {% for name, amt, cnt in rollup %}
+            <tr>
+                <td><strong>{{ name }}</strong></td>
+                <td class="text-center">{{ cnt }}</td>
+                <td class="text-end fw-bold">Rs.{{ "{:,.2f}".format(amt) }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="card mb-3">
+    <div class="card-body py-2 px-3">
+        <form method="GET" class="d-flex gap-2 align-items-center flex-wrap">
+            <label class="form-label mb-0 me-2">Filter by category:</label>
+            <select name="category_id" class="form-select form-select-sm" style="width:220px;" onchange="this.form.submit()">
+                <option value="">All Categories</option>
+                {% for c in categories %}
+                <option value="{{ c.id }}" {{ 'selected' if cat_filter == c.id }}>{{ c.name }}</option>
+                {% endfor %}
+            </select>
+            {% if cat_filter %}
+            <a href="{{ url_for('expenses.list_expenses') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mobile-stack mb-0">
+            <thead class="table-light">
+                <tr><th>Date</th><th>Category</th><th>Description</th><th>Reference</th><th>Deducted?</th><th>Supplier</th><th class="text-end">Amount</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+            {% for e in expenses %}
+            <tr>
+                <td>{{ e.expense_date }}</td>
+                <td><span class="badge bg-secondary">{{ e.category.name if e.category else 'Uncategorised' }}</span></td>
+                <td>{{ e.description or '-' }}</td>
+                <td>{{ e.reference_number or '-' }}</td>
+                <td>
+                    {% if e.deduct_from_supplier %}
+                    <span class="badge bg-info">Supplier</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Own cost</span>
+                    {% endif %}
+                </td>
+                <td>{{ e.supplier.name if e.supplier else '-' }}</td>
+                <td class="text-end fw-bold">Rs.{{ "{:,.2f}".format(e.amount) }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('expenses.delete_expense', id=e.id) }}" class="d-inline" onsubmit="return confirm('Delete expense Rs.{{ '{:,.0f}'.format(e.amount) }}?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" class="text-center text-muted py-4">No expenses yet. <a href="{{ url_for('expenses.new_expense') }}">Add one</a>.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

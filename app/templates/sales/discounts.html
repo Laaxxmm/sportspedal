@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Customer Discounts - Sportspedal{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Customer Discounts</h2>
+    <a href="{{ url_for('sales.list_sales') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-receipt-cutoff"></i> All Sales</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="kpi-card kpi-amber">
+            <div class="kpi-icon"><i class="bi bi-tags"></i></div>
+            <div class="kpi-label">Total Discount Given</div>
+            <div class="kpi-value">Rs.{{ "{:,.0f}".format(total) }}</div>
+            <div class="kpi-sub">Across {{ rows|length }} order(s)</div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="kpi-card kpi-blue">
+            <div class="kpi-icon"><i class="bi bi-people"></i></div>
+            <div class="kpi-label">Customers Given Discount</div>
+            <div class="kpi-value">{{ by_customer|length }}</div>
+            <div class="kpi-sub">See breakdown below</div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header"><strong>By Customer</strong></div>
+    <div class="card-body p-0">
+        <table class="table table-hover mobile-stack mb-0">
+            <thead class="table-light">
+                <tr><th>Customer</th><th>Type</th><th class="text-center">Orders</th><th class="text-end">Total Discount</th></tr>
+            </thead>
+            <tbody>
+            {% for c in by_customer %}
+            <tr>
+                <td><strong>{{ c.customer.name }}</strong></td>
+                <td><span class="badge bg-secondary">{{ c.customer.customer_type }}</span></td>
+                <td class="text-center">{{ c.orders }}</td>
+                <td class="text-end fw-bold text-danger">Rs.{{ "{:,.2f}".format(c.amount) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-4">No discounts given yet.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><strong>Order Detail</strong></div>
+    <div class="card-body p-0">
+        <table class="table table-hover mobile-stack mb-0">
+            <thead class="table-light">
+                <tr><th>Date</th><th>Invoice</th><th>Customer</th><th class="text-end">Item Disc.</th><th class="text-end">Order Disc.</th><th class="text-end">Total Disc.</th><th class="text-end">Payable</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+            {% for s in rows %}
+            <tr>
+                <td>{{ s.sale_date }}</td>
+                <td><code>{{ s.invoice_number }}</code></td>
+                <td>{{ s.customer.name }}</td>
+                <td class="text-end">{{ "{:,.2f}".format(s.item_discount_total) if s.item_discount_total else '-' }}</td>
+                <td class="text-end">{{ "{:,.2f}".format(s.discount_amount) if s.discount_amount else '-' }}</td>
+                <td class="text-end fw-bold text-danger">Rs.{{ "{:,.2f}".format(s.total_customer_discount) }}</td>
+                <td class="text-end fw-semibold">Rs.{{ "{:,.0f}".format(s.grand_total) }}</td>
+                <td><a href="{{ url_for('sales.view_sale', id=s.id) }}" class="btn btn-sm btn-outline-info">View</a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" class="text-center text-muted py-4">No discounted orders yet.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

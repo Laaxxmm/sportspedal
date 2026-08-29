@@ -158,6 +158,7 @@ def new_sale():
         qtys = request.form.getlist('qty[]')
         unit_prices = request.form.getlist('unit_price[]')
         gst_percents = request.form.getlist('gst_percent[]')
+        line_discounts = request.form.getlist('line_discount[]')
 
         items_data = []
         for i in range(len(variant_ids)):
@@ -168,6 +169,7 @@ def new_sale():
                 'quantity': int(qtys[i] or 1),
                 'unit_price': float(unit_prices[i] or 0),
                 'gst_percent': float(gst_percents[i] or 12.0),
+                'discount': float(line_discounts[i] or 0) if i < len(line_discounts) else 0,
             })
 
         # Check for package pricing
@@ -183,7 +185,8 @@ def new_sale():
 
                 for d in items_data:
                     adjusted_price = round(d['unit_price'] * ratio, 2)
-                    taxable = adjusted_price * d['quantity']
+                    disc = min(d['discount'], adjusted_price * d['quantity'])
+                    taxable = adjusted_price * d['quantity'] - disc
                     gst_amt = taxable * d['gst_percent'] / 100
                     v = ProductVariant.query.get(d['variant_id'])
                     item = SaleItem(
@@ -191,6 +194,7 @@ def new_sale():
                         variant_id=d['variant_id'],
                         quantity=d['quantity'],
                         unit_price=adjusted_price,
+                        discount_amount=disc,
                         cost_at_sale=v.effective_cost if v else 0,
                         gst_percent=d['gst_percent'],
                         gst_amount=gst_amt,
@@ -202,7 +206,8 @@ def new_sale():
 
         if not use_package:
             for d in items_data:
-                taxable = d['unit_price'] * d['quantity']
+                disc = min(d['discount'], d['unit_price'] * d['quantity'])
+                taxable = d['unit_price'] * d['quantity'] - disc
                 gst_amt = taxable * d['gst_percent'] / 100
                 v = ProductVariant.query.get(d['variant_id'])
                 item = SaleItem(
@@ -210,6 +215,7 @@ def new_sale():
                     variant_id=d['variant_id'],
                     quantity=d['quantity'],
                     unit_price=d['unit_price'],
+                    discount_amount=disc,
                     cost_at_sale=v.effective_cost if v else 0,
                     gst_percent=d['gst_percent'],
                     gst_amount=gst_amt,
@@ -244,6 +250,27 @@ def new_sale():
     return render_template('sales/form.html', sale=None, customers=customers,
                            variants=variants, stock_map=stock_map, packages=packages,
                            suppliers=suppliers, advance_map=advance_map)
+
+
+@bp.route('/discounts')
+@login_required
+def discount_report():
+    """All sales where a customer discount was given."""
+    query = SaleOrder.query
+    if not current_user.is_superadmin and current_user.location_id:
+        query = query.filter_by(location_id=current_user.location_id)
+    sales = query.order_by(SaleOrder.sale_date.desc()).all()
+    rows = [s for s in sales if s.total_customer_discount > 0]
+    total = sum(s.total_customer_discount for s in rows)
+    by_customer = {}
+    for s in rows:
+        e = by_customer.setdefault(s.customer.name,
+                                   {'customer': s.customer, 'amount': 0, 'orders': 0})
+        e['amount'] += s.total_customer_discount
+        e['orders'] += 1
+    by_customer = sorted(by_customer.values(), key=lambda x: x['amount'], reverse=True)
+    return render_template('sales/discounts.html', rows=rows, total=total,
+                           by_customer=by_customer)
 
 
 @bp.route('/<int:id>')
@@ -289,6 +316,7 @@ def edit_sale(id):
         qtys = request.form.getlist('qty[]')
         unit_prices = request.form.getlist('unit_price[]')
         gst_percents = request.form.getlist('gst_percent[]')
+        line_discounts = request.form.getlist('line_discount[]')
 
         for i in range(len(variant_ids)):
             if not variant_ids[i]:
@@ -296,13 +324,15 @@ def edit_sale(id):
             qty = int(qtys[i] or 1)
             price = float(unit_prices[i] or 0)
             gst_pct = float(gst_percents[i] or 0)
-            taxable = price * qty
+            disc = float(line_discounts[i] or 0) if i < len(line_discounts) else 0
+            disc = min(disc, price * qty)
+            taxable = price * qty - disc
             gst_amt = taxable * gst_pct / 100
             vid = int(variant_ids[i])
             v = ProductVariant.query.get(vid)
             db.session.add(SaleItem(
                 sale_order_id=sale.id, variant_id=vid,
-                quantity=qty, unit_price=price,
+                quantity=qty, unit_price=price, discount_amount=disc,
                 cost_at_sale=v.effective_cost if v else 0,
                 gst_percent=gst_pct,
                 gst_amount=gst_amt, total_amount=taxable + gst_amt,

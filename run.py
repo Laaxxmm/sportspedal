@@ -208,6 +208,7 @@ def init_database():
         ('sale_order', 'discount_reason', 'VARCHAR(200)'),
         ('sale_order', 'transport_borne_by', "VARCHAR(20) DEFAULT 'customer'"),
         ('sale_order', 'transport_supplier_id', 'INTEGER'),
+        ('sale_item', 'discount_amount', 'FLOAT DEFAULT 0'),
     ]
 
     from sqlalchemy import text

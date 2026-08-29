@@ -348,7 +348,18 @@ class SaleOrder(db.Model):
         return sum(i.gst_amount or 0 for i in self.items)
 
     @property
+    def item_discount_total(self):
+        """Sum of line-level customer discounts."""
+        return sum(i.discount_amount or 0 for i in self.items)
+
+    @property
+    def total_customer_discount(self):
+        """All discount given to the buyer: line-level + order-level."""
+        return self.item_discount_total + (self.discount_amount or 0)
+
+    @property
     def grand_total(self):
+        # Line discounts are already inside subtotal; order discount applies on top.
         return self.subtotal + (self.transport_charge or 0) - (self.discount_amount or 0)
 
 
@@ -359,6 +370,7 @@ class SaleItem(db.Model):
     variant_id = db.Column(db.Integer, db.ForeignKey('product_variant.id'), nullable=False)
     quantity = db.Column(db.Integer, default=1)
     unit_price = db.Column(db.Float, default=0)
+    discount_amount = db.Column(db.Float, default=0)  # Line-level customer discount
     cost_at_sale = db.Column(db.Float, default=0)  # Frozen cost price at time of sale
     gst_percent = db.Column(db.Float, default=12.0)
     gst_amount = db.Column(db.Float, default=0)
@@ -450,6 +462,35 @@ class TransportExpense(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    supplier = db.relationship('Supplier')
+    creator = db.relationship('User')
+
+
+# ===== Business Expenses (travel, design, misc) =====
+
+class ExpenseCategory(db.Model):
+    __tablename__ = 'expense_category'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Expense(db.Model):
+    __tablename__ = 'expense'
+    id = db.Column(db.Integer, primary_key=True)
+    expense_date = db.Column(db.Date, nullable=False, default=date.today)
+    category_id = db.Column(db.Integer, db.ForeignKey('expense_category.id'), nullable=True)
+    description = db.Column(db.String(200))
+    amount = db.Column(db.Float, nullable=False)
+    # When true, this expense is deducted from what we owe the supplier
+    deduct_from_supplier = db.Column(db.Boolean, default=True)
+    supplier_id = db.Column(db.Integer, db.ForeignKey('supplier.id'), nullable=True)
+    reference_number = db.Column(db.String(100))
+    notes = db.Column(db.Text)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    category = db.relationship('ExpenseCategory')
     supplier = db.relationship('Supplier')
     creator = db.relationship('User')
 

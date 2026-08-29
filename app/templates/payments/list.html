@@ -61,6 +61,9 @@
         {% if overall.adjustment_credit and overall.adjustment_credit > 0 %}
         <div class="fin-row"><span class="fin-label"><i class="bi bi-clipboard-minus"></i> Adjustment Credit</span><span class="fin-value" style="color:var(--accent-blue)">−Rs.{{ "{:,.0f}".format(overall.adjustment_credit) }}</span></div>
         {% endif %}
+        {% if overall.expense_credit and overall.expense_credit > 0 %}
+        <div class="fin-row"><span class="fin-label"><i class="bi bi-receipt"></i> Expenses</span><span class="fin-value" style="color:var(--accent-green)">-Rs.{{ "{:,.0f}".format(overall.expense_credit) }}</span></div>
+        {% endif %}
         {% if overall.sale_discount and overall.sale_discount > 0 %}
         <div class="fin-row"><span class="fin-label"><i class="bi bi-percent"></i> Bulk Sale Discount</span><span class="fin-value" style="color:var(--accent-green)">−Rs.{{ "{:,.0f}".format(overall.sale_discount) }}</span></div>
         {% endif %}

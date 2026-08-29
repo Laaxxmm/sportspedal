@@ -170,6 +170,7 @@
                         <th>Stock</th>
                         <th>Qty</th>
                         <th>Unit Price</th>
+                        <th title="Discount given to the customer on this line">Disc (Rs.)</th>
                         <th title="Check to apply package price">Pkg</th>
                         <th>GST%</th>
                         <th>GST Amt</th>
@@ -180,14 +181,14 @@
                 <tbody id="items-body"></tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="7" class="text-end"><strong>Subtotal:</strong></td>
+                        <td colspan="8" class="text-end"><strong>Subtotal:</strong></td>
                         <td></td>
                         <td id="total-gst"><strong>0.00</strong></td>
                         <td id="subtotal"><strong>0.00</strong></td>
                         <td></td>
                     </tr>
                     <tr>
-                        <td colspan="9" class="text-end"><strong>Grand Total (incl. transport - discount):</strong></td>
+                        <td colspan="10" class="text-end"><strong>Grand Total (incl. transport - discount):</strong></td>
                         <td id="grand-total"><strong>0.00</strong></td>
                         <td></td>
                     </tr>
@@ -199,6 +200,7 @@
             <div class="mobile-totals">
                 <div class="mt-row"><span>Subtotal</span><span id="mt-subtotal">Rs.0.00</span></div>
                 <div class="mt-row"><span>GST</span><span id="mt-gst">Rs.0.00</span></div>
+                <div class="mt-row"><span>Discount</span><span id="mt-disc">Rs.0.00</span></div>
                 <div class="mt-row mt-grand"><span>Grand Total</span><span id="mt-grand">Rs.0.00</span></div>
             </div>
 
@@ -380,6 +382,7 @@ function newRow() {
         <td data-label="Stock" class="stock-cell">-</td>
         <td data-label="Qty"><input type="number" name="qty[]" class="form-control form-control-sm qty" value="1" min="1"></td>
         <td data-label="Unit Price"><input type="number" name="unit_price[]" class="form-control form-control-sm unit-price" step="0.01" value="0"><small class="cost-hint text-muted d-block" style="font-size:0.65rem;"></small></td>
+        <td data-label="Discount"><input type="number" name="line_discount[]" class="form-control form-control-sm line-disc" step="0.01" min="0" value="0" placeholder="0"></td>
         <td data-label="Package Price" class="text-center"><input type="checkbox" class="form-check-input pkg-check" title="Apply package price"></td>
         <td data-label="GST %"><input type="number" name="gst_percent[]" class="form-control form-control-sm gst-pct" step="0.1" value="0"></td>
         <td data-label="GST Amount" class="gst-amt">0.00</td>
@@ -456,12 +459,15 @@ function updateVariantSelection(row) {
 }
 
 function recalc() {
-    let totalGst = 0, subtotal = 0;
+    let totalGst = 0, subtotal = 0, itemDiscTotal = 0;
     document.querySelectorAll('.item-row').forEach(row => {
         const qty = parseFloat(row.querySelector('.qty')?.value || 0);
         const price = parseFloat(row.querySelector('.unit-price')?.value || 0);
         const gstPct = parseFloat(row.querySelector('.gst-pct')?.value || 0);
-        const taxable = qty * price;
+        let lineDisc = parseFloat(row.querySelector('.line-disc')?.value || 0);
+        if (lineDisc > qty * price) lineDisc = qty * price;
+        itemDiscTotal += lineDisc;
+        const taxable = qty * price - lineDisc;
         const gst = taxable * gstPct / 100;
         row.querySelector('.gst-amt').textContent = gst.toFixed(2);
         row.querySelector('.row-total').textContent = (taxable + gst).toFixed(2);
@@ -486,6 +492,8 @@ function recalc() {
         mts.textContent = 'Rs.' + (subtotal - totalGst).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         document.getElementById('mt-gst').textContent = 'Rs.' + totalGst.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         document.getElementById('mt-grand').textContent = 'Rs.' + grand.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        const md = document.getElementById('mt-disc');
+        if (md) md.textContent = 'Rs.' + (itemDiscTotal + discount).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
 
     checkPackage();
@@ -597,7 +605,7 @@ function bindEvents() {
         cb.onchange = function() { updateVariantSelection(this.closest('tr')); };
     });
 
-    document.querySelectorAll('.qty, .unit-price, .gst-pct').forEach(el => { el.oninput = recalc; });
+    document.querySelectorAll('.qty, .unit-price, .gst-pct, .line-disc').forEach(el => { el.oninput = recalc; });
     document.querySelectorAll('.remove-row').forEach(btn => {
         btn.onclick = function() { this.closest('tr').remove(); recalc(); };
     });

@@ -38,6 +38,12 @@ def compute_dashboard_data(location_id=None):
     purchase_taxable = pt_query.scalar() or 0
     purchase_gst = pg_query.scalar() or 0
 
+    # Net off purchase-order bulk discounts so this matches supplier 'Total Owed'
+    pd_query = db.session.query(func.sum(PurchaseOrder.bulk_discount))
+    if location_id:
+        pd_query = pd_query.filter(PurchaseOrder.location_id == location_id)
+    total_purchase_cost -= pd_query.scalar() or 0
+
     # Revenue (scoped)
     all_sales = so_query.all() if location_id else SaleOrder.query.all()
     total_revenue = sum(s.grand_total for s in all_sales)
@@ -62,8 +68,16 @@ def compute_dashboard_data(location_id=None):
 
     # Inventory (scoped)
     inventory = get_inventory_data(location_id)
-    # Stock value derived from purchase cost - COGS to guarantee they balance
-    stock_value = total_purchase_cost - total_cogs
+    # Value of stock that left via adjustments (promotional / damaged / lost).
+    # Units already exclude these, so the value must too or stock is overstated.
+    adjv_q = (db.session.query(func.sum(StockAdjustmentItem.unit_cost * StockAdjustmentItem.quantity))
+              .join(StockAdjustment).filter(StockAdjustment.status == 'completed'))
+    if location_id:
+        adjv_q = adjv_q.filter(StockAdjustment.location_id == location_id)
+    adjustment_value = adjv_q.scalar() or 0
+
+    # Stock value derived from purchase cost - COGS - adjustments so it balances
+    stock_value = total_purchase_cost - total_cogs - adjustment_value
     total_stock_units = sum(item['stock'] for item in inventory)
     low_stock = [item for item in inventory if 0 < item['stock'] < 3]
     zero_stock = [item for item in inventory if item['stock'] <= 0 and item['inward'] > 0]
@@ -94,6 +108,17 @@ def compute_dashboard_data(location_id=None):
     adv = customer_advance_map()
     buyer_advance_held = sum(v for v in adv.values() if v > 0)
     buyer_advance_due = sum(-v for v in adv.values() if v < 0)
+
+    # Customer discounts given (line-level + order-level)
+    disc_sales = [s_ for s_ in all_sales if s_.total_customer_discount > 0]
+    customer_discount_total = sum(s_.total_customer_discount for s_ in disc_sales)
+    customer_discount_count = len(disc_sales)
+
+    # Business expenses
+    from app.models import Expense
+    ex_all = db.session.query(func.sum(Expense.amount)).scalar() or 0
+    ex_sup = db.session.query(func.sum(Expense.amount)).filter(
+        Expense.deduct_from_supplier == True).scalar() or 0
 
     # Transport costs (scoped) - by who bears them
     tq = db.session.query(func.sum(SaleOrder.shipping_cost)).filter(
@@ -166,6 +191,10 @@ def compute_dashboard_data(location_id=None):
         'transport_self': transport_self,
         'transport_customer': transport_customer,
         'transport_total': transport_total,
+        'customer_discount_total': customer_discount_total,
+        'customer_discount_count': customer_discount_count,
+        'expense_total': ex_all,
+        'expense_supplier_deducted': ex_sup,
         'bulk_data': bulk_data,
         'promo_data': promo_data,
         'damage_data': damage_data,

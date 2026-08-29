@@ -141,6 +141,7 @@
                         <th style="width:35%">Product / Variant</th>
                         <th>Qty</th>
                         <th>Unit Price</th>
+                        <th>Disc (Rs.)</th>
                         <th>GST%</th>
                         <th>GST Amt</th>
                         <th>Total</th>
@@ -160,6 +161,7 @@
                         </td>
                         <td><input type="number" name="qty[]" class="form-control form-control-sm qty" value="{{ item.quantity }}" min="1"></td>
                         <td><input type="number" name="unit_price[]" class="form-control form-control-sm unit-price" step="0.01" value="{{ item.unit_price }}"></td>
+                        <td><input type="number" name="line_discount[]" class="form-control form-control-sm line-disc" step="0.01" min="0" value="{{ item.discount_amount or 0 }}"></td>
                         <td><input type="number" name="gst_percent[]" class="form-control form-control-sm gst-pct" step="0.1" value="{{ item.gst_percent }}"></td>
                         <td class="gst-amt">{{ "%.2f"|format(item.gst_amount) }}</td>
                         <td class="row-total">{{ "%.2f"|format(item.total_amount) }}</td>
@@ -169,14 +171,14 @@
                 </tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
+                        <td colspan="4" class="text-end"><strong>Subtotal:</strong></td>
                         <td></td>
                         <td id="total-gst"><strong>0.00</strong></td>
                         <td id="subtotal"><strong>0.00</strong></td>
                         <td></td>
                     </tr>
                     <tr>
-                        <td colspan="5" class="text-end"><strong>Grand Total:</strong></td>
+                        <td colspan="6" class="text-end"><strong>Grand Total:</strong></td>
                         <td id="grand-total"><strong>0.00</strong></td>
                         <td></td>
                     </tr>
@@ -204,6 +206,7 @@ function newRow() {
         <td><select name="variant_id[]" class="form-select form-select-sm variant-select" required>${variantOptions}</select></td>
         <td><input type="number" name="qty[]" class="form-control form-control-sm qty" value="1" min="1"></td>
         <td><input type="number" name="unit_price[]" class="form-control form-control-sm unit-price" step="0.01" value="0"></td>
+        <td><input type="number" name="line_discount[]" class="form-control form-control-sm line-disc" step="0.01" min="0" value="0"></td>
         <td><input type="number" name="gst_percent[]" class="form-control form-control-sm gst-pct" step="0.1" value="0"></td>
         <td class="gst-amt">0.00</td>
         <td class="row-total">0.00</td>
@@ -222,7 +225,9 @@ function recalc() {
         const qty = parseFloat(row.querySelector('.qty')?.value || 0);
         const price = parseFloat(row.querySelector('.unit-price')?.value || 0);
         const gstPct = parseFloat(row.querySelector('.gst-pct')?.value || 0);
-        const taxable = qty * price;
+        let lineDisc = parseFloat(row.querySelector('.line-disc')?.value || 0);
+        if (lineDisc > qty * price) lineDisc = qty * price;
+        const taxable = qty * price - lineDisc;
         const gst = taxable * gstPct / 100;
         row.querySelector('.gst-amt').textContent = gst.toFixed(2);
         row.querySelector('.row-total').textContent = (taxable + gst).toFixed(2);
@@ -260,7 +265,7 @@ function recalc() {
 }
 
 function bindEvents() {
-    document.querySelectorAll('.qty, .unit-price, .gst-pct').forEach(el => { el.oninput = recalc; });
+    document.querySelectorAll('.qty, .unit-price, .gst-pct, .line-disc').forEach(el => { el.oninput = recalc; });
     document.querySelectorAll('.variant-select').forEach(el => { el.onchange = recalc; });
     document.querySelectorAll('.remove-row').forEach(btn => {
         btn.onclick = function() { this.closest('tr').remove(); recalc(); };

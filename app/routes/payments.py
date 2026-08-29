@@ -56,13 +56,20 @@ def get_supplier_balance(supplier_id=None):
 
     shipping_pending = shipping_credit - shipping_settled
 
-    # Adjustment credits (promotional/damaged/returned where supplier covers cost)
-    adj_credit = db.session.query(
+    # Adjustment credits (promotional/damaged/returned where supplier covers cost).
+    # Scoped to the supplier that actually supplied the stock via its purchase orders.
+    adj_q = db.session.query(
         func.sum(StockAdjustmentItem.unit_cost * StockAdjustmentItem.quantity)
     ).join(StockAdjustment).filter(
         StockAdjustment.supplier_credit == True,
         StockAdjustment.status == 'completed'
-    ).scalar() or 0
+    )
+    if supplier_id:
+        from app.models import PurchaseItem as _PI, PurchaseOrder as _PO
+        supplied_variants = db.session.query(_PI.variant_id).join(_PO).filter(
+            _PO.supplier_id == supplier_id).distinct().subquery()
+        adj_q = adj_q.filter(StockAdjustmentItem.variant_id.in_(db.session.query(supplied_variants.c.variant_id)))
+    adj_credit = adj_q.scalar() or 0
 
     # Bulk sale discounts borne by this supplier (reduces payable)
     sale_disc_q = db.session.query(func.sum(SaleOrder.supplier_discount)).filter(
@@ -72,7 +79,16 @@ def get_supplier_balance(supplier_id=None):
         sale_disc_q = sale_disc_q.filter(SaleOrder.discount_supplier_id == supplier_id)
     sale_discount = sale_disc_q.scalar() or 0
 
-    net_balance = total_owed - total_paid - shipping_pending - adj_credit - sale_discount
+    # Business expenses set to be deducted from supplier dues
+    from app.models import Expense
+    exp_q = db.session.query(func.sum(Expense.amount)).filter(
+        Expense.deduct_from_supplier == True)
+    if supplier_id:
+        exp_q = exp_q.filter(Expense.supplier_id == supplier_id)
+    expense_credit = exp_q.scalar() or 0
+
+    net_balance = (total_owed - total_paid - shipping_pending
+                   - adj_credit - sale_discount - expense_credit)
 
     return {
         'owed': total_owed,
@@ -84,6 +100,7 @@ def get_supplier_balance(supplier_id=None):
         'shipping_pending': shipping_pending,
         'adjustment_credit': adj_credit,
         'sale_discount': sale_discount,
+        'expense_credit': expense_credit,
         'balance': net_balance,
     }
 
