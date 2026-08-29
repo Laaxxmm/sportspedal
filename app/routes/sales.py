@@ -41,6 +41,15 @@ def parse_transport(form):
 
 bp = Blueprint('sales', __name__)
 
+def form_at(values, i, default=''):
+    """Safely read index i from a parallel form array.
+
+    Browsers can submit ragged arrays (a disabled/removed input drops a value),
+    which previously raised IndexError and discarded the whole submission.
+    """
+    return values[i] if i < len(values) else default
+
+
 
 def generate_invoice_number():
     profile = BusinessProfile.query.first()
@@ -166,10 +175,10 @@ def new_sale():
                 continue
             items_data.append({
                 'variant_id': int(variant_ids[i]),
-                'quantity': int(qtys[i] or 1),
-                'unit_price': float(unit_prices[i] or 0),
-                'gst_percent': float(gst_percents[i] or 12.0),
-                'discount': float(line_discounts[i] or 0) if i < len(line_discounts) else 0,
+                'quantity': int(form_at(qtys, i) or 1),
+                'unit_price': float(form_at(unit_prices, i) or 0),
+                'gst_percent': float(form_at(gst_percents, i) or 12.0),
+                'discount': float(form_at(line_discounts, i) or 0),
             })
 
         # Check for package pricing
@@ -321,11 +330,10 @@ def edit_sale(id):
         for i in range(len(variant_ids)):
             if not variant_ids[i]:
                 continue
-            qty = int(qtys[i] or 1)
-            price = float(unit_prices[i] or 0)
-            gst_pct = float(gst_percents[i] or 0)
-            disc = float(line_discounts[i] or 0) if i < len(line_discounts) else 0
-            disc = min(disc, price * qty)
+            qty = int(form_at(qtys, i) or 1)
+            price = float(form_at(unit_prices, i) or 0)
+            gst_pct = float(form_at(gst_percents, i) or 0)
+            disc = min(float(form_at(line_discounts, i) or 0), price * qty)
             taxable = price * qty - disc
             gst_amt = taxable * gst_pct / 100
             vid = int(variant_ids[i])

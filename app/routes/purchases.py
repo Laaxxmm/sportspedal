@@ -7,6 +7,15 @@ from app.decorators import superadmin_required
 
 bp = Blueprint('purchases', __name__)
 
+def form_at(values, i, default=''):
+    """Safely read index i from a parallel form array.
+
+    Browsers can submit ragged arrays (a disabled/removed input drops a value),
+    which previously raised IndexError and discarded the whole submission.
+    """
+    return values[i] if i < len(values) else default
+
+
 
 def scope_purchase(po):
     """Check if current user can access this purchase order."""
@@ -68,10 +77,10 @@ def new_purchase():
             if not variant_ids[i]:
                 continue
             try:
-                qty_d = int(qtys_dispatched[i] or 0)
-                qty_r = int(qtys_received[i] or 0)
-                price = float(unit_prices[i] or 0)
-                gst_pct = float(gst_percents[i] or 12.0)
+                qty_d = int(form_at(qtys_dispatched, i) or 0)
+                qty_r = int(form_at(qtys_received, i) or 0)
+                price = float(form_at(unit_prices, i) or 0)
+                gst_pct = float(form_at(gst_percents, i) or 12.0)
             except (ValueError, IndexError):
                 continue
             taxable = price * qty_r
@@ -130,10 +139,10 @@ def edit_purchase(id):
             if not variant_ids[i]:
                 continue
             try:
-                qty_d = int(qtys_dispatched[i] or 0)
-                qty_r = int(qtys_received[i] or 0)
-                price = float(unit_prices[i] or 0)
-                gst_pct = float(gst_percents[i] or 12.0)
+                qty_d = int(form_at(qtys_dispatched, i) or 0)
+                qty_r = int(form_at(qtys_received, i) or 0)
+                price = float(form_at(unit_prices, i) or 0)
+                gst_pct = float(form_at(gst_percents, i) or 12.0)
             except (ValueError, IndexError):
                 continue
             taxable = price * qty_r

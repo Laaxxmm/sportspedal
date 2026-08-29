@@ -46,6 +46,28 @@ def create_app():
             return f"<pre>{traceback.format_exc()}</pre>", 500
         return "Something went wrong. Please try again.", 500
 
+    # Supplier-role users must stay inside their portal. The sidebar hides the
+    # admin pages from them, but without this guard they could still reach every
+    # admin route (dashboard profit, customer list, sale prices) by URL.
+    SUPPLIER_ALLOWED_ENDPOINTS = {'static', 'api.serve_image'}
+    SUPPLIER_ALLOWED_PREFIXES = ('supplier_portal.', 'auth.')
+
+    @app.before_request
+    def restrict_supplier_users():
+        from flask import request, redirect, url_for, flash
+        from flask_login import current_user
+        if not current_user.is_authenticated:
+            return None
+        if not getattr(current_user, 'is_supplier_user', False):
+            return None
+        endpoint = request.endpoint or ''
+        if endpoint in SUPPLIER_ALLOWED_ENDPOINTS:
+            return None
+        if endpoint.startswith(SUPPLIER_ALLOWED_PREFIXES):
+            return None
+        flash('That page is not available on the supplier portal.', 'warning')
+        return redirect(url_for('supplier_portal.portal_dashboard'))
+
     # Security headers
     @app.after_request
     def security_headers(response):

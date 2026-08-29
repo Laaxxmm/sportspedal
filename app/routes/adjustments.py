@@ -9,6 +9,15 @@ from app.services.stock import get_stock_map
 
 bp = Blueprint('adjustments', __name__)
 
+def form_at(values, i, default=''):
+    """Safely read index i from a parallel form array.
+
+    Browsers can submit ragged arrays (a disabled/removed input drops a value),
+    which previously raised IndexError and discarded the whole submission.
+    """
+    return values[i] if i < len(values) else default
+
+
 
 def scope_adjustment(adj):
     """Check if user can access this adjustment (location-scoped for admins)."""
@@ -80,7 +89,7 @@ def new_adjustment():
                 if not variant_ids[i]:
                     continue
                 vid = int(variant_ids[i])
-                qty = int(qtys[i] or 0)
+                qty = int(form_at(qtys, i) or 0)
                 if qty <= 0:
                     continue
                 # Validate stock
