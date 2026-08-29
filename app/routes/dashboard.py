@@ -68,16 +68,11 @@ def compute_dashboard_data(location_id=None):
 
     # Inventory (scoped)
     inventory = get_inventory_data(location_id)
-    # Value of stock that left via adjustments (promotional / damaged / lost).
-    # Units already exclude these, so the value must too or stock is overstated.
-    adjv_q = (db.session.query(func.sum(StockAdjustmentItem.unit_cost * StockAdjustmentItem.quantity))
-              .join(StockAdjustment).filter(StockAdjustment.status == 'completed'))
-    if location_id:
-        adjv_q = adjv_q.filter(StockAdjustment.location_id == location_id)
-    adjustment_value = adjv_q.scalar() or 0
-
-    # Stock value derived from purchase cost - COGS - adjustments so it balances
-    stock_value = total_purchase_cost - total_cogs - adjustment_value
+    # Stock valued the same way the Inventory page does it: per-variant stock x
+    # weighted-average landed cost. Deriving it as (purchase - COGS) disagreed with
+    # the Inventory page because COGS is frozen at the product master cost while
+    # landed cost includes GST and actual paid prices.
+    stock_value = sum(item['stock_value'] for item in inventory)
     total_stock_units = sum(item['stock'] for item in inventory)
     low_stock = [item for item in inventory if 0 < item['stock'] < 3]
     zero_stock = [item for item in inventory if item['stock'] <= 0 and item['inward'] > 0]
