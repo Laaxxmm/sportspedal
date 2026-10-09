@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
+from app.decorators import permission_required
 from flask_login import login_required
 from app import db
 from app.models import Product, ProductVariant
@@ -12,7 +13,7 @@ SIZES = ['XS', 'S', 'M', 'L', 'XL']
 CATEGORIES = ['skates', 'helmet', 'guards', 'bag', 'freebie']
 
 
-def generate_sku(product_name, color, size):
+def generate_sku(product_name, color, size, exclude_id=None):
     name_part = product_name[:4].upper().replace(' ', '')
     color_part = (color[:3].upper()) if color else ''
     size_part = size.upper() if size else ''
@@ -26,7 +27,13 @@ def generate_sku(product_name, color, size):
     # Ensure uniqueness - append counter if SKU exists
     sku = base_sku
     counter = 2
-    while ProductVariant.query.filter_by(sku_code=sku).first():
+    def taken(code):
+        q = ProductVariant.query.filter_by(sku_code=code)
+        if exclude_id:
+            q = q.filter(ProductVariant.id != exclude_id)
+        return q.first() is not None
+
+    while taken(sku):
         sku = f"{base_sku}-{counter}"
         counter += 1
     return sku
@@ -34,6 +41,7 @@ def generate_sku(product_name, color, size):
 
 @bp.route('/')
 @login_required
+@permission_required('view_products')
 def list_products():
     products = Product.query.filter_by(is_active=True).order_by(Product.category, Product.name).all()
     return render_template('products/list.html', products=products)
@@ -41,6 +49,7 @@ def list_products():
 
 @bp.route('/new', methods=['GET', 'POST'])
 @login_required
+@permission_required('view_products')
 def new_product():
     if request.method == 'POST':
       try:
@@ -51,8 +60,12 @@ def new_product():
             except (ValueError, TypeError):
                 return float(default)
 
+        name = (request.form.get('name') or '').strip()
+        if not name:
+            flash('Product name is required.', 'danger')
+            return redirect(url_for('products.new_product'))
         product = Product(
-            name=request.form['name'].strip(),
+            name=name,
             category=request.form['category'],
             hsn_code=request.form.get('hsn_code', ''),
             gst_percent=fnum('gst_percent', 12.0),
@@ -69,10 +82,13 @@ def new_product():
         )
 
         # Handle image upload
-        if 'image' in request.files:
-            file = request.files['image']
-            if file and file.filename and allowed_file(file.filename):
-                product.image_path = save_product_image(file)
+        file = request.files.get('image')
+        if file and file.filename:
+            saved = save_product_image(file) if allowed_file(file.filename) else None
+            if saved:
+                product.image_path = saved
+            else:
+                flash('Photo not saved - use JPG, PNG, WebP or GIF.', 'warning')
 
         db.session.add(product)
         db.session.flush()
@@ -108,32 +124,39 @@ def new_product():
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
+@permission_required('view_products')
 def edit_product(id):
     product = Product.query.get_or_404(id)
     if request.method == 'POST':
-        product.name = request.form['name']
-        product.category = request.form['category']
+        name = (request.form.get('name') or '').strip()
+        if not name:
+            flash('Product name is required.', 'danger')
+            return redirect(url_for('products.edit_product', id=id))
+        product.name = name
+        product.category = request.form.get('category', product.category)
         product.hsn_code = request.form.get('hsn_code', '')
         product.gst_percent = form_float(request.form, 'gst_percent', 12.0)
         product.cost_price = form_float(request.form, 'cost_price', 0)
         product.coach_price = form_float(request.form, 'coach_price', 0)
         product.mrp = form_float(request.form, 'mrp', 0)
-        product.coach_local = float(request.form.get('coach_local', 0) or 0)
-        product.coach_direct = float(request.form.get('coach_direct', 0) or 0)
-        product.coach_self = float(request.form.get('coach_self', 0) or 0)
-        product.bulk_local = float(request.form.get('bulk_local', 0) or 0)
-        product.bulk_direct = float(request.form.get('bulk_direct', 0) or 0)
-        product.bulk_self = float(request.form.get('bulk_self', 0) or 0)
-        product.dealer_price = float(request.form.get('dealer_price', 0) or 0)
+        product.coach_local = form_float(request.form, 'coach_local', 0)
+        product.coach_direct = form_float(request.form, 'coach_direct', 0)
+        product.coach_self = form_float(request.form, 'coach_self', 0)
+        product.bulk_local = form_float(request.form, 'bulk_local', 0)
+        product.bulk_direct = form_float(request.form, 'bulk_direct', 0)
+        product.bulk_self = form_float(request.form, 'bulk_self', 0)
+        product.dealer_price = form_float(request.form, 'dealer_price', 0)
 
-        # Handle image upload
-        if 'image' in request.files:
-            file = request.files['image']
-            if file and file.filename and allowed_file(file.filename):
-                # Delete old image
+        # Handle image upload - save the new one first, only then drop the old one
+        file = request.files.get('image')
+        if file and file.filename:
+            saved = save_product_image(file) if allowed_file(file.filename) else None
+            if saved:
                 if product.image_path:
                     delete_product_image(product.image_path)
-                product.image_path = save_product_image(file)
+                product.image_path = saved
+            else:
+                flash('Photo not saved - use JPG, PNG, WebP or GIF. Previous photo kept.', 'warning')
 
         # Handle image removal
         if request.form.get('remove_image') == '1' and product.image_path:
@@ -149,16 +172,22 @@ def edit_product(id):
 
 @bp.route('/<int:id>/add-variant', methods=['POST'])
 @login_required
+@permission_required('view_products')
 def add_variant(id):
     product = Product.query.get_or_404(id)
     color = request.form.get('color') or None
     size = request.form.get('size') or None
-    sku = generate_sku(product.name, color, size)
 
-    existing = ProductVariant.query.filter_by(sku_code=sku).first()
+    existing = ProductVariant.query.filter_by(product_id=product.id, color=color, size=size).first()
     if existing:
-        flash(f'Variant with SKU {sku} already exists.', 'warning')
+        if not existing.is_active:
+            existing.is_active = True
+            db.session.commit()
+            flash(f'Variant {existing.sku_code} re-activated.', 'success')
+        else:
+            flash(f'Variant {existing.sku_code} already exists.', 'warning')
     else:
+        sku = generate_sku(product.name, color, size)
         variant = ProductVariant(product_id=product.id, color=color, size=size, sku_code=sku)
         db.session.add(variant)
         db.session.commit()
@@ -169,14 +198,29 @@ def add_variant(id):
 
 @bp.route('/variant/<int:vid>/edit', methods=['POST'])
 @login_required
+@permission_required('view_products')
 def edit_variant(vid):
     variant = ProductVariant.query.get_or_404(vid)
-    variant.color = request.form.get('color') or None
-    variant.size = request.form.get('size') or None
-    variant.sku_code = generate_sku(variant.product.name, variant.color, variant.size)
-    variant.cost_price_override = float(request.form.get('cost_override') or 0) or None
-    variant.coach_price_override = float(request.form.get('coach_override') or 0) or None
-    variant.mrp_override = float(request.form.get('mrp_override') or 0) or None
+    new_color = request.form.get('color') or None
+    new_size = request.form.get('size') or None
+
+    if (new_color, new_size) != (variant.color, variant.size):
+        clash = (ProductVariant.query
+                 .filter_by(product_id=variant.product_id, color=new_color, size=new_size)
+                 .filter(ProductVariant.id != variant.id).first())
+        if clash:
+            flash(f'Another variant ({clash.sku_code}) already has that colour/size.', 'danger')
+            return redirect(url_for('products.edit_product', id=variant.product_id))
+        variant.color, variant.size = new_color, new_size
+        # Only re-derive the SKU when the variant actually changed. Regenerating it
+        # on every save collided with its own SKU and appended -2, -3...
+        variant.sku_code = generate_sku(variant.product.name, new_color, new_size,
+                                        exclude_id=variant.id)
+
+    # Blank or 0 means "no override - use the product price"
+    variant.cost_price_override = form_opt_float(request.form, 'cost_override') or None
+    variant.coach_price_override = form_opt_float(request.form, 'coach_override') or None
+    variant.mrp_override = form_opt_float(request.form, 'mrp_override') or None
     db.session.commit()
     flash(f'Variant {variant.sku_code} updated.', 'success')
     return redirect(url_for('products.edit_product', id=variant.product_id))
@@ -184,6 +228,7 @@ def edit_variant(vid):
 
 @bp.route('/variant/<int:vid>/delete', methods=['POST'])
 @login_required
+@permission_required('view_products')
 def delete_variant(vid):
     variant = ProductVariant.query.get_or_404(vid)
     pid = variant.product_id
@@ -205,6 +250,7 @@ def delete_variant(vid):
 
 @bp.route('/<int:id>/delete', methods=['POST'])
 @login_required
+@permission_required('view_products')
 def delete_product(id):
     product = Product.query.get_or_404(id)
     product.is_active = False

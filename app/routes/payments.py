@@ -88,7 +88,12 @@ def get_supplier_balance(supplier_id=None):
         exp_q = exp_q.filter(Expense.supplier_id == supplier_id)
     expense_credit = exp_q.scalar() or 0
 
-    net_balance = (total_owed - total_paid - shipping_pending
+    # The full supplier-borne transport credit reduces what we owe. The payment
+    # form already shows the balance net of this credit, so people pay that net
+    # figure; subtracting only the "unsettled" part made any amount typed into
+    # "transport credit applied" reappear as owed. shipping_deduction is now a
+    # record of which payment used the credit and does not move the balance.
+    net_balance = (total_owed - total_paid - shipping_credit
                    - adj_credit - sale_discount - expense_credit)
 
     return {
@@ -132,7 +137,10 @@ def new_payment():
         if amount <= 0:
             flash('Enter a payment amount greater than zero.', 'danger')
             return redirect(url_for('payments.new_payment'))
-        shipping_ded = form_float(request.form, 'shipping_deduction', 0)
+        if not Supplier.query.get(form_int(request.form, 'supplier_id')):
+            flash('Select a supplier for this payment.', 'danger')
+            return redirect(url_for('payments.new_payment'))
+        shipping_ded = max(0.0, form_float(request.form, 'shipping_deduction', 0))
         payment = SupplierPayment(
             supplier_id=form_int(request.form, 'supplier_id'),
             payment_date=form_date(request.form, 'payment_date'),
@@ -147,7 +155,7 @@ def new_payment():
         db.session.commit()
         msg = f'Payment of Rs.{payment.amount:,.2f} recorded.'
         if shipping_ded > 0:
-            msg += f' (includes Rs.{shipping_ded:,.2f} shipping deduction)'
+            msg += f' Noted Rs.{shipping_ded:,.2f} transport credit applied.'
         flash(msg, 'success')
         return redirect(url_for('payments.list_payments'))
 
@@ -162,9 +170,17 @@ def new_payment():
 def edit_payment(id):
     payment = SupplierPayment.query.get_or_404(id)
     if request.method == 'POST':
+        amount = form_float(request.form, 'amount')
+        if amount <= 0:
+            flash('Enter a payment amount greater than zero.', 'danger')
+            return redirect(url_for('payments.edit_payment', id=id))
+        if not Supplier.query.get(form_int(request.form, 'supplier_id')):
+            flash('Select a supplier for this payment.', 'danger')
+            return redirect(url_for('payments.edit_payment', id=id))
         payment.supplier_id = form_int(request.form, 'supplier_id')
-        payment.payment_date = form_date(request.form, 'payment_date')
-        payment.amount = form_float(request.form, 'amount')
+        payment.payment_date = form_date(request.form, 'payment_date', payment.payment_date)
+        payment.amount = amount
+        payment.shipping_deduction = max(0.0, form_float(request.form, 'shipping_deduction', 0))
         payment.payment_mode = request.form.get('payment_mode', '')
         payment.reference_number = request.form.get('reference_number', '')
         payment.notes = request.form.get('notes', '')

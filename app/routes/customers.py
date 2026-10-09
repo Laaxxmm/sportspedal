@@ -1,5 +1,6 @@
 from datetime import date
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from app.decorators import permission_required
 from flask_login import login_required, current_user
 from app import db
 from app.models import Customer, CustomerPayment, SaleOrder
@@ -12,6 +13,7 @@ bp = Blueprint('customers', __name__)
 
 @bp.route('/')
 @login_required
+@permission_required('view_customers')
 def list_customers():
     query = Customer.query
     if not current_user.is_superadmin and current_user.location_id:
@@ -22,6 +24,7 @@ def list_customers():
 
 @bp.route('/new', methods=['GET', 'POST'])
 @login_required
+@permission_required('view_customers')
 def new_customer():
     if request.method == 'POST':
         # Auto-assign location from current user for admins
@@ -75,6 +78,7 @@ def quick_add():
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
+@permission_required('view_customers')
 def edit_customer(id):
     customer = Customer.query.get_or_404(id)
     if request.method == 'POST':
@@ -195,6 +199,7 @@ def delete_payment(pid):
 
 @bp.route('/<int:id>/delete', methods=['POST'])
 @login_required
+@permission_required('view_customers')
 def delete_customer(id):
     customer = Customer.query.get_or_404(id)
     # Check if customer has orders

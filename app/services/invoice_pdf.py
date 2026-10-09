@@ -1,5 +1,5 @@
 from flask import send_file
-from fpdf import FPDF
+from app.services.pdf_base import SafeFPDF as FPDF
 from num2words import num2words
 import io
 import os
@@ -50,7 +50,7 @@ def generate_invoice(sale, profile):
     customer = sale.customer
     pdf.cell(0, 5, customer.name, 0, 1)
     if customer.address:
-        pdf.cell(0, 5, customer.address, 0, 1)
+        pdf.multi_cell(0, 5, customer.address)
     if customer.city:
         pdf.cell(0, 5, f"{customer.city}, {customer.state or ''}", 0, 1)
     if customer.gstin:
@@ -62,14 +62,15 @@ def generate_invoice(sale, profile):
     # Items table header
     pdf.set_font('Helvetica', 'B', 9)
     pdf.set_fill_color(220, 220, 220)
-    pdf.cell(10, 7, '#', 1, 0, 'C', True)
-    pdf.cell(60, 7, 'Description', 1, 0, 'L', True)
+    pdf.cell(8, 7, '#', 1, 0, 'C', True)
+    pdf.cell(52, 7, 'Description', 1, 0, 'L', True)
     pdf.cell(15, 7, 'HSN', 1, 0, 'C', True)
-    pdf.cell(15, 7, 'Qty', 1, 0, 'C', True)
-    pdf.cell(25, 7, 'Rate', 1, 0, 'R', True)
-    pdf.cell(20, 7, 'GST%', 1, 0, 'C', True)
+    pdf.cell(12, 7, 'Qty', 1, 0, 'C', True)
+    pdf.cell(22, 7, 'Rate', 1, 0, 'R', True)
+    pdf.cell(18, 7, 'Disc', 1, 0, 'R', True)
+    pdf.cell(15, 7, 'GST%', 1, 0, 'C', True)
     pdf.cell(20, 7, 'GST Amt', 1, 0, 'R', True)
-    pdf.cell(25, 7, 'Total', 1, 1, 'R', True)
+    pdf.cell(28, 7, 'Total', 1, 1, 'R', True)
 
     # Items
     pdf.set_font('Helvetica', '', 9)
@@ -79,18 +80,20 @@ def generate_invoice(sale, profile):
         variant = item.variant
         desc = variant.display_name
         hsn = variant.product.hsn_code or ''
-        taxable = item.unit_price * item.quantity
+        line_disc = item.discount_amount or 0
+        taxable = item.unit_price * item.quantity - line_disc
         subtotal += taxable
         total_gst += item.gst_amount or 0
 
-        pdf.cell(10, 6, str(idx), 1, 0, 'C')
-        pdf.cell(60, 6, desc[:35], 1, 0, 'L')
-        pdf.cell(15, 6, hsn, 1, 0, 'C')
-        pdf.cell(15, 6, str(item.quantity), 1, 0, 'C')
-        pdf.cell(25, 6, f"{item.unit_price:,.2f}", 1, 0, 'R')
-        pdf.cell(20, 6, f"{item.gst_percent}%", 1, 0, 'C')
-        pdf.cell(20, 6, f"{item.gst_amount:,.2f}", 1, 0, 'R')
-        pdf.cell(25, 6, f"{item.total_amount:,.2f}", 1, 1, 'R')
+        pdf.cell(8, 6, str(idx), 1, 0, 'C')
+        pdf.cell(52, 6, desc[:30], 1, 0, 'L')
+        pdf.cell(15, 6, hsn[:8], 1, 0, 'C')
+        pdf.cell(12, 6, str(item.quantity), 1, 0, 'C')
+        pdf.cell(22, 6, f"{item.unit_price:,.2f}", 1, 0, 'R')
+        pdf.cell(18, 6, f"{line_disc:,.2f}" if line_disc else '-', 1, 0, 'R')
+        pdf.cell(15, 6, f"{item.gst_percent:g}%", 1, 0, 'C')
+        pdf.cell(20, 6, f"{(item.gst_amount or 0):,.2f}", 1, 0, 'R')
+        pdf.cell(28, 6, f"{(item.total_amount or 0):,.2f}", 1, 1, 'R')
 
     pdf.ln(2)
 
@@ -101,11 +104,13 @@ def generate_invoice(sale, profile):
 
     pdf.set_font('Helvetica', '', 9)
     pdf.set_x(x_label)
-    pdf.cell(w_label, 6, 'Subtotal:', 0, 0, 'R')
+    pdf.cell(w_label, 6, 'Taxable value:', 0, 0, 'R')
     pdf.cell(w_val, 6, f"{subtotal:,.2f}", 0, 1, 'R')
 
     # GST breakdown
-    is_intrastate = (customer.state or '').lower() in ['karnataka', '']
+    home_state = ((profile.state if profile else None) or 'Karnataka').strip().lower()
+    buyer_state = (customer.state or '').strip().lower()
+    is_intrastate = buyer_state in (home_state, '')
     if is_intrastate:
         half_gst = total_gst / 2
         pdf.set_x(x_label)
@@ -126,7 +131,7 @@ def generate_invoice(sale, profile):
 
     if sale.discount_amount:
         pdf.set_x(x_label)
-        pdf.cell(w_label, 6, 'Discount:', 0, 0, 'R')
+        pdf.cell(w_label, 6, 'Order discount:', 0, 0, 'R')
         pdf.cell(w_val, 6, f"-{sale.discount_amount:,.2f}", 0, 1, 'R')
 
     if sale.is_package and sale.package_type:

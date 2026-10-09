@@ -6,11 +6,16 @@ from sqlalchemy import func
 
 
 def get_stock_map(location_id=None):
-    """Returns dict of {variant_id: current_stock}. If location_id is given, scoped to that location."""
+    """Returns dict of {variant_id: current_stock}. If location_id is given, scoped to that location.
+
+    Inward stock is the quantity actually received on a purchase order, whatever the
+    PO's status. Supplier dues are already charged on received quantity, so counting
+    only 'delivered' POs here left received goods owed-for but missing from stock.
+    """
     # Inward from purchases
     inward_q = (db.session.query(PurchaseItem.variant_id, func.sum(PurchaseItem.quantity_received))
                 .join(PurchaseOrder)
-                .filter(PurchaseOrder.status == 'delivered'))
+                .filter(PurchaseItem.quantity_received > 0))
     if location_id:
         inward_q = inward_q.filter(PurchaseOrder.location_id == location_id)
     inward = dict(inward_q.group_by(PurchaseItem.variant_id).all())
@@ -65,7 +70,7 @@ def get_inventory_data(location_id=None):
     stock_map = get_stock_map(location_id)
 
     inward_q = (db.session.query(PurchaseItem.variant_id, func.sum(PurchaseItem.quantity_received))
-                .join(PurchaseOrder).filter(PurchaseOrder.status == 'delivered'))
+                .join(PurchaseOrder).filter(PurchaseItem.quantity_received > 0))
     if location_id:
         inward_q = inward_q.filter(PurchaseOrder.location_id == location_id)
     inward_map = dict(inward_q.group_by(PurchaseItem.variant_id).all())
@@ -103,7 +108,7 @@ def get_inventory_data(location_id=None):
         PurchaseItem.variant_id,
         func.sum(PurchaseItem.total_amount),
         func.sum(PurchaseItem.quantity_received)
-    ).join(PurchaseOrder).filter(PurchaseOrder.status == 'delivered'))
+    ).join(PurchaseOrder).filter(PurchaseItem.quantity_received > 0))
     if location_id:
         avg_cost_q = avg_cost_q.filter(PurchaseOrder.location_id == location_id)
     avg_cost_data = avg_cost_q.group_by(PurchaseItem.variant_id).all()

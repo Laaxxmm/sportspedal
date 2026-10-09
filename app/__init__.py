@@ -37,6 +37,12 @@ def create_app():
         from app.models import PERMISSION_KEYS
         return {'PERMISSION_KEYS': PERMISSION_KEYS}
 
+    @app.errorhandler(413)
+    def handle_413(e):
+        from flask import flash, redirect, request
+        flash('That file is too large (max 50 MB).', 'danger')
+        return redirect(request.referrer or '/')
+
     # Error handler (shows error to logged-in superadmin only)
     @app.errorhandler(500)
     def handle_500(e):

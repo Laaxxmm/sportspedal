@@ -56,7 +56,23 @@ def download_backup():
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
         if os.path.exists(db_path):
-            zf.write(db_path, arcname='sportspedal.db')
+            # Copying the live file byte-for-byte can capture a half-written page if
+            # a save happens mid-copy. The backup API takes a consistent snapshot.
+            import sqlite3
+            import tempfile
+            fd, snap = tempfile.mkstemp(suffix='.db', dir=DATA_DIR)
+            os.close(fd)
+            try:
+                src = sqlite3.connect(db_path)
+                dst = sqlite3.connect(snap)
+                with dst:
+                    src.backup(dst)
+                dst.close()
+                src.close()
+                zf.write(snap, arcname='sportspedal.db')
+            finally:
+                if os.path.exists(snap):
+                    os.remove(snap)
         if os.path.exists(images_dir):
             for fname in os.listdir(images_dir):
                 fpath = os.path.join(images_dir, fname)
@@ -79,33 +95,82 @@ def restore_backup():
 
     if request.method == 'POST':
         f = request.files.get('backup_file')
-        if not f or not f.filename.endswith('.zip'):
+        if not f or not f.filename.lower().endswith('.zip'):
             flash('Please upload a .zip backup file.', 'danger')
             return redirect(url_for('settings.restore_backup'))
 
+        import shutil
+        import sqlite3
+        from datetime import datetime
+
+        tmp_zip = os.path.join(DATA_DIR, '_restore_tmp.zip')
+        tmp_db = os.path.join(DATA_DIR, '_restore_tmp.db')
+        db_path = os.path.join(DATA_DIR, 'sportspedal.db')
+        img_dir = os.path.join(DATA_DIR, 'images', 'products')
         try:
-            # Save uploaded file temporarily
-            tmp_path = os.path.join(DATA_DIR, '_restore_tmp.zip')
-            f.save(tmp_path)
+            f.save(tmp_zip)
+            if not zipfile.is_zipfile(tmp_zip):
+                raise ValueError('That file is not a valid ZIP archive.')
 
-            os.makedirs(os.path.join(DATA_DIR, 'images', 'products'), exist_ok=True)
+            with zipfile.ZipFile(tmp_zip, 'r') as zf:
+                names = zf.namelist()
+                if 'sportspedal.db' not in names:
+                    raise ValueError('ZIP does not contain sportspedal.db - is this a Sportspedal backup?')
 
-            # Close DB connections before overwriting
-            db.session.remove()
-            db.engine.dispose()
+                # Extract the database to a temp file and prove it is a usable
+                # Sportspedal database BEFORE touching the live one. Previously a
+                # bad ZIP overwrote the live database with no way back.
+                with zf.open('sportspedal.db') as src, open(tmp_db, 'wb') as out:
+                    shutil.copyfileobj(src, out)
+                conn = sqlite3.connect(tmp_db)
+                try:
+                    if conn.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
+                        raise ValueError('Backup database failed its integrity check.')
+                    tables = {r[0] for r in conn.execute(
+                        "SELECT name FROM sqlite_master WHERE type='table'")}
+                    if not {'user', 'product', 'sale_order'} <= tables:
+                        raise ValueError('Backup database is missing core tables.')
+                finally:
+                    conn.close()
 
-            with zipfile.ZipFile(tmp_path, 'r') as zf:
-                for member in zf.namelist():
-                    if member == 'sportspedal.db':
-                        zf.extract(member, DATA_DIR)
-                    elif member.startswith('images/products/'):
-                        zf.extract(member, DATA_DIR)
+                # Safety copy of the current database, kept on the volume
+                safety = None
+                if os.path.exists(db_path):
+                    safety = os.path.join(
+                        DATA_DIR, f"pre_restore_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db")
+                    shutil.copy2(db_path, safety)
 
-            os.remove(tmp_path)
-            flash('Backup restored! Restart the server to load new data.', 'success')
+                db.session.remove()
+                db.engine.dispose()
+                os.replace(tmp_db, db_path)
+
+                # Images: plain file names only, written into the images folder
+                os.makedirs(img_dir, exist_ok=True)
+                restored_imgs = 0
+                for member in names:
+                    if not member.startswith('images/products/') or member.endswith('/'):
+                        continue
+                    fname = os.path.basename(member)
+                    if not fname or fname.startswith('.'):
+                        continue
+                    with zf.open(member) as src, open(os.path.join(img_dir, fname), 'wb') as out:
+                        shutil.copyfileobj(src, out)
+                    restored_imgs += 1
+
+            msg = f'Backup restored ({restored_imgs} images). Redeploy/restart the app to apply any schema updates.'
+            if safety:
+                msg += f' Previous data saved as {os.path.basename(safety)}.'
+            flash(msg, 'success')
             return redirect(url_for('settings.business_settings'))
         except Exception as e:
-            flash(f'Restore failed: {str(e)}', 'danger')
+            flash(f'Restore failed - current data left untouched: {e}', 'danger')
             return redirect(url_for('settings.restore_backup'))
+        finally:
+            for p in (tmp_zip, tmp_db):
+                if os.path.exists(p):
+                    try:
+                        os.remove(p)
+                    except OSError:
+                        pass
 
     return render_template('restore.html')

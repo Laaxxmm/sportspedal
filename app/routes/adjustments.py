@@ -71,7 +71,7 @@ def new_adjustment():
 
             adj = StockAdjustment(
                 adjustment_number=generate_adjustment_number(),
-                adjustment_date=form_date(request.form, 'adjustment_date', date.today().isoformat()),
+                adjustment_date=form_date(request.form, 'adjustment_date', date.today()),
                 location_id=loc_id,
                 adjustment_type=request.form.get('adjustment_type', 'promotional'),
                 recipient=request.form.get('recipient', ''),
@@ -86,6 +86,7 @@ def new_adjustment():
             qtys = request.form.getlist('qty[]')
 
             stock_map = get_stock_map(location_id=loc_id)
+            added = 0
             for i in range(len(variant_ids)):
                 if not variant_ids[i]:
                     continue
@@ -106,7 +107,7 @@ def new_adjustment():
                     func.sum(PurchaseItem.quantity_received)
                 ).join(PurchaseOrder).filter(
                     PurchaseItem.variant_id == vid,
-                    PurchaseOrder.status == 'delivered'
+                    PurchaseItem.quantity_received > 0
                 ).first()
                 avg_cost = (cost_data[0] / cost_data[1]) if cost_data and cost_data[1] else 0
 
@@ -114,6 +115,12 @@ def new_adjustment():
                     adjustment_id=adj.id, variant_id=vid,
                     quantity=qty, unit_cost=avg_cost,
                 ))
+                added += 1
+
+            if not added:
+                db.session.rollback()
+                flash('Nothing adjusted - add at least one item with available stock.', 'danger')
+                return redirect(url_for('adjustments.new_adjustment'))
 
             db.session.commit()
             flash(f'Adjustment {adj.adjustment_number} created. {adj.total_qty} units adjusted.', 'success')

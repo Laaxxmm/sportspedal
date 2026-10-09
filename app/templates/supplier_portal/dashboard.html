@@ -68,6 +68,28 @@
     </div>
 </div>
 
+<!-- How the net balance is worked out (same ledger the owner sees) -->
+<div class="card mb-4">
+    <div class="card-header"><strong><i class="bi bi-calculator"></i> Balance Breakdown</strong></div>
+    <div class="p-3">
+        <div class="fin-row"><span class="fin-label">Total invoice value</span><span class="fin-value">Rs.{{ "{:,.0f}".format(total_cost) }}</span></div>
+        <div class="fin-row"><span class="fin-label">Payments received</span><span class="fin-value" style="color:var(--accent-green)">-Rs.{{ "{:,.0f}".format(total_paid) }}</span></div>
+        {% if shipping_credit and shipping_credit > 0 %}
+        <div class="fin-row"><span class="fin-label">Transport borne by supplier</span><span class="fin-value" style="color:var(--accent-blue)">-Rs.{{ "{:,.0f}".format(shipping_credit) }}</span></div>
+        {% endif %}
+        {% if adj_credit and adj_credit > 0 %}
+        <div class="fin-row"><span class="fin-label">Promotional / damaged credit</span><span class="fin-value" style="color:var(--accent-blue)">-Rs.{{ "{:,.0f}".format(adj_credit) }}</span></div>
+        {% endif %}
+        {% if sale_discount and sale_discount > 0 %}
+        <div class="fin-row"><span class="fin-label">Bulk sale discount borne by supplier</span><span class="fin-value" style="color:var(--accent-blue)">-Rs.{{ "{:,.0f}".format(sale_discount) }}</span></div>
+        {% endif %}
+        {% if expense_credit and expense_credit > 0 %}
+        <div class="fin-row"><span class="fin-label">Expenses charged to supplier</span><span class="fin-value" style="color:var(--accent-blue)">-Rs.{{ "{:,.0f}".format(expense_credit) }}</span></div>
+        {% endif %}
+        <div class="fin-row fin-total"><span class="fin-label">Net balance</span><span class="fin-value" style="font-size:1.1rem;">Rs.{{ "{:,.0f}".format(balance) }}</span></div>
+    </div>
+</div>
+
 <!-- Adjustment Credits Row -->
 <div class="row g-3 mb-4">
     <div class="col-md-4">

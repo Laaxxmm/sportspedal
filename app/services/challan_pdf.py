@@ -1,5 +1,5 @@
 from flask import send_file
-from fpdf import FPDF
+from app.services.pdf_base import SafeFPDF as FPDF
 import io
 
 
@@ -38,7 +38,7 @@ def generate_challan(sale, profile):
     customer = sale.customer
     pdf.cell(0, 5, customer.name, 0, 1)
     if customer.address:
-        pdf.cell(0, 5, customer.address, 0, 1)
+        pdf.multi_cell(0, 5, customer.address)
     if customer.city:
         pdf.cell(0, 5, f"{customer.city}, {customer.state or ''}", 0, 1)
     if customer.phone:
@@ -49,10 +49,10 @@ def generate_challan(sale, profile):
     pdf.set_font('Helvetica', 'B', 9)
     pdf.set_fill_color(220, 220, 220)
     pdf.cell(10, 7, '#', 1, 0, 'C', True)
-    pdf.cell(80, 7, 'Description', 1, 0, 'L', True)
-    pdf.cell(15, 7, 'SKU', 1, 0, 'C', True)
+    pdf.cell(75, 7, 'Description', 1, 0, 'L', True)
+    pdf.cell(30, 7, 'SKU', 1, 0, 'C', True)
     pdf.cell(20, 7, 'Qty', 1, 0, 'C', True)
-    pdf.cell(65, 7, 'Remarks', 1, 1, 'L', True)
+    pdf.cell(55, 7, 'Remarks', 1, 1, 'L', True)
 
     pdf.set_font('Helvetica', '', 9)
     total_qty = 0
@@ -60,17 +60,17 @@ def generate_challan(sale, profile):
         variant = item.variant
         total_qty += item.quantity
         pdf.cell(10, 6, str(idx), 1, 0, 'C')
-        pdf.cell(80, 6, variant.display_name[:45], 1, 0, 'L')
-        pdf.cell(15, 6, variant.sku_code or '', 1, 0, 'C')
+        pdf.cell(75, 6, variant.display_name[:42], 1, 0, 'L')
+        pdf.cell(30, 6, (variant.sku_code or '')[:16], 1, 0, 'C')
         pdf.cell(20, 6, str(item.quantity), 1, 0, 'C')
-        pdf.cell(65, 6, '', 1, 1, 'L')
+        pdf.cell(55, 6, '', 1, 1, 'L')
 
     # Total items
     pdf.set_font('Helvetica', 'B', 9)
-    pdf.cell(90, 6, 'Total Items:', 1, 0, 'R')
-    pdf.cell(15, 6, '', 1, 0)
+    pdf.cell(85, 6, 'Total Items:', 1, 0, 'R')
+    pdf.cell(30, 6, '', 1, 0)
     pdf.cell(20, 6, str(total_qty), 1, 0, 'C')
-    pdf.cell(65, 6, '', 1, 1)
+    pdf.cell(55, 6, '', 1, 1)
 
     # Transport
     pdf.ln(5)

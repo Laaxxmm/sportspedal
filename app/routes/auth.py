@@ -23,7 +23,11 @@ def login():
             user.last_login = datetime.utcnow()
             db.session.commit()
             login_user(user, remember=request.form.get('remember'))
-            next_page = request.args.get('next')
+            next_page = request.args.get('next') or ''
+            # Only follow same-site relative paths; '//evil.com' or 'https://..'
+            # would otherwise bounce a freshly logged-in user to another site.
+            if not next_page.startswith('/') or next_page.startswith('//') or '\\' in next_page:
+                next_page = None
             flash(f'Welcome, {user.full_name}!', 'success')
             if user.is_supplier_user:
                 return redirect(url_for('supplier_portal.portal_dashboard'))

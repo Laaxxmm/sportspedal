@@ -81,6 +81,12 @@ def form_date(form, key, default=None):
     from datetime import date as _date
     if default is None:
         default = _date.today()
+    elif isinstance(default, str):
+        # Callers sometimes pass an ISO string; a Date column needs a date object.
+        try:
+            default = _date.fromisoformat(default)
+        except ValueError:
+            default = _date.today()
     raw = form.get(key)
     if raw is None:
         return default

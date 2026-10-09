@@ -68,26 +68,16 @@ def portal_dashboard():
                 .filter_by(supplier_id=sid)
                 .order_by(SupplierPayment.payment_date.desc()).all())
 
-    # Shipping credits (supplier owes for shipping)
-    from app.models import SaleOrder
-    shipping_credit = db.session.query(func.sum(SaleOrder.shipping_cost)).filter(
-        SaleOrder.shipping_paid_by == 'supplier', SaleOrder.shipping_cost > 0
-    ).scalar() or 0
-
-    shipping_settled = db.session.query(func.sum(SupplierPayment.shipping_deduction)).filter(
-        SupplierPayment.supplier_id == sid
-    ).scalar() or 0
-
-    shipping_pending = shipping_credit - shipping_settled
-
-    # Adjustment credits (promotional/damaged/returned where supplier covers cost)
+    # Same ledger the owner sees on the dashboard and payments page. The portal used
+    # to keep its own formula, which ignored transport expenses, bulk-sale discounts
+    # and business expenses and did not scope credits to this supplier - so the
+    # supplier was shown a larger amount owed than the owner's books.
+    from app.routes.payments import get_supplier_balance
+    ledger = get_supplier_balance(sid)
+    shipping_credit = ledger['shipping_credit']
+    shipping_pending = ledger['shipping_pending']
+    adj_credit = ledger['adjustment_credit']
     from app.models import StockAdjustment, StockAdjustmentItem
-    adj_credit = db.session.query(
-        func.sum(StockAdjustmentItem.unit_cost * StockAdjustmentItem.quantity)
-    ).join(StockAdjustment).filter(
-        StockAdjustment.supplier_credit == True,
-        StockAdjustment.status == 'completed'
-    ).scalar() or 0
 
     # Promotional / damaged breakdown
     adj_breakdown = (db.session.query(
@@ -95,7 +85,10 @@ def portal_dashboard():
         func.sum(StockAdjustmentItem.quantity),
         func.sum(StockAdjustmentItem.unit_cost * StockAdjustmentItem.quantity)
     ).join(StockAdjustmentItem)
-     .filter(StockAdjustment.status == 'completed')
+     .filter(StockAdjustment.status == 'completed',
+             StockAdjustmentItem.variant_id.in_(
+                 db.session.query(PurchaseItem.variant_id).join(PurchaseOrder)
+                 .filter(PurchaseOrder.supplier_id == sid)))
      .group_by(StockAdjustment.adjustment_type).all())
 
     promo_qty, promo_value = 0, 0
@@ -107,13 +100,21 @@ def portal_dashboard():
             damage_qty += q or 0
             damage_value += v or 0
 
-    balance = total_cost - total_paid - shipping_pending - adj_credit
+    total_cost = ledger['owed']
+    total_paid = ledger['paid']
+    balance = ledger['balance']
+    sale_discount = ledger['sale_discount']
+    expense_credit = ledger['expense_credit']
+
+    # Only show this supplier the products they actually supplied
+    supplied = {vid for (vid,) in db.session.query(PurchaseItem.variant_id)
+                .join(PurchaseOrder).filter(PurchaseOrder.supplier_id == sid).distinct()}
 
     # Stock by location
     locations = Location.query.filter_by(is_active=True).order_by(Location.state, Location.district).all()
     location_stock = []
     for loc in locations:
-        inv = get_inventory_data(location_id=loc.id)
+        inv = [i for i in get_inventory_data(location_id=loc.id) if i['variant_id'] in supplied]
         total_stock = sum(item['stock'] for item in inv)
         total_value = sum(item['stock_value'] for item in inv)
         if total_stock > 0 or any(item['inward'] > 0 for item in inv):
@@ -125,7 +126,7 @@ def portal_dashboard():
             })
 
     # Items that need restocking (stock = 0 but were previously stocked)
-    all_inv = get_inventory_data()
+    all_inv = [i for i in get_inventory_data() if i['variant_id'] in supplied]
     restock_needed = [i for i in all_inv if i['stock'] <= 0 and i['inward'] > 0]
 
     # Per-product summary: what was sent, current stock across all locations
@@ -156,6 +157,8 @@ def portal_dashboard():
                            shipping_credit=shipping_credit,
                            shipping_pending=shipping_pending,
                            adj_credit=adj_credit,
+                           sale_discount=sale_discount,
+                           expense_credit=expense_credit,
                            promo_qty=promo_qty, promo_value=promo_value,
                            damage_qty=damage_qty, damage_value=damage_value,
                            payments=payments,

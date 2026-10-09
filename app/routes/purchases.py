@@ -1,5 +1,6 @@
 from datetime import date
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
+from app.decorators import permission_required
 from flask_login import login_required, current_user
 from app import db
 from app.models import PurchaseOrder, PurchaseItem, Supplier, ProductVariant, Product, Location
@@ -27,6 +28,7 @@ def scope_purchase(po):
 
 @bp.route('/')
 @login_required
+@permission_required('view_purchases')
 def list_purchases():
     query = PurchaseOrder.query
     if not current_user.is_superadmin and current_user.location_id:
@@ -37,6 +39,7 @@ def list_purchases():
 
 @bp.route('/download')
 @login_required
+@permission_required('view_purchases')
 def download_purchases():
     from app.services.excel_export import export_purchases
     query = PurchaseOrder.query
@@ -48,11 +51,18 @@ def download_purchases():
 
 @bp.route('/new', methods=['GET', 'POST'])
 @login_required
+@permission_required('view_purchases')
 def new_purchase():
     if request.method == 'POST':
         loc_id = request.form.get('location_id', type=int)
         if not current_user.is_superadmin:
             loc_id = current_user.location_id or loc_id
+
+        # A PO with a missing supplier saved supplier_id=0 and then crashed the
+        # purchases list ("NoneType has no attribute name").
+        if not Supplier.query.get(form_int(request.form, 'supplier_id')):
+            flash('Select a supplier for this purchase order.', 'danger')
+            return redirect(url_for('purchases.new_purchase'))
 
         po = PurchaseOrder(
             order_number=request.form.get('order_number', ''),
@@ -61,7 +71,7 @@ def new_purchase():
             location_id=loc_id,
             transporter=request.form.get('transporter', ''),
             status=request.form.get('status', 'ordered'),
-            bulk_discount=float(request.form.get('bulk_discount', 0) or 0),
+            bulk_discount=max(0.0, form_float(request.form, 'bulk_discount', 0)),
             discount_reason=request.form.get('discount_reason', ''),
             notes=request.form.get('notes', ''),
         )
@@ -107,6 +117,7 @@ def new_purchase():
 
 @bp.route('/<int:id>')
 @login_required
+@permission_required('view_purchases')
 def view_purchase(id):
     po = PurchaseOrder.query.get_or_404(id)
     scope_purchase(po)
@@ -115,17 +126,22 @@ def view_purchase(id):
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
+@permission_required('view_purchases')
 def edit_purchase(id):
     po = PurchaseOrder.query.get_or_404(id)
     scope_purchase(po)
     if request.method == 'POST':
+        if not Supplier.query.get(form_int(request.form, 'supplier_id')):
+            flash('Select a supplier for this purchase order.', 'danger')
+            return redirect(url_for('purchases.edit_purchase', id=po.id))
         po.order_number = request.form.get('order_number', '')
         po.supplier_id = form_int(request.form, 'supplier_id')
-        po.order_date = form_date(request.form, 'order_date')
-        po.location_id = request.form.get('location_id', type=int) or po.location_id
+        po.order_date = form_date(request.form, 'order_date', po.order_date)
+        if current_user.is_superadmin:
+            po.location_id = request.form.get('location_id', type=int) or po.location_id
         po.transporter = request.form.get('transporter', '')
         po.status = request.form.get('status', 'ordered')
-        po.bulk_discount = float(request.form.get('bulk_discount', 0) or 0)
+        po.bulk_discount = max(0.0, form_float(request.form, 'bulk_discount', 0))
         po.discount_reason = request.form.get('discount_reason', '')
         po.notes = request.form.get('notes', '')
 
@@ -169,6 +185,7 @@ def edit_purchase(id):
 
 @bp.route('/<int:id>/delete', methods=['POST'])
 @login_required
+@permission_required('view_purchases')
 def delete_purchase(id):
     po = PurchaseOrder.query.get_or_404(id)
     scope_purchase(po)

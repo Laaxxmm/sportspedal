@@ -42,6 +42,15 @@ def parse_transport(form):
 
 bp = Blueprint('sales', __name__)
 
+def _num(raw, default=0, cast=float):
+    """Parse a number from a form array cell; blank or junk falls back to default."""
+    try:
+        raw = (raw or '').strip()
+        return cast(float(raw)) if raw != '' else cast(default)
+    except (TypeError, ValueError, AttributeError):
+        return cast(default)
+
+
 def form_at(values, i, default=''):
     """Safely read index i from a parallel form array.
 
@@ -52,34 +61,42 @@ def form_at(values, i, default=''):
 
 
 
+def _next_number(column, prefix, fy):
+    """Next sequence for '<prefix>/<fy>/<nnn>'.
+
+    Takes the highest existing sequence for this exact prefix + financial year,
+    so numbering restarts at 001 when the FY changes and a prefix change does not
+    continue another series. Looking only at the last row (the old approach)
+    reused numbers and carried one FY's count into the next.
+    """
+    stem = f"{prefix}/{fy}/"
+    rows = db.session.query(column).filter(column.like(stem + '%')).all()
+    seq = 0
+    for (num,) in rows:
+        try:
+            seq = max(seq, int(num.rsplit('/', 1)[-1]))
+        except (ValueError, AttributeError):
+            continue
+    candidate = f"{stem}{seq + 1:03d}"
+    # invoice_number is UNIQUE - step past any collision rather than fail the save
+    while db.session.query(column).filter(column == candidate).first():
+        seq += 1
+        candidate = f"{stem}{seq + 1:03d}"
+    return candidate
+
+
 def generate_invoice_number():
     profile = BusinessProfile.query.first()
-    prefix = profile.invoice_prefix if profile else 'SP'
-    fy = profile.current_fy if profile else '2025-26'
-    last = SaleOrder.query.filter(SaleOrder.invoice_number.isnot(None)).order_by(SaleOrder.id.desc()).first()
-    if last and last.invoice_number:
-        try:
-            seq = int(last.invoice_number.split('/')[-1]) + 1
-        except (ValueError, IndexError):
-            seq = 1
-    else:
-        seq = 1
-    return f"{prefix}/{fy}/{seq:03d}"
+    prefix = (profile.invoice_prefix if profile else None) or 'SP'
+    fy = (profile.current_fy if profile else None) or '2025-26'
+    return _next_number(SaleOrder.invoice_number, prefix, fy)
 
 
 def generate_challan_number():
     profile = BusinessProfile.query.first()
-    prefix = profile.challan_prefix if profile else 'DC'
-    fy = profile.current_fy if profile else '2025-26'
-    last = SaleOrder.query.filter(SaleOrder.challan_number.isnot(None)).order_by(SaleOrder.id.desc()).first()
-    if last and last.challan_number:
-        try:
-            seq = int(last.challan_number.split('/')[-1]) + 1
-        except (ValueError, IndexError):
-            seq = 1
-    else:
-        seq = 1
-    return f"{prefix}/{fy}/{seq:03d}"
+    prefix = (profile.challan_prefix if profile else None) or 'DC'
+    fy = (profile.current_fy if profile else None) or '2025-26'
+    return _next_number(SaleOrder.challan_number, prefix, fy)
 
 
 def detect_package(items_data, customer_type):
@@ -132,6 +149,12 @@ def new_sale():
     if request.method == 'POST':
       try:
         customer = Customer.query.get(form_int(request.form, 'customer_id'))
+        if not customer:
+            flash('Select a customer before saving the sale.', 'danger')
+            return redirect(url_for('sales.new_sale'))
+        if not any(v for v in request.form.getlist('variant_id[]')):
+            flash('Add at least one item to the sale.', 'danger')
+            return redirect(url_for('sales.new_sale'))
         from app.models import Location
         loc_id = current_user.location_id or Location.query.first().id if Location.query.first() else None
 
@@ -140,7 +163,7 @@ def new_sale():
             invoice_number=generate_invoice_number(),
             challan_number=generate_challan_number(),
             customer_id=customer.id,
-            sale_date=form_date(request.form, 'sale_date', date.today().isoformat()),
+            sale_date=form_date(request.form, 'sale_date', date.today()),
             location_id=loc_id,
             status=request.form.get('status', 'confirmed'),
             payment_status=request.form.get('payment_status', 'paid'),
@@ -149,8 +172,8 @@ def new_sale():
             transport_charge=t['transport_charge'],
             transport_borne_by=t['transport_borne_by'],
             transport_supplier_id=t['transport_supplier_id'],
-            discount_amount=form_float(request.form, 'discount_amount', 0),
-            supplier_discount=float(request.form.get('supplier_discount', 0) or 0),
+            discount_amount=max(0.0, form_float(request.form, 'discount_amount', 0)),
+            supplier_discount=max(0.0, form_float(request.form, 'supplier_discount', 0)),
             discount_supplier_id=(form_int(request.form, 'discount_supplier_id')
                                   if request.form.get('discount_supplier_id') else None),
             discount_reason=request.form.get('discount_reason', ''),
@@ -174,12 +197,15 @@ def new_sale():
         for i in range(len(variant_ids)):
             if not variant_ids[i]:
                 continue
+            qty = _num(form_at(qtys, i), 1, int)
+            if qty <= 0:
+                continue
             items_data.append({
                 'variant_id': int(variant_ids[i]),
-                'quantity': int(form_at(qtys, i) or 1),
-                'unit_price': float(form_at(unit_prices, i) or 0),
-                'gst_percent': float(form_at(gst_percents, i) or 12.0),
-                'discount': float(form_at(line_discounts, i) or 0),
+                'quantity': qty,
+                'unit_price': max(0.0, _num(form_at(unit_prices, i), 0)),
+                'gst_percent': max(0.0, _num(form_at(gst_percents, i), 12.0)),
+                'discount': max(0.0, _num(form_at(line_discounts, i), 0)),
             })
 
         # Check for package pricing
@@ -299,7 +325,7 @@ def edit_sale(id):
     scope_sale(sale)
     if request.method == 'POST':
       try:
-        sale.sale_date = form_date(request.form, 'sale_date', sale.sale_date.isoformat())
+        sale.sale_date = form_date(request.form, 'sale_date', sale.sale_date)
         sale.status = request.form.get('status', sale.status)
         sale.payment_status = request.form.get('payment_status', sale.payment_status)
         sale.transport_mode = request.form.get('transport_mode', '')
@@ -312,12 +338,21 @@ def edit_sale(id):
         sale.shipping_carrier = t['shipping_carrier']
         sale.shipping_tracking = t['shipping_tracking']
         sale.shipping_paid_by = t['shipping_paid_by']
-        sale.discount_amount = form_float(request.form, 'discount_amount', 0)
-        sale.supplier_discount = float(request.form.get('supplier_discount', 0) or 0)
+        sale.discount_amount = max(0.0, form_float(request.form, 'discount_amount', 0))
+        sale.supplier_discount = max(0.0, form_float(request.form, 'supplier_discount', 0))
         sale.discount_supplier_id = (form_int(request.form, 'discount_supplier_id')
                                      if request.form.get('discount_supplier_id') else None)
         sale.discount_reason = request.form.get('discount_reason', '')
         sale.notes = request.form.get('notes', '')
+
+        if not any(v for v in request.form.getlist('variant_id[]')):
+            raise ValueError('A sale needs at least one item.')
+
+        # Keep each variant's original frozen cost. Re-reading the current cost on
+        # every edit silently rewrote historical COGS and profit for old sales.
+        prior_cost = {}
+        for old in sale.items:
+            prior_cost.setdefault(old.variant_id, old.cost_at_sale)
 
         # Delete old items and recreate
         SaleItem.query.filter_by(sale_order_id=sale.id).delete()
@@ -331,18 +366,21 @@ def edit_sale(id):
         for i in range(len(variant_ids)):
             if not variant_ids[i]:
                 continue
-            qty = int(form_at(qtys, i) or 1)
-            price = float(form_at(unit_prices, i) or 0)
-            gst_pct = float(form_at(gst_percents, i) or 0)
-            disc = min(float(form_at(line_discounts, i) or 0), price * qty)
+            qty = _num(form_at(qtys, i), 1, int)
+            if qty <= 0:
+                continue
+            price = max(0.0, _num(form_at(unit_prices, i), 0))
+            gst_pct = max(0.0, _num(form_at(gst_percents, i), 0))
+            disc = min(max(0.0, _num(form_at(line_discounts, i), 0)), price * qty)
             taxable = price * qty - disc
             gst_amt = taxable * gst_pct / 100
             vid = int(variant_ids[i])
             v = ProductVariant.query.get(vid)
+            frozen = prior_cost.get(vid)
             db.session.add(SaleItem(
                 sale_order_id=sale.id, variant_id=vid,
                 quantity=qty, unit_price=price, discount_amount=disc,
-                cost_at_sale=v.effective_cost if v else 0,
+                cost_at_sale=frozen if frozen else (v.effective_cost if v else 0),
                 gst_percent=gst_pct,
                 gst_amount=gst_amt, total_amount=taxable + gst_amt,
             ))
@@ -387,6 +425,7 @@ def delete_sale(id):
 def download_invoice(id):
     from app.services.invoice_pdf import generate_invoice
     sale = SaleOrder.query.get_or_404(id)
+    scope_sale(sale)
     profile = BusinessProfile.query.first()
     return generate_invoice(sale, profile)
 
@@ -396,5 +435,6 @@ def download_invoice(id):
 def download_challan(id):
     from app.services.challan_pdf import generate_challan
     sale = SaleOrder.query.get_or_404(id)
+    scope_sale(sale)
     profile = BusinessProfile.query.first()
     return generate_challan(sale, profile)

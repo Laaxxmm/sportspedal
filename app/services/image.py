@@ -1,7 +1,7 @@
 """Image upload and WebP thumbnail conversion. Stores in data/ for persistence."""
 import os
 import uuid
-from PIL import Image
+from PIL import Image, ImageOps
 
 # Store images in data/ directory (persisted on Railway volume)
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), '..'))
@@ -26,13 +26,17 @@ def save_product_image(file):
         img.verify()  # Verify it's actually an image
         file.stream.seek(0)  # Reset after verify
         img = Image.open(file.stream)
+        # Phone photos store rotation in EXIF; without this they save sideways.
+        img = ImageOps.exif_transpose(img)
+        # WebP only takes RGB/RGBA. CMYK, greyscale+alpha, 16-bit etc. used to crash save.
+        has_alpha = img.mode in ('RGBA', 'LA', 'PA') or (img.mode == 'P' and 'transparency' in img.info)
+        img = img.convert('RGBA' if has_alpha else 'RGB')
+        img.thumbnail(THUMBNAIL_SIZE, Image.LANCZOS)
+        img.save(filepath, 'WEBP', quality=85, optimize=True)
     except Exception:
-        return None  # Not a valid image
-
-    if img.mode in ('RGBA', 'P'):
-        img = img.convert('RGB')
-    img.thumbnail(THUMBNAIL_SIZE, Image.LANCZOS)
-    img.save(filepath, 'WEBP', quality=85, optimize=True)
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        return None  # Not a valid / supported image
 
     return filename
 

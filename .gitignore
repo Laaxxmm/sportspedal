@@ -12,3 +12,7 @@ dist/
 build/
 .venv/
 venv/
+data/.secret_key
+data/pre_restore_*.db
+data/_restore_tmp*
+data/*.db-journal

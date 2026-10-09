@@ -21,7 +21,15 @@ def list_users():
 @superadmin_required
 def new_user():
     if request.method == 'POST':
-        username = request.form['username'].strip().lower()
+        username = (request.form.get('username') or '').strip().lower()
+        password = request.form.get('password') or ''
+        full_name = (request.form.get('full_name') or '').strip()
+        if not username or not full_name:
+            flash('Username and full name are required.', 'danger')
+            return redirect(url_for('users.new_user'))
+        if len(password) < 6:
+            flash('Password must be at least 6 characters.', 'danger')
+            return redirect(url_for('users.new_user'))
         if User.query.filter_by(username=username).first():
             flash(f'Username "{username}" already exists.', 'danger')
             return redirect(url_for('users.new_user'))
@@ -45,17 +53,13 @@ def new_user():
 
         user = User(
             username=username,
-            full_name=request.form['full_name'].strip(),
+            full_name=full_name,
             email=request.form.get('email', ''),
             phone=request.form.get('phone', ''),
             role=role,
             location_id=location.id if location else None,
             supplier_id=supplier_id_val,
         )
-        password = request.form['password']
-        if len(password) < 6:
-            flash('Password must be at least 6 characters.', 'danger')
-            return redirect(url_for('users.new_user'))
         user.set_password(password)
         db.session.add(user)
         db.session.flush()
@@ -85,8 +89,12 @@ def edit_user(id):
         user.email = request.form.get('email', '')
         user.phone = request.form.get('phone', '')
 
-        if request.form.get('password'):
-            user.set_password(request.form['password'])
+        new_pw = request.form.get('password') or ''
+        if new_pw:
+            if len(new_pw) < 6:
+                flash('Password must be at least 6 characters.', 'danger')
+                return redirect(url_for('users.edit_user', id=id))
+            user.set_password(new_pw)
 
         # Update location
         state = request.form.get('state', '')

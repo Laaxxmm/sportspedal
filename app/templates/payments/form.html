@@ -24,13 +24,13 @@
                     <input type="date" name="payment_date" class="form-control" value="{{ payment.payment_date if payment else '' }}" required>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label">Amount (Rs.) *</label>
+                    <label class="form-label">Amount paid (Rs.) *</label>
                     <input type="number" name="amount" class="form-control" step="0.01" min="0.01" value="{{ payment.amount if payment else '' }}" required>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label">Shipping Deduction</label>
-                    <input type="number" name="shipping_deduction" class="form-control" step="0.01" value="{{ payment.shipping_deduction if payment else 0 }}" placeholder="0">
-                    <small class="text-muted">Shipping credit to deduct</small>
+                    <label class="form-label">Transport credit used</label>
+                    <input type="number" name="shipping_deduction" class="form-control" step="0.01" min="0" value="{{ payment.shipping_deduction if payment else 0 }}" placeholder="0">
+                    <small class="text-muted">For your records only - the balance shown already deducts supplier-borne transport.</small>
                 </div>
             </div>
             <div class="row mb-3">

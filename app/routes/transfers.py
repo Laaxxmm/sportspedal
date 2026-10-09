@@ -1,5 +1,5 @@
 from datetime import date
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import abort, Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app import db
 from app.models import StockTransfer, StockTransferItem, Location, ProductVariant, Product
@@ -39,6 +39,9 @@ def new_transfer():
     if request.method == 'POST':
         from_loc = form_int(request.form, 'from_location_id')
         to_loc = form_int(request.form, 'to_location_id')
+        if not Location.query.get(from_loc) or not Location.query.get(to_loc):
+            flash('Select both a source and a destination location.', 'danger')
+            return redirect(url_for('transfers.new_transfer'))
         if from_loc == to_loc:
             flash('Source and destination must be different.', 'danger')
             return redirect(url_for('transfers.new_transfer'))
@@ -49,7 +52,7 @@ def new_transfer():
             transfer_number=f"TRF-{count:04d}",
             from_location_id=from_loc,
             to_location_id=to_loc,
-            transfer_date=form_date(request.form, 'transfer_date', date.today().isoformat()),
+            transfer_date=form_date(request.form, 'transfer_date', date.today()),
             status='pending',
             notes=request.form.get('notes', ''),
             created_by=current_user.id,
@@ -60,6 +63,7 @@ def new_transfer():
         stock_map = get_stock_map(location_id=from_loc)
         variant_ids = request.form.getlist('variant_id[]')
         qtys = request.form.getlist('qty[]')
+        added = 0
 
         for i in range(len(variant_ids)):
             if not variant_ids[i]:
@@ -73,6 +77,12 @@ def new_transfer():
                 flash(f'Insufficient stock for variant {vid}. Available: {available}', 'warning')
                 continue
             db.session.add(StockTransferItem(transfer_id=transfer.id, variant_id=vid, quantity=qty))
+            added += 1
+
+        if not added:
+            db.session.rollback()
+            flash('Nothing to transfer - add at least one item with available stock.', 'danger')
+            return redirect(url_for('transfers.new_transfer'))
 
         db.session.commit()
         flash(f'Transfer {transfer.transfer_number} created.', 'success')
@@ -89,6 +99,9 @@ def new_transfer():
 @login_required
 def view_transfer(id):
     transfer = StockTransfer.query.get_or_404(id)
+    if not current_user.is_superadmin and current_user.location_id not in (
+            transfer.from_location_id, transfer.to_location_id):
+        abort(403)
     return render_template('transfers/detail.html', transfer=transfer)
 
 
