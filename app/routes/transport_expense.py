@@ -4,6 +4,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import TransportExpense, Supplier
 from app.decorators import superadmin_required
+from app.form_utils import form_float, form_int, form_opt_float, form_opt_int, form_date
 
 bp = Blueprint('transport_expense', __name__)
 
@@ -25,12 +26,17 @@ def list_expenses():
 @superadmin_required
 def new_expense():
     if request.method == 'POST':
+        amount = form_float(request.form, 'amount')
+        if amount <= 0:
+            flash('Enter a transport amount greater than zero.', 'danger')
+            return redirect(url_for('transport_expense.new_expense'))
+
         borne = request.form.get('borne_by', 'supplier')
         e = TransportExpense(
-            expense_date=date.fromisoformat(request.form['expense_date']),
-            amount=float(request.form['amount']),
+            expense_date=form_date(request.form, 'expense_date'),
+            amount=amount,
             borne_by=borne,
-            supplier_id=(int(request.form['supplier_id'])
+            supplier_id=(form_int(request.form, 'supplier_id')
                          if borne == 'supplier' and request.form.get('supplier_id') else None),
             carrier=request.form.get('carrier', ''),
             reference_number=request.form.get('reference_number', ''),

@@ -3,6 +3,7 @@ from flask_login import login_required
 from app import db
 from app.models import Product, ProductVariant
 from app.services.image import save_product_image, delete_product_image, allowed_file
+from app.form_utils import form_float, form_int, form_opt_float, form_opt_int
 
 bp = Blueprint('products', __name__)
 
@@ -113,10 +114,10 @@ def edit_product(id):
         product.name = request.form['name']
         product.category = request.form['category']
         product.hsn_code = request.form.get('hsn_code', '')
-        product.gst_percent = float(request.form.get('gst_percent', 12.0))
-        product.cost_price = float(request.form.get('cost_price', 0))
-        product.coach_price = float(request.form.get('coach_price', 0))
-        product.mrp = float(request.form.get('mrp', 0))
+        product.gst_percent = form_float(request.form, 'gst_percent', 12.0)
+        product.cost_price = form_float(request.form, 'cost_price', 0)
+        product.coach_price = form_float(request.form, 'coach_price', 0)
+        product.mrp = form_float(request.form, 'mrp', 0)
         product.coach_local = float(request.form.get('coach_local', 0) or 0)
         product.coach_direct = float(request.form.get('coach_direct', 0) or 0)
         product.coach_self = float(request.form.get('coach_self', 0) or 0)

@@ -5,6 +5,7 @@ from app import db
 from app.models import Customer, CustomerPayment, SaleOrder
 from app.decorators import superadmin_required
 from app.services.customer_account import get_customer_balance
+from app.form_utils import form_float, form_int, form_opt_float, form_opt_int, form_date
 
 bp = Blueprint('customers', __name__)
 
@@ -154,10 +155,15 @@ def account_detail(id):
 def record_payment(id):
     customer = Customer.query.get_or_404(id)
     if request.method == 'POST':
+        amount = form_float(request.form, 'amount')
+        if amount <= 0:
+            flash('Enter an amount greater than zero.', 'danger')
+            return redirect(url_for('customers.record_payment', id=customer.id))
+
         payment = CustomerPayment(
             customer_id=customer.id,
-            payment_date=date.fromisoformat(request.form['payment_date']),
-            amount=float(request.form['amount']),
+            payment_date=form_date(request.form, 'payment_date'),
+            amount=amount,
             payment_type=request.form.get('payment_type', 'advance'),
             payment_mode=request.form.get('payment_mode', ''),
             reference_number=request.form.get('reference_number', ''),

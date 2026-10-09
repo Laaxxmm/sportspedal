@@ -5,6 +5,7 @@ from app import db
 from app.models import SupplierPayment, Supplier, PurchaseItem
 from app.decorators import superadmin_required
 from sqlalchemy import func
+from app.form_utils import form_float, form_int, form_opt_float, form_opt_int, form_date
 
 bp = Blueprint('payments', __name__)
 
@@ -127,11 +128,15 @@ def list_payments():
 @superadmin_required
 def new_payment():
     if request.method == 'POST':
-        shipping_ded = float(request.form.get('shipping_deduction', 0))
+        amount = form_float(request.form, 'amount')
+        if amount <= 0:
+            flash('Enter a payment amount greater than zero.', 'danger')
+            return redirect(url_for('payments.new_payment'))
+        shipping_ded = form_float(request.form, 'shipping_deduction', 0)
         payment = SupplierPayment(
-            supplier_id=int(request.form['supplier_id']),
-            payment_date=date.fromisoformat(request.form['payment_date']),
-            amount=float(request.form['amount']),
+            supplier_id=form_int(request.form, 'supplier_id'),
+            payment_date=form_date(request.form, 'payment_date'),
+            amount=amount,
             shipping_deduction=shipping_ded,
             payment_mode=request.form.get('payment_mode', ''),
             reference_number=request.form.get('reference_number', ''),
@@ -157,9 +162,9 @@ def new_payment():
 def edit_payment(id):
     payment = SupplierPayment.query.get_or_404(id)
     if request.method == 'POST':
-        payment.supplier_id = int(request.form['supplier_id'])
-        payment.payment_date = date.fromisoformat(request.form['payment_date'])
-        payment.amount = float(request.form['amount'])
+        payment.supplier_id = form_int(request.form, 'supplier_id')
+        payment.payment_date = form_date(request.form, 'payment_date')
+        payment.amount = form_float(request.form, 'amount')
         payment.payment_mode = request.form.get('payment_mode', '')
         payment.reference_number = request.form.get('reference_number', '')
         payment.notes = request.form.get('notes', '')

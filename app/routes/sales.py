@@ -5,6 +5,7 @@ from app.models import SaleOrder, SaleItem, Customer, ProductVariant, Product, B
 from app.services.stock import get_stock_map
 from app.services.customer_account import customer_advance_map as _customer_advance_map
 from datetime import date
+from app.form_utils import form_float, form_int, form_opt_float, form_opt_int, form_date
 
 
 def scope_sale(sale):
@@ -130,7 +131,7 @@ def download_sales():
 def new_sale():
     if request.method == 'POST':
       try:
-        customer = Customer.query.get(int(request.form['customer_id']))
+        customer = Customer.query.get(form_int(request.form, 'customer_id'))
         from app.models import Location
         loc_id = current_user.location_id or Location.query.first().id if Location.query.first() else None
 
@@ -139,7 +140,7 @@ def new_sale():
             invoice_number=generate_invoice_number(),
             challan_number=generate_challan_number(),
             customer_id=customer.id,
-            sale_date=date.fromisoformat(request.form.get('sale_date', date.today().isoformat())),
+            sale_date=form_date(request.form, 'sale_date', date.today().isoformat()),
             location_id=loc_id,
             status=request.form.get('status', 'confirmed'),
             payment_status=request.form.get('payment_status', 'paid'),
@@ -148,9 +149,9 @@ def new_sale():
             transport_charge=t['transport_charge'],
             transport_borne_by=t['transport_borne_by'],
             transport_supplier_id=t['transport_supplier_id'],
-            discount_amount=float(request.form.get('discount_amount', 0)),
+            discount_amount=form_float(request.form, 'discount_amount', 0),
             supplier_discount=float(request.form.get('supplier_discount', 0) or 0),
-            discount_supplier_id=(int(request.form['discount_supplier_id'])
+            discount_supplier_id=(form_int(request.form, 'discount_supplier_id')
                                   if request.form.get('discount_supplier_id') else None),
             discount_reason=request.form.get('discount_reason', ''),
             shipping_cost=t['shipping_cost'],
@@ -298,7 +299,7 @@ def edit_sale(id):
     scope_sale(sale)
     if request.method == 'POST':
       try:
-        sale.sale_date = date.fromisoformat(request.form.get('sale_date', sale.sale_date.isoformat()))
+        sale.sale_date = form_date(request.form, 'sale_date', sale.sale_date.isoformat())
         sale.status = request.form.get('status', sale.status)
         sale.payment_status = request.form.get('payment_status', sale.payment_status)
         sale.transport_mode = request.form.get('transport_mode', '')
@@ -311,9 +312,9 @@ def edit_sale(id):
         sale.shipping_carrier = t['shipping_carrier']
         sale.shipping_tracking = t['shipping_tracking']
         sale.shipping_paid_by = t['shipping_paid_by']
-        sale.discount_amount = float(request.form.get('discount_amount', 0))
+        sale.discount_amount = form_float(request.form, 'discount_amount', 0)
         sale.supplier_discount = float(request.form.get('supplier_discount', 0) or 0)
-        sale.discount_supplier_id = (int(request.form['discount_supplier_id'])
+        sale.discount_supplier_id = (form_int(request.form, 'discount_supplier_id')
                                      if request.form.get('discount_supplier_id') else None)
         sale.discount_reason = request.form.get('discount_reason', '')
         sale.notes = request.form.get('notes', '')

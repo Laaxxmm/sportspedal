@@ -5,6 +5,7 @@ from app import db
 from app.models import Expense, ExpenseCategory, Supplier
 from app.decorators import superadmin_required
 from sqlalchemy import func
+from app.form_utils import form_float, form_int, form_opt_float, form_opt_int, form_date
 
 bp = Blueprint('expenses', __name__)
 
@@ -67,14 +68,19 @@ def new_expense():
                 db.session.flush()
                 cat_id = c.id
 
+        amount = form_float(request.form, 'amount')
+        if amount <= 0:
+            flash('Enter an expense amount greater than zero.', 'danger')
+            return redirect(url_for('expenses.new_expense'))
+
         deduct = request.form.get('deduct_from_supplier') == '1'
         e = Expense(
-            expense_date=date.fromisoformat(request.form['expense_date']),
+            expense_date=form_date(request.form, 'expense_date'),
             category_id=int(cat_id) if cat_id else None,
             description=request.form.get('description', ''),
-            amount=float(request.form['amount']),
+            amount=amount,
             deduct_from_supplier=deduct,
-            supplier_id=(int(request.form['supplier_id'])
+            supplier_id=(form_int(request.form, 'supplier_id')
                          if deduct and request.form.get('supplier_id') else None),
             reference_number=request.form.get('reference_number', ''),
             notes=request.form.get('notes', ''),

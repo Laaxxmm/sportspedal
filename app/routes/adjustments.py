@@ -6,6 +6,7 @@ from app import db
 from app.models import (StockAdjustment, StockAdjustmentItem, ProductVariant,
                         Product, Location, ADJUSTMENT_TYPES)
 from app.services.stock import get_stock_map
+from app.form_utils import form_date
 
 bp = Blueprint('adjustments', __name__)
 
@@ -70,7 +71,7 @@ def new_adjustment():
 
             adj = StockAdjustment(
                 adjustment_number=generate_adjustment_number(),
-                adjustment_date=date.fromisoformat(request.form.get('adjustment_date', date.today().isoformat())),
+                adjustment_date=form_date(request.form, 'adjustment_date', date.today().isoformat()),
                 location_id=loc_id,
                 adjustment_type=request.form.get('adjustment_type', 'promotional'),
                 recipient=request.form.get('recipient', ''),

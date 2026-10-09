@@ -4,6 +4,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import PurchaseOrder, PurchaseItem, Supplier, ProductVariant, Product, Location
 from app.decorators import superadmin_required
+from app.form_utils import form_float, form_int, form_opt_float, form_opt_int, form_date
 
 bp = Blueprint('purchases', __name__)
 
@@ -55,8 +56,8 @@ def new_purchase():
 
         po = PurchaseOrder(
             order_number=request.form.get('order_number', ''),
-            supplier_id=int(request.form['supplier_id']),
-            order_date=date.fromisoformat(request.form['order_date']),
+            supplier_id=form_int(request.form, 'supplier_id'),
+            order_date=form_date(request.form, 'order_date'),
             location_id=loc_id,
             transporter=request.form.get('transporter', ''),
             status=request.form.get('status', 'ordered'),
@@ -119,8 +120,8 @@ def edit_purchase(id):
     scope_purchase(po)
     if request.method == 'POST':
         po.order_number = request.form.get('order_number', '')
-        po.supplier_id = int(request.form['supplier_id'])
-        po.order_date = date.fromisoformat(request.form['order_date'])
+        po.supplier_id = form_int(request.form, 'supplier_id')
+        po.order_date = form_date(request.form, 'order_date')
         po.location_id = request.form.get('location_id', type=int) or po.location_id
         po.transporter = request.form.get('transporter', '')
         po.status = request.form.get('status', 'ordered')

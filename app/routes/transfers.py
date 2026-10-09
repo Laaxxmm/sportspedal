@@ -5,6 +5,7 @@ from app import db
 from app.models import StockTransfer, StockTransferItem, Location, ProductVariant, Product
 from app.decorators import superadmin_required
 from app.services.stock import get_stock_map
+from app.form_utils import form_float, form_int, form_opt_float, form_opt_int, form_date
 
 bp = Blueprint('transfers', __name__)
 
@@ -36,8 +37,8 @@ def list_transfers():
 @superadmin_required
 def new_transfer():
     if request.method == 'POST':
-        from_loc = int(request.form['from_location_id'])
-        to_loc = int(request.form['to_location_id'])
+        from_loc = form_int(request.form, 'from_location_id')
+        to_loc = form_int(request.form, 'to_location_id')
         if from_loc == to_loc:
             flash('Source and destination must be different.', 'danger')
             return redirect(url_for('transfers.new_transfer'))
@@ -48,7 +49,7 @@ def new_transfer():
             transfer_number=f"TRF-{count:04d}",
             from_location_id=from_loc,
             to_location_id=to_loc,
-            transfer_date=date.fromisoformat(request.form.get('transfer_date', date.today().isoformat())),
+            transfer_date=form_date(request.form, 'transfer_date', date.today().isoformat()),
             status='pending',
             notes=request.form.get('notes', ''),
             created_by=current_user.id,
