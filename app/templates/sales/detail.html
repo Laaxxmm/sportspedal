@@ -28,7 +28,7 @@
                 {% if sale.transport_mode %}<p><strong>Transport:</strong> {{ sale.transport_mode }}</p>{% endif %}
                 {% if sale.shipping_cost and sale.shipping_cost > 0 %}
                 <hr>
-                <p><strong><i class="bi bi-truck"></i> Transport:</strong> Rs.{{ "%.2f"|format(sale.shipping_cost) }}
+                <p><strong><i class="bi bi-truck"></i> Transport:</strong> Rs.{{ "{:,.2f}".format(sale.shipping_cost) }}
                     {% if sale.shipping_paid_by == 'supplier' %}
                     <span class="badge bg-info">Borne by supplier — deducted from dues</span>
                     {% else %}
@@ -76,20 +76,20 @@
                 <td>{{ item.variant.display_name }}</td>
                 <td><code>{{ item.variant.sku_code }}</code></td>
                 <td>{{ item.quantity }}</td>
-                <td>{{ "%.2f"|format(item.unit_price) }}</td>
-                <td>{{ "%.2f"|format(item.discount_amount) if item.discount_amount else '-' }}</td>
+                <td>{{ "{:,.2f}".format(item.unit_price) }}</td>
+                <td>{{ "{:,.2f}".format(item.discount_amount) if item.discount_amount else '-' }}</td>
                 <td>{{ item.gst_percent }}%</td>
-                <td>{{ "%.2f"|format(item.gst_amount) }}</td>
-                <td>{{ "%.2f"|format(item.total_amount) }}</td>
+                <td>{{ "{:,.2f}".format(item.gst_amount) }}</td>
+                <td>{{ "{:,.2f}".format(item.total_amount) }}</td>
             </tr>
             {% endfor %}
             </tbody>
             <tfoot class="table-light">
-                <tr><td colspan="7" class="text-end"><strong>Subtotal:</strong></td><td></td><td><strong>{{ "%.2f"|format(sale.subtotal) }}</strong></td></tr>
-                {% if sale.total_customer_discount %}<tr><td colspan="7" class="text-end">Customer discount given:</td><td></td><td>{{ "%.2f"|format(sale.total_customer_discount) }}</td></tr>{% endif %}
-                {% if sale.transport_charge %}<tr><td colspan="7" class="text-end">Transport:</td><td></td><td>{{ "%.2f"|format(sale.transport_charge) }}</td></tr>{% endif %}
-                {% if sale.discount_amount %}<tr><td colspan="7" class="text-end">Order discount:</td><td></td><td>-{{ "%.2f"|format(sale.discount_amount) }}</td></tr>{% endif %}
-                <tr><td colspan="7" class="text-end"><strong>Grand Total:</strong></td><td></td><td><strong>{{ "%.2f"|format(sale.grand_total) }}</strong></td></tr>
+                <tr><td colspan="7" class="text-end"><strong>Subtotal:</strong></td><td></td><td><strong>{{ "{:,.2f}".format(sale.subtotal) }}</strong></td></tr>
+                {% if sale.total_customer_discount %}<tr><td colspan="7" class="text-end">Customer discount given:</td><td></td><td>{{ "{:,.2f}".format(sale.total_customer_discount) }}</td></tr>{% endif %}
+                {% if sale.transport_charge %}<tr><td colspan="7" class="text-end">Transport:</td><td></td><td>{{ "{:,.2f}".format(sale.transport_charge) }}</td></tr>{% endif %}
+                {% if sale.discount_amount %}<tr><td colspan="7" class="text-end">Order discount:</td><td></td><td>-{{ "{:,.2f}".format(sale.discount_amount) }}</td></tr>{% endif %}
+                <tr><td colspan="7" class="text-end"><strong>Grand Total:</strong></td><td></td><td><strong>{{ "{:,.2f}".format(sale.grand_total) }}</strong></td></tr>
             </tfoot>
         </table>
     </div>

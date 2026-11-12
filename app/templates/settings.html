@@ -121,8 +121,8 @@
             <tr>
                 <td><strong>{{ pkg.name }}</strong></td>
                 <td>{{ pkg.skate_product.name }}</td>
-                <td>{{ "%.2f"|format(pkg.coach_price) }}</td>
-                <td>{{ "%.2f"|format(pkg.public_price) }}</td>
+                <td>{{ "{:,.2f}".format(pkg.coach_price) }}</td>
+                <td>{{ "{:,.2f}".format(pkg.public_price) }}</td>
             </tr>
             {% endfor %}
             </tbody>

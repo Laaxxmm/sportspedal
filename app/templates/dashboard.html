@@ -97,41 +97,41 @@
 <!-- 3. Money flow + supplier account -->
 <div class="row g-3 mb-4">
     <div class="col-lg-8">
-        <div class="money-flow-card" style="height:100%; padding: 22px;">
-            <div style="font-weight:700; font-size:0.95rem; margin-bottom:16px;"><i class="bi bi-currency-rupee"></i> Money flow</div>
+        <div class="money-flow-card" style="height:100%; padding: 20px;">
+            <h3 class="section-title"><i class="bi bi-currency-rupee" style="color:var(--tone-blue)"></i> Money flow <span class="muted">all time{{ ', ' ~ selected_location.display_name if selected_location }}</span></h3>
             <div class="row">
                 <div class="col-6 col-lg flow-item">
                     <a href="{{ url_for('purchases.list_purchases') if current_user.has_permission('view_purchases') else '#' }}">
-                        <div class="flow-label">I bought for</div>
-                        <div class="flow-value" style="color:#c0392b;">Rs.{{ "{:,.0f}".format(total_purchase_cost) }}</div>
+                        <div class="flow-head"><span class="flow-chip tone-rose"><i class="bi bi-cart-plus"></i></span><span class="flow-label">I bought for</span></div>
+                        <div class="flow-value">Rs.{{ "{:,.0f}".format(total_purchase_cost) }}</div>
                         <div class="flow-sub">incl GST Rs.{{ "{:,.0f}".format(purchase_gst) }}</div>
                     </a>
                 </div>
                 <div class="col-6 col-lg flow-item">
                     <a href="{{ url_for('sales.list_sales') }}">
-                        <div class="flow-label">I sold for</div>
-                        <div class="flow-value" style="color:#0d9e6d;">Rs.{{ "{:,.0f}".format(total_revenue) }}</div>
+                        <div class="flow-head"><span class="flow-chip tone-green"><i class="bi bi-receipt-cutoff"></i></span><span class="flow-label">I sold for</span></div>
+                        <div class="flow-value">Rs.{{ "{:,.0f}".format(total_revenue) }}</div>
                         <div class="flow-sub">{{ total_units_sold }} units sold</div>
                     </a>
                 </div>
                 <div class="col-6 col-lg flow-item">
                     <a href="{{ url_for('sales.list_sales') }}">
-                        <div class="flow-label">Cost of sold</div>
-                        <div class="flow-value" style="color:#e67e22;">Rs.{{ "{:,.0f}".format(total_cogs) }}</div>
+                        <div class="flow-head"><span class="flow-chip tone-amber"><i class="bi bi-box-seam"></i></span><span class="flow-label">Cost of sold</span></div>
+                        <div class="flow-value">Rs.{{ "{:,.0f}".format(total_cogs) }}</div>
                         <div class="flow-sub">what I paid for sold items</div>
                     </a>
                 </div>
                 <div class="col-6 col-lg flow-item">
                     <a href="{{ url_for('sales.list_sales') }}">
-                        <div class="flow-label">My profit</div>
-                        <div class="flow-value" style="color:{{ '#0d9e6d' if gross_profit >= 0 else '#c0392b' }};">Rs.{{ "{:,.0f}".format(gross_profit) }}</div>
-                        <div class="flow-sub">{{ "{:.1f}".format(profit_margin) }}% margin</div>
+                        <div class="flow-head"><span class="flow-chip {{ 'tone-green' if gross_profit >= 0 else 'tone-rose' }}"><i class="bi bi-graph-up-arrow"></i></span><span class="flow-label">My profit</span></div>
+                        <div class="flow-value {{ 'good' if gross_profit >= 0 else 'bad' }}">Rs.{{ "{:,.0f}".format(gross_profit) }}</div>
+                        <div class="flow-sub">{{ "{:.1f}".format(profit_margin) }}% margin on public sales</div>
                     </a>
                 </div>
                 <div class="col-6 col-lg flow-item">
                     <a href="{{ url_for('inventory.view_inventory') }}">
-                        <div class="flow-label">Stock in hand</div>
-                        <div class="flow-value" style="color:#5b21b6;">Rs.{{ "{:,.0f}".format(stock_value) }}</div>
+                        <div class="flow-head"><span class="flow-chip tone-purple"><i class="bi bi-boxes"></i></span><span class="flow-label">Stock in hand</span></div>
+                        <div class="flow-value">Rs.{{ "{:,.0f}".format(stock_value) }}</div>
                         <div class="flow-sub">{{ total_stock_units }} units</div>
                     </a>
                 </div>

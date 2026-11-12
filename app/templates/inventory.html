@@ -125,8 +125,8 @@
                     <strong>{{ item.stock }}</strong>
                     {% endif %}
                 </td>
-                <td class="text-end">{{ "%.2f"|format(item.cost_price) }}</td>
-                <td class="text-end">{{ "%.2f"|format(item.stock_value) }}</td>
+                <td class="text-end">{{ "{:,.2f}".format(item.cost_price) }}</td>
+                <td class="text-end">{{ "{:,.2f}".format(item.stock_value) }}</td>
             </tr>
             {% set ns.total_value = ns.total_value + item.stock_value %}
             {% set ns.total_stock = ns.total_stock + item.stock %}
@@ -140,7 +140,7 @@
                     <td colspan="11" class="text-end"><strong>Totals:</strong></td>
                     <td class="text-center"><strong>{{ ns.total_stock }}</strong></td>
                     <td></td>
-                    <td class="text-end"><strong>{{ "%.2f"|format(ns.total_value) }}</strong></td>
+                    <td class="text-end"><strong>{{ "{:,.2f}".format(ns.total_value) }}</strong></td>
                 </tr>
             </tfoot>
             {% endif %}

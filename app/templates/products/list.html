@@ -42,9 +42,9 @@
                 </td>
                 <td><strong>{{ product.name }}</strong></td>
                 <td><span class="badge bg-secondary">{{ product.category }}</span></td>
-                <td>{{ "%.2f"|format(product.cost_price) }}</td>
-                <td>{{ "%.2f"|format(product.coach_price) }}</td>
-                <td>{{ "%.2f"|format(product.mrp) }}</td>
+                <td>{{ "{:,.2f}".format(product.cost_price) }}</td>
+                <td>{{ "{:,.2f}".format(product.coach_price) }}</td>
+                <td>{{ "{:,.2f}".format(product.mrp) }}</td>
                 <td>{{ product.gst_percent }}%</td>
                 <td>{{ product.variants.filter_by(is_active=True).count() }}</td>
                 <td>

@@ -43,18 +43,18 @@
                 <td><code>{{ item.variant.sku_code }}</code></td>
                 <td>{{ item.quantity_dispatched }}</td>
                 <td>{{ item.quantity_received }}</td>
-                <td>{{ "%.2f"|format(item.unit_price) }}</td>
+                <td>{{ "{:,.2f}".format(item.unit_price) }}</td>
                 <td>{{ item.gst_percent }}%</td>
-                <td>{{ "%.2f"|format(item.gst_amount) }}</td>
-                <td>{{ "%.2f"|format(item.total_amount) }}</td>
+                <td>{{ "{:,.2f}".format(item.gst_amount) }}</td>
+                <td>{{ "{:,.2f}".format(item.total_amount) }}</td>
             </tr>
             {% endfor %}
             </tbody>
             <tfoot class="table-light">
                 <tr>
                     <td colspan="7" class="text-end"><strong>Total:</strong></td>
-                    <td><strong>{{ "%.2f"|format(purchase.total_gst) }}</strong></td>
-                    <td><strong>{{ "%.2f"|format(purchase.total_amount) }}</strong></td>
+                    <td><strong>{{ "{:,.2f}".format(purchase.total_gst) }}</strong></td>
+                    <td><strong>{{ "{:,.2f}".format(purchase.total_amount) }}</strong></td>
                 </tr>
             </tfoot>
         </table>
