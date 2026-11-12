@@ -156,16 +156,23 @@
         <a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if nav.home_active }}">
             <i class="bi bi-house-door-fill"></i><span>Home</span>
         </a>
-        {% for item in nav.sidebar if item.key in ('sales', 'stock') %}
-        <a href="{{ item.url }}" class="{{ 'active' if item.active }}">
-            <i class="bi {{ item.icon }}"></i><span>{{ item.label }}</span>
-        </a>
-        {% endfor %}
-        {% if nav.actions %}
+        {# fixed five slots so + always sits in the middle: Home, Sales, +, Stock, Menu #}
+        {% for key in ('sales', 'plus', 'stock') %}
+            {% if key == 'plus' %}
+                {% if nav.actions %}
         <button type="button" class="bottom-nav-plus" data-bs-toggle="offcanvas" data-bs-target="#actionSheet" aria-label="New">
             <i class="bi bi-plus-lg"></i>
         </button>
-        {% endif %}
+                {% else %}<span class="bottom-nav-gap" aria-hidden="true"></span>{% endif %}
+            {% else %}
+                {% set item = (nav.sidebar | selectattr('key', 'equalto', key) | first) %}
+                {% if item %}
+        <a href="{{ item.url }}" class="{{ 'active' if item.active }}">
+            <i class="bi {{ item.icon }}"></i><span>{{ item.label }}</span>
+        </a>
+                {% else %}<span class="bottom-nav-gap" aria-hidden="true"></span>{% endif %}
+            {% endif %}
+        {% endfor %}
         <a href="#" onclick="document.getElementById('mobile-nav-toggle').click(); return false;">
             <i class="bi bi-grid-3x3-gap-fill"></i><span>Menu</span>
         </a>

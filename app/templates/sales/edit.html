@@ -8,18 +8,18 @@
         <form method="POST" id="sale-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="row mb-3">
-                <div class="col-md-3">
+                <div class="col-12 col-lg-3">
                     <label class="form-label">Customer</label>
                     <select name="customer_id" class="form-select" disabled>
                         <option selected>{{ sale.customer.name }} ({{ sale.customer.customer_type }})</option>
                     </select>
                     <input type="hidden" name="customer_id" value="{{ sale.customer_id }}">
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-lg-2">
                     <label class="form-label">Date</label>
                     <input type="date" name="sale_date" class="form-control" value="{{ sale.sale_date }}" required>
                 </div>
-                <div class="col-md-1">
+                <div class="col-6 col-lg-2">
                     <label class="form-label">Status</label>
                     <select name="status" class="form-select">
                         {% for st in ['confirmed', 'dispatched', 'delivered'] %}
@@ -27,7 +27,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-1">
+                <div class="col-6 col-lg-2">
                     <label class="form-label">Payment</label>
                     <select name="payment_status" class="form-select">
                         {% for ps in ['paid', 'pending', 'partial'] %}
@@ -35,14 +35,14 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">Transport Mode</label>
+                <div class="col-6 col-lg-3">
+                    <label class="form-label">Transport mode</label>
                     <input type="text" name="transport_mode" class="form-control" value="{{ sale.transport_mode or '' }}">
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Customer Discount (Rs.)</label>
+                <div class="col-6 col-lg-3">
+                    <label class="form-label">Customer discount</label>
                     <input type="number" name="discount_amount" class="form-control" step="0.01" value="{{ sale.discount_amount or 0 }}" id="discount-amt">
-                    <small class="text-muted">Reduces what the customer pays (shown on the invoice).</small>
+                    <div class="field-hint">Lowers the invoice total.</div>
                 </div>
             </div>
 
@@ -50,31 +50,31 @@
             {% set t_cost = sale.transport_charge if t_borne == 'customer' else sale.shipping_cost %}
             <!-- Optional sections toggles -->
             <div class="mb-3 d-flex gap-2 flex-wrap">
-                <button type="button" class="btn btn-sm btn-outline-primary opt-toggle" data-target="transport-section"><i class="bi bi-truck"></i> Transport / Delivery</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary opt-toggle" data-target="supplier-discount-section"><i class="bi bi-percent"></i> Supplier-Borne Discount</button>
+                <button type="button" class="btn btn-sm btn-outline-primary opt-toggle" data-target="transport-section"><i class="bi bi-truck"></i> Transport</button>
+                <button type="button" class="btn btn-sm btn-outline-primary opt-toggle" data-target="supplier-discount-section"><i class="bi bi-percent"></i> Supplier discount</button>
             </div>
 
             <!-- Transport / Delivery -->
             <div class="card mb-3" id="transport-section" style="{{ 'display:none;' if not (t_cost and t_cost > 0) }} border-color: var(--accent-blue) !important;">
-                <div class="card-header py-2" style="background:#eef4ff;">
-                    <strong style="font-size:0.9rem;"><i class="bi bi-truck"></i> Transport / Delivery</strong>
-                    <small class="text-muted ms-2">Cost of getting goods to the customer, and who pays it.</small>
+                <div class="opt-head">
+                    <div class="opt-title"><i class="bi bi-truck"></i> Transport / delivery</div>
+                    <div class="opt-desc">What delivery cost and who pays it.</div>
                 </div>
                 <div class="card-body">
-                    <div class="row g-3 align-items-end">
-                        <div class="col-md-2">
-                            <label class="form-label">Transport Cost (Rs.)</label>
+                    <div class="row g-3">
+                        <div class="col-6 col-lg-2">
+                            <label class="form-label">Transport cost</label>
                             <input type="number" name="transport_cost" class="form-control" step="0.01" value="{{ t_cost or 0 }}" id="transport-cost">
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Who bears it?</label>
+                        <div class="col-6 col-lg-3">
+                            <label class="form-label">Who pays</label>
                             <select name="transport_borne_by" class="form-select" id="transport-borne-by">
                                 <option value="customer" {{ 'selected' if t_borne == 'customer' }}>Customer (add to invoice)</option>
                                 <option value="self" {{ 'selected' if t_borne == 'self' }}>We pay it</option>
                                 <option value="supplier" {{ 'selected' if t_borne == 'supplier' }}>Supplier (deduct from dues)</option>
                             </select>
                         </div>
-                        <div class="col-md-3" id="transport-supplier-wrap" style="display:none;">
+                        <div class="col-12 col-lg-3" id="transport-supplier-wrap" style="display:none;">
                             <label class="form-label">Supplier</label>
                             <select name="transport_supplier_id" class="form-select" id="transport-supplier">
                                 <option value="">— Select —</option>
@@ -83,16 +83,16 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-md-2 ct-field">
+                        <div class="col-6 col-lg-2 ct-field">
                             <label class="form-label">Carrier</label>
                             <input type="text" name="shipping_carrier" class="form-control" value="{{ sale.shipping_carrier or '' }}">
                         </div>
-                        <div class="col-md-2 ct-field">
-                            <label class="form-label">Tracking #</label>
+                        <div class="col-6 col-lg-2 ct-field">
+                            <label class="form-label">Tracking no.</label>
                             <input type="text" name="shipping_tracking" class="form-control" value="{{ sale.shipping_tracking or '' }}">
                         </div>
                     </div>
-                    <small id="transport-hint" class="text-muted d-block mt-2"></small>
+                    <div id="transport-hint" class="field-hint mt-2"></div>
                 </div>
             </div>
 
@@ -105,19 +105,19 @@
 
             <!-- Bulk discount borne by supplier -->
             <div class="card mb-3" id="supplier-discount-section" style="{{ 'display:none;' if not (sale.supplier_discount and sale.supplier_discount > 0) }} border-color: var(--accent-purple) !important;">
-                <div class="card-header py-2" style="background:#f0ecff;">
-                    <strong style="font-size:0.9rem;"><i class="bi bi-percent"></i> Supplier-Borne Discount</strong>
-                    <small class="text-muted ms-2">Different from Customer Discount above. Reduces what you owe the supplier; does NOT change the buyer's invoice.</small>
+                <div class="opt-head">
+                    <div class="opt-title"><i class="bi bi-percent"></i> Supplier discount</div>
+                    <div class="opt-desc">For selling below cost. Lowers what you owe the supplier; the buyer's invoice stays the same.</div>
                 </div>
                 <div class="card-body">
-                    <div class="row g-3 align-items-end">
-                        <div class="col-md-3">
-                            <label class="form-label">Discount Amount (Rs.)</label>
+                    <div class="row g-3">
+                        <div class="col-6 col-lg-3">
+                            <label class="form-label">Supplier discount</label>
                             <input type="number" name="supplier_discount" id="supplier-discount" class="form-control" step="0.01" value="{{ sale.supplier_discount or 0 }}">
-                            <small id="discount-suggest" class="text-muted d-block mt-1"></small>
+                            <div id="discount-suggest" class="field-hint"></div>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Given by Supplier</label>
+                        <div class="col-6 col-lg-3">
+                            <label class="form-label">Given by</label>
                             <select name="discount_supplier_id" id="discount-supplier" class="form-select">
                                 <option value="">— Select —</option>
                                 {% for s in suppliers %}
@@ -125,8 +125,8 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Reason / Note</label>
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label">Reason</label>
                             <input type="text" name="discount_reason" class="form-control" value="{{ sale.discount_reason or '' }}" placeholder="e.g. Bulk deal — supplier agreed to absorb">
                         </div>
                     </div>
@@ -134,16 +134,16 @@
             </div>
 
             <hr>
-            <h5>Line Items</h5>
+            <h5 class="section-sub">Items</h5>
             <table class="table table-sm" id="items-table">
                 <thead>
                     <tr>
-                        <th style="width:35%">Product / Variant</th>
+                        <th style="width:35%">Product</th>
                         <th>Qty</th>
-                        <th>Unit Price</th>
-                        <th>Disc (Rs.)</th>
-                        <th>GST%</th>
-                        <th>GST Amt</th>
+                        <th>Unit price</th>
+                        <th>Discount</th>
+                        <th>GST %</th>
+                        <th>GST amount</th>
                         <th>Total</th>
                         <th></th>
                     </tr>
@@ -163,8 +163,8 @@
                         <td><input type="number" name="unit_price[]" class="form-control form-control-sm unit-price" step="0.01" value="{{ item.unit_price }}"></td>
                         <td><input type="number" name="line_discount[]" class="form-control form-control-sm line-disc" step="0.01" min="0" value="{{ item.discount_amount or 0 }}"></td>
                         <td><input type="number" name="gst_percent[]" class="form-control form-control-sm gst-pct" step="0.1" value="{{ item.gst_percent }}"></td>
-                        <td class="gst-amt">{{ "%.2f"|format(item.gst_amount) }}</td>
-                        <td class="row-total">{{ "%.2f"|format(item.total_amount) }}</td>
+                        <td><span class="gst-amt cell-val">{{ "%.2f"|format(item.gst_amount) }}</span></td>
+                        <td><span class="row-total cell-val">{{ "%.2f"|format(item.total_amount) }}</span></td>
                         <td><button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-trash"></i></button></td>
                     </tr>
                     {% endfor %}
@@ -184,10 +184,10 @@
                     </tr>
                 </tfoot>
             </table>
-            <button type="button" class="btn btn-sm btn-outline-success mb-3" id="add-row"><i class="bi bi-plus"></i> Add Item</button>
+            <div class="d-flex mb-3"><button type="button" class="btn btn-outline-success" id="add-row"><i class="bi bi-plus-circle"></i> Add item</button></div>
 
             <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary">Update Sale</button>
+                <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Save changes</button>
                 <a href="{{ url_for('sales.view_sale', id=sale.id) }}" class="btn btn-outline-secondary">Cancel</a>
             </div>
         </form>
@@ -197,7 +197,7 @@
 
 {% block extra_js %}
 <script>
-const variantOptions = `<option value="">Select...</option>
+const variantOptions = `<option value="">Choose product</option>
 {% for v, p in variants %}<option value="{{ v.id }}" data-cost="{{ v.effective_cost }}" data-gst="{{ p.gst_percent }}" data-image="{{ p.image_url or '' }}">{{ p.name }} - {{ v.color or '' }} {{ v.size or '' }} ({{ v.sku_code }})</option>
 {% endfor %}`;
 
@@ -208,8 +208,8 @@ function newRow() {
         <td><input type="number" name="unit_price[]" class="form-control form-control-sm unit-price" step="0.01" value="0"></td>
         <td><input type="number" name="line_discount[]" class="form-control form-control-sm line-disc" step="0.01" min="0" value="0"></td>
         <td><input type="number" name="gst_percent[]" class="form-control form-control-sm gst-pct" step="0.1" value="0"></td>
-        <td class="gst-amt">0.00</td>
-        <td class="row-total">0.00</td>
+        <td><span class="gst-amt cell-val">0.00</span></td>
+        <td><span class="row-total cell-val">0.00</span></td>
         <td><button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-trash"></i></button></td>
     </tr>`;
 }
@@ -255,16 +255,24 @@ function recalc() {
     const el = document.getElementById('discount-suggest');
     if (el) {
         if (suggested > 0) {
-            el.innerHTML = `Sold below cost by <strong>Rs.${suggested.toFixed(2)}</strong> · <a href="#" id="apply-suggest">apply</a>`;
+            el.innerHTML = `Rs.${suggested.toFixed(2)} below cost · <a href="#" id="apply-suggest">use this</a>`;
             const a = document.getElementById('apply-suggest');
             if (a) a.onclick = (e) => { e.preventDefault(); document.getElementById('supplier-discount').value = suggested.toFixed(2); };
         } else {
-            el.textContent = 'No items priced below cost.';
+            el.textContent = 'No items below cost.';
         }
     }
 }
 
+function labelItemCells() {
+    const heads = [...document.querySelectorAll('#items-table thead th')].map(th => th.textContent.trim());
+    document.querySelectorAll('#items-table .item-row').forEach(row => {
+        [...row.children].forEach((td, i) => { if (heads[i] && !td.dataset.label) td.dataset.label = heads[i]; });
+    });
+}
+
 function bindEvents() {
+    labelItemCells();
     document.querySelectorAll('.qty, .unit-price, .gst-pct, .line-disc').forEach(el => { el.oninput = recalc; });
     document.querySelectorAll('.variant-select').forEach(el => { el.onchange = recalc; });
     document.querySelectorAll('.remove-row').forEach(btn => {

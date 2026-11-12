@@ -8,11 +8,11 @@
         <form method="POST" id="sale-form" class="mobile-form-padded">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="row mb-3">
-                <div class="col-md-4">
+                <div class="col-12 col-lg-4">
                     <label class="form-label">Customer</label>
                     <div class="input-group">
                         <select name="customer_id" class="form-select" id="customer-select" required>
-                            <option value="">Select customer...</option>
+                            <option value="">Choose customer</option>
                             {% for c in customers %}
                             <option value="{{ c.id }}" data-type="{{ c.customer_type }}" data-state="{{ c.state or 'Karnataka' }}">
                                 {% if c.customer_type == 'bulk' %}🟦 BULK{% elif c.customer_type == 'coach' %}🟢 COACH{% elif c.customer_type == 'dealer' %}🟣 DEALER{% else %}⚪ PUBLIC{% endif %} — {{ c.name }}
@@ -26,11 +26,11 @@
                     <div id="customer-type-badge" class="mt-1" style="font-size:0.78rem;"></div>
                     <div id="advance-hint" class="mt-1" style="font-size:0.78rem;"></div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-lg-2">
                     <label class="form-label">Date</label>
                     <input type="date" name="sale_date" class="form-control" value="{{ sale.sale_date if sale else '' }}" required>
                 </div>
-                <div class="col-md-1">
+                <div class="col-6 col-lg-2">
                     <label class="form-label">Status</label>
                     <select name="status" class="form-select">
                         {% for st in ['confirmed', 'dispatched', 'delivered'] %}
@@ -38,7 +38,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-1">
+                <div class="col-6 col-lg-2">
                     <label class="form-label">Payment</label>
                     <select name="payment_status" class="form-select">
                         <option value="paid">Paid</option>
@@ -46,32 +46,30 @@
                         <option value="partial">Partial</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">Transport Type</label>
+                <div class="col-6 col-lg-2">
+                    <label class="form-label">Transport</label>
                     <select name="transport_type" class="form-select" id="transport-type-select">
-                        <option value="self">Their / Self Pickup</option>
-                        <option value="local">Local Transport</option>
-                        <option value="direct">Direct Transport</option>
+                        <option value="self">Self pickup</option>
+                        <option value="local">Local transport</option>
+                        <option value="direct">Direct transport</option>
                     </select>
                 </div>
             </div>
 
             <div class="row mb-3">
-                <div class="col-md-3">
-                    <label class="form-label">Customer Discount (Rs.)</label>
+                <div class="col-6 col-lg-3">
+                    <label class="form-label">Customer discount</label>
                     <input type="number" name="discount_amount" class="form-control" step="0.01" value="0" id="discount-amt">
-                    <small class="text-muted">Reduces what the customer pays (shown on the invoice).</small>
+                    <div class="field-hint">Lowers the invoice total.</div>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Mark as Bulk?</label>
-                    <div class="form-check mt-2">
+                <div class="col-6 col-lg-3">
+                    <label class="form-label" for="bulk-override">Bulk order</label>
+                    <label class="check-field" for="bulk-override">
                         <input class="form-check-input" type="checkbox" name="is_bulk_override" value="1" id="bulk-override">
-                        <label class="form-check-label" for="bulk-override" style="font-size:0.85rem;">
-                            <span id="bulk-status-text" class="text-muted">Auto from customer</span>
-                        </label>
-                    </div>
+                        <span id="bulk-status-text">Auto</span>
+                    </label>
                 </div>
-                <div class="col-md-6">
+                <div class="col-12 col-lg-6">
                     <label class="form-label">Notes</label>
                     <input type="text" name="notes" class="form-control" value="">
                 </div>
@@ -79,31 +77,31 @@
 
             <!-- Optional sections (hidden until needed) -->
             <div class="mb-3 d-flex gap-2 flex-wrap">
-                <button type="button" class="btn btn-sm btn-outline-primary opt-toggle" id="toggle-transport" data-target="transport-section"><i class="bi bi-truck"></i> Transport / Delivery</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary opt-toggle" id="toggle-supdisc" data-target="supplier-discount-section"><i class="bi bi-percent"></i> Supplier-Borne Discount</button>
+                <button type="button" class="btn btn-sm btn-outline-primary opt-toggle" id="toggle-transport" data-target="transport-section"><i class="bi bi-truck"></i> Transport</button>
+                <button type="button" class="btn btn-sm btn-outline-primary opt-toggle" id="toggle-supdisc" data-target="supplier-discount-section"><i class="bi bi-percent"></i> Supplier discount</button>
             </div>
 
             <!-- Transport / Delivery -->
             <div class="card mb-3" id="transport-section" style="display:none; border-color: var(--accent-blue) !important;">
-                <div class="card-header py-2" style="background:#eef4ff;">
-                    <strong style="font-size:0.9rem;"><i class="bi bi-truck"></i> Transport / Delivery</strong>
-                    <small class="text-muted ms-2">Cost of getting goods to the customer, and who pays it.</small>
+                <div class="opt-head">
+                    <div class="opt-title"><i class="bi bi-truck"></i> Transport / delivery</div>
+                    <div class="opt-desc">What delivery cost and who pays it.</div>
                 </div>
                 <div class="card-body">
-                    <div class="row g-3 align-items-end">
-                        <div class="col-md-2">
-                            <label class="form-label">Transport Cost (Rs.)</label>
+                    <div class="row g-3">
+                        <div class="col-6 col-lg-2">
+                            <label class="form-label">Transport cost</label>
                             <input type="number" name="transport_cost" class="form-control" step="0.01" value="0" id="transport-cost">
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Who bears it?</label>
+                        <div class="col-6 col-lg-3">
+                            <label class="form-label">Who pays</label>
                             <select name="transport_borne_by" class="form-select" id="transport-borne-by">
                                 <option value="customer">Customer (add to invoice)</option>
                                 <option value="self">We pay it</option>
                                 <option value="supplier">Supplier (deduct from dues)</option>
                             </select>
                         </div>
-                        <div class="col-md-3" id="transport-supplier-wrap" style="display:none;">
+                        <div class="col-12 col-lg-3" id="transport-supplier-wrap" style="display:none;">
                             <label class="form-label">Supplier</label>
                             <select name="transport_supplier_id" class="form-select" id="transport-supplier">
                                 <option value="">— Select —</option>
@@ -112,34 +110,34 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-md-2 ct-field">
+                        <div class="col-6 col-lg-2 ct-field">
                             <label class="form-label">Carrier</label>
                             <input type="text" name="shipping_carrier" class="form-control" placeholder="Delhivery, DTDC...">
                         </div>
-                        <div class="col-md-2 ct-field">
-                            <label class="form-label">Tracking #</label>
+                        <div class="col-6 col-lg-2 ct-field">
+                            <label class="form-label">Tracking no.</label>
                             <input type="text" name="shipping_tracking" class="form-control" placeholder="AWB / Tracking">
                         </div>
                     </div>
-                    <small id="transport-hint" class="text-muted d-block mt-2"></small>
+                    <div id="transport-hint" class="field-hint mt-2"></div>
                 </div>
             </div>
 
             <!-- Bulk discount borne by supplier -->
             <div class="card mb-3" id="supplier-discount-section" style="display:none; border-color: var(--accent-purple) !important;">
-                <div class="card-header py-2" style="background:#f0ecff;">
-                    <strong style="font-size:0.9rem;"><i class="bi bi-percent"></i> Supplier-Borne Discount</strong>
-                    <small class="text-muted ms-2">Different from Customer Discount above. Use when you sell below supplier cost — it reduces what you owe the supplier and does NOT change the buyer's invoice.</small>
+                <div class="opt-head">
+                    <div class="opt-title"><i class="bi bi-percent"></i> Supplier discount</div>
+                    <div class="opt-desc">For selling below cost. Lowers what you owe the supplier; the buyer's invoice stays the same.</div>
                 </div>
                 <div class="card-body">
-                    <div class="row g-3 align-items-end">
-                        <div class="col-md-3">
-                            <label class="form-label">Discount Amount (Rs.)</label>
+                    <div class="row g-3">
+                        <div class="col-6 col-lg-3">
+                            <label class="form-label">Supplier discount</label>
                             <input type="number" name="supplier_discount" id="supplier-discount" class="form-control" step="0.01" value="0">
-                            <small id="discount-suggest" class="text-muted d-block mt-1"></small>
+                            <div id="discount-suggest" class="field-hint"></div>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Given by Supplier</label>
+                        <div class="col-6 col-lg-3">
+                            <label class="form-label">Given by</label>
                             <select name="discount_supplier_id" id="discount-supplier" class="form-select">
                                 <option value="">— Select —</option>
                                 {% for s in suppliers %}
@@ -147,8 +145,8 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Reason / Note</label>
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label">Reason</label>
                             <input type="text" name="discount_reason" class="form-control" placeholder="e.g. Bulk deal — supplier agreed to absorb">
                         </div>
                     </div>
@@ -156,11 +154,11 @@
             </div>
 
             <div id="package-info" class="alert alert-success d-none mb-3">
-                <i class="bi bi-check-circle"></i> <span id="package-msg">Tip: Check the "Pkg" box on items to apply package pricing. Uncheck for individual pricing. Prices are always editable.</span>
+                <i class="bi bi-check-circle"></i> <span id="package-msg">Tip: tick Package price on an item to use the package rate. Prices stay editable.</span>
             </div>
 
             <hr>
-            <h5>Line Items</h5>
+            <h5 class="section-sub">Items</h5>
             <div class="items-scroll">
             <table class="table table-sm" id="items-table">
                 <thead>
@@ -170,11 +168,11 @@
                         <th>Size</th>
                         <th>Stock</th>
                         <th>Qty</th>
-                        <th>Unit Price</th>
-                        <th title="Discount given to the customer on this line">Disc (Rs.)</th>
-                        <th title="Check to apply package price">Pkg</th>
-                        <th>GST%</th>
-                        <th>GST Amt</th>
+                        <th>Unit price</th>
+                        <th title="Discount given to the customer on this line">Discount</th>
+                        <th title="Tick to use the package price">Package</th>
+                        <th>GST %</th>
+                        <th>GST amount</th>
                         <th>Total</th>
                         <th></th>
                     </tr>
@@ -197,8 +195,8 @@
             </table>
             </div>
             <div class="d-flex gap-2 flex-wrap mb-3">
-                <button type="button" class="btn btn-primary" id="pick-by-photo"><i class="bi bi-images"></i> Add item by photo</button>
-                <button type="button" class="btn btn-outline-success" id="add-row"><i class="bi bi-plus-circle"></i> Add item from list</button>
+                <button type="button" class="btn btn-primary" id="pick-by-photo"><i class="bi bi-images"></i> Add by photo</button>
+                <button type="button" class="btn btn-outline-success" id="add-row"><i class="bi bi-plus-circle"></i> Add from list</button>
             </div>
 
             <!-- Mobile-only Totals card -->
@@ -210,7 +208,7 @@
             </div>
 
             <div class="form-footer-buttons d-flex gap-2">
-                <button type="submit" class="btn btn-success">Create Sale</button>
+                <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Save sale</button>
                 <a href="{{ url_for('sales.list_sales') }}" class="btn btn-outline-secondary">Cancel</a>
             </div>
         </form>
@@ -220,7 +218,7 @@
 <!-- Sticky bottom save bar (mobile only) -->
 <div class="sticky-save-bar">
     <a href="{{ url_for('sales.list_sales') }}" class="btn btn-outline-secondary">Cancel</a>
-    <button type="submit" form="sale-form" class="btn btn-success"><i class="bi bi-check-lg"></i> Save Sale</button>
+    <button type="submit" form="sale-form" class="btn btn-success"><i class="bi bi-check-lg"></i> Save sale</button>
 </div>
 <!-- Add Customer Modal -->
 <div class="modal fade" id="addCustomerModal" tabindex="-1">
@@ -236,24 +234,24 @@
                     <input type="text" id="new-cust-name" class="form-control" required>
                 </div>
                 <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-6">
                         <label class="form-label">Type</label>
                         <select id="new-cust-type" class="form-select">
                             <option value="public">Public</option>
                             <option value="coach">Coach</option>
                         </select>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-6">
                         <label class="form-label">Phone</label>
                         <input type="text" id="new-cust-phone" class="form-control">
                     </div>
                 </div>
                 <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-6">
                         <label class="form-label">City</label>
                         <input type="text" id="new-cust-city" class="form-control" value="Bangalore">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-6">
                         <label class="form-label">State</label>
                         <input type="text" id="new-cust-state" class="form-control" value="Karnataka">
                     </div>
@@ -413,17 +411,17 @@ function newRow() {
         </td>
         <td data-label="Color"><select class="form-select form-select-sm color-select"><option value="">-</option></select></td>
         <td data-label="Size"><select class="form-select form-select-sm size-select"><option value="">-</option></select></td>
-        <td data-label="Stock" class="stock-cell">-</td>
+        <td data-label="In stock"><span class="stock-cell cell-val">-</span></td>
         <td data-label="Qty"><input type="number" name="qty[]" class="form-control form-control-sm qty" value="1" min="1"></td>
-        <td data-label="Unit Price"><input type="number" name="unit_price[]" class="form-control form-control-sm unit-price" step="0.01" value="0"><small class="cost-hint text-muted d-block" style="font-size:0.65rem;"></small></td>
+        <td data-label="Unit price"><input type="number" name="unit_price[]" class="form-control form-control-sm unit-price" step="0.01" value="0"><div class="cost-hint field-hint"></div></td>
         <td data-label="Discount"><input type="number" name="line_discount[]" class="form-control form-control-sm line-disc" step="0.01" min="0" value="0" placeholder="0"></td>
-        <td data-label="Package Price" class="text-center"><input type="checkbox" class="form-check-input pkg-check" title="Apply package price"></td>
+        <td data-label="Package price"><label class="check-field check-cell"><input type="checkbox" class="form-check-input pkg-check" title="Use the package price"><span>Use it</span></label></td>
         <td data-label="GST %"><input type="number" name="gst_percent[]" class="form-control form-control-sm gst-pct" step="0.1" value="0"></td>
-        <td data-label="GST Amount" class="gst-amt">0.00</td>
-        <td data-label="Item Total" class="row-total">0.00</td>
+        <td data-label="GST amount"><span class="gst-amt cell-val">0.00</span></td>
+        <td data-label="Total"><span class="row-total cell-val">0.00</span></td>
         <td>
             <input type="hidden" name="variant_id[]" class="variant-id-hidden" value="">
-            <button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-trash"></i> Remove Item</button>
+            <button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-trash"></i> Remove item</button>
         </td>
     </tr>`;
 }
@@ -545,13 +543,13 @@ function updateSupplierDiscountSuggestion() {
     const el = document.getElementById('discount-suggest');
     if (!el) return;
     if (suggested > 0) {
-        el.innerHTML = `Sold below cost by <strong>Rs.${suggested.toFixed(2)}</strong> · <a href="#" id="apply-suggest">apply as supplier discount</a>`;
+        el.innerHTML = `Rs.${suggested.toFixed(2)} below cost · <a href="#" id="apply-suggest">use this</a>`;
         const a = document.getElementById('apply-suggest');
         if (a) a.onclick = (e) => { e.preventDefault(); document.getElementById('supplier-discount').value = suggested.toFixed(2); };
         // Auto-reveal the section so the user notices the below-cost sale
         showOptionalSection('supplier-discount-section', 'toggle-supdisc');
     } else {
-        el.textContent = 'No items priced below cost.';
+        el.textContent = 'No items below cost.';
     }
 }
 
@@ -599,7 +597,7 @@ function bindEvents() {
             // Populate colors
             const colors = getColorsForProduct(name);
             if (colors.length > 0) {
-                colorSel.innerHTML = '<option value="">Select Color...</option>' + colors.map(c => `<option value="${c}">${c}</option>`).join('');
+                colorSel.innerHTML = '<option value="">Choose colour</option>' + colors.map(c => `<option value="${c}">${c}</option>`).join('');
                 colorSel.disabled = false;
             } else {
                 colorSel.innerHTML = '<option value="">-</option>';
@@ -621,7 +619,7 @@ function bindEvents() {
             // Populate sizes
             const sizes = getSizesForProduct(name, color);
             if (sizes.length > 0) {
-                sizeSel.innerHTML = '<option value="">Select Size...</option>' + sizes.map(s => `<option value="${s}">${s}</option>`).join('');
+                sizeSel.innerHTML = '<option value="">Choose size</option>' + sizes.map(s => `<option value="${s}">${s}</option>`).join('');
                 sizeSel.disabled = false;
             } else {
                 sizeSel.innerHTML = '<option value="">-</option>';
@@ -655,24 +653,24 @@ document.getElementById('customer-select').addEventListener('change', function()
 
     // Update badge
     if (type === 'bulk') {
-        badge.innerHTML = '<span class="badge" style="background:var(--accent-blue);">🟦 BULK BUYER — Bulk pricing will apply</span>';
-        bulkStatus.textContent = 'Auto: This is a Bulk Order ✓';
+        badge.innerHTML = '<span class="badge" style="background:var(--accent-blue);">Bulk buyer · bulk prices</span>';
+        bulkStatus.textContent = 'Auto: yes';
         bulkStatus.style.color = 'var(--accent-blue)';
     } else if (type === 'coach') {
-        badge.innerHTML = '<span class="badge" style="background:var(--accent-green);">🟢 COACH — Coach pricing</span>';
-        bulkStatus.textContent = 'Auto from customer (not bulk)';
+        badge.innerHTML = '<span class="badge" style="background:var(--accent-green);">Coach · coach prices</span>';
+        bulkStatus.textContent = 'Auto: no';
         bulkStatus.style.color = 'var(--text-muted)';
     } else if (type === 'dealer') {
-        badge.innerHTML = '<span class="badge" style="background:var(--accent-purple);">🟣 DEALER — Dealer pricing</span>';
-        bulkStatus.textContent = 'Auto from customer (not bulk)';
+        badge.innerHTML = '<span class="badge" style="background:var(--accent-purple);">Dealer · dealer prices</span>';
+        bulkStatus.textContent = 'Auto: no';
         bulkStatus.style.color = 'var(--text-muted)';
     } else if (type === 'public') {
-        badge.innerHTML = '<span class="badge" style="background:var(--text-muted);">⚪ PUBLIC — MRP pricing</span>';
-        bulkStatus.textContent = 'Auto from customer (not bulk)';
+        badge.innerHTML = '<span class="badge" style="background:var(--text-muted);">Public · MRP</span>';
+        bulkStatus.textContent = 'Auto: no';
         bulkStatus.style.color = 'var(--text-muted)';
     } else {
         badge.innerHTML = '';
-        bulkStatus.textContent = 'Auto from customer';
+        bulkStatus.textContent = 'Auto';
     }
 
     // Advance / dues hint
@@ -697,8 +695,7 @@ document.getElementById('customer-select').addEventListener('change', function()
 document.getElementById('bulk-override').addEventListener('change', function() {
     const bulkStatus = document.getElementById('bulk-status-text');
     if (this.checked) {
-        bulkStatus.textContent = 'Manually marked as Bulk ✓';
-        bulkStatus.style.color = 'var(--accent-blue)';
+        bulkStatus.textContent = 'Yes, bulk'; bulkStatus.style.color = '';
     } else {
         // Re-trigger customer change to restore auto status
         document.getElementById('customer-select').dispatchEvent(new Event('change'));

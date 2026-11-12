@@ -122,12 +122,12 @@
             </div>
         </div>
         <div class="mc-actions">
-            <a href="{{ url_for('sales.view_sale', id=sale.id) }}" class="btn btn-outline-info btn-sm"><i class="bi bi-eye"></i> View</a>
-            <a href="{{ url_for('sales.edit_sale', id=sale.id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil"></i> Edit</a>
-            <a href="{{ url_for('sales.download_invoice', id=sale.id) }}" class="btn btn-outline-danger btn-sm"><i class="bi bi-file-pdf"></i></a>
+            <a href="{{ url_for('sales.view_sale', id=sale.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-eye"></i> View</a>
+            <a href="{{ url_for('sales.edit_sale', id=sale.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Edit</a>
+            <a href="{{ url_for('sales.download_invoice', id=sale.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-file-earmark-pdf"></i> Invoice</a>
             <form method="POST" action="{{ url_for('sales.delete_sale', id=sale.id) }}" class="d-inline" onsubmit="return confirm('Delete sale {{ sale.invoice_number }}?')" style="flex:0 0 auto;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
+                <button class="btn btn-outline-danger btn-sm" title="Delete" aria-label="Delete"><i class="bi bi-trash"></i></button>
             </form>
         </div>
     </div>

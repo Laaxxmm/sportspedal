@@ -244,37 +244,37 @@
             <div class="row">
                 <div class="col-6 col-lg flow-item">
                     <a href="{{ url_for('purchases.list_purchases') if current_user.has_permission('view_purchases') else '#' }}">
-                        <div class="flow-head"><span class="flow-chip tone-rose"><i class="bi bi-cart-plus"></i></span><span class="flow-label">I bought for</span></div>
+                        <div class="flow-head"><span class="flow-chip tone-rose"><i class="bi bi-cart-plus"></i></span><span class="flow-label">Bought</span></div>
                         <div class="flow-value">Rs.{{ "{:,.0f}".format(total_purchase_cost) }}</div>
-                        <div class="flow-sub">incl GST Rs.{{ "{:,.0f}".format(purchase_gst) }}</div>
+                        <div class="flow-sub">Rs.{{ "{:,.0f}".format(purchase_gst) }} GST incl.</div>
                     </a>
                 </div>
                 <div class="col-6 col-lg flow-item">
                     <a href="{{ url_for('sales.list_sales') }}">
-                        <div class="flow-head"><span class="flow-chip tone-green"><i class="bi bi-receipt-cutoff"></i></span><span class="flow-label">I sold for</span></div>
+                        <div class="flow-head"><span class="flow-chip tone-green"><i class="bi bi-receipt-cutoff"></i></span><span class="flow-label">Sold</span></div>
                         <div class="flow-value">Rs.{{ "{:,.0f}".format(total_revenue) }}</div>
-                        <div class="flow-sub">{{ total_units_sold }} units sold</div>
+                        <div class="flow-sub">{{ total_units_sold }} unit{{ 's' if total_units_sold != 1 }}</div>
                     </a>
                 </div>
                 <div class="col-6 col-lg flow-item">
                     <a href="{{ url_for('sales.list_sales') }}">
-                        <div class="flow-head"><span class="flow-chip tone-amber"><i class="bi bi-box-seam"></i></span><span class="flow-label">Cost of sold</span></div>
+                        <div class="flow-head"><span class="flow-chip tone-amber"><i class="bi bi-box-seam"></i></span><span class="flow-label">Cost of sales</span></div>
                         <div class="flow-value">Rs.{{ "{:,.0f}".format(total_cogs) }}</div>
-                        <div class="flow-sub">what I paid for sold items</div>
+                        <div class="flow-sub">what the sold items cost</div>
                     </a>
                 </div>
                 <div class="col-6 col-lg flow-item">
                     <a href="{{ url_for('sales.list_sales') }}">
-                        <div class="flow-head"><span class="flow-chip {{ 'tone-green' if gross_profit >= 0 else 'tone-rose' }}"><i class="bi bi-graph-up-arrow"></i></span><span class="flow-label">My profit</span></div>
+                        <div class="flow-head"><span class="flow-chip {{ 'tone-green' if gross_profit >= 0 else 'tone-rose' }}"><i class="bi bi-graph-up-arrow"></i></span><span class="flow-label">Profit</span></div>
                         <div class="flow-value {{ 'good' if gross_profit >= 0 else 'bad' }}">Rs.{{ "{:,.0f}".format(gross_profit) }}</div>
-                        <div class="flow-sub">{{ "{:.1f}".format(profit_margin) }}% margin on public sales</div>
+                        <div class="flow-sub">{{ "{:.1f}".format(profit_margin) }}% margin (public)</div>
                     </a>
                 </div>
                 <div class="col-6 col-lg flow-item">
                     <a href="{{ url_for('inventory.view_inventory') }}">
                         <div class="flow-head"><span class="flow-chip tone-purple"><i class="bi bi-boxes"></i></span><span class="flow-label">Stock in hand</span></div>
                         <div class="flow-value">Rs.{{ "{:,.0f}".format(stock_value) }}</div>
-                        <div class="flow-sub">{{ total_stock_units }} units</div>
+                        <div class="flow-sub">{{ total_stock_units }} unit{{ 's' if total_stock_units != 1 }}</div>
                     </a>
                 </div>
             </div>
@@ -320,72 +320,60 @@
     {% endif %}
 </div>
 
-<!-- 4. Activity tiles - every tile opens its list -->
-<div class="row g-3 mb-4">
+<!-- 4. Activity tiles - every tile opens its list; value is always money -->
+<div class="row g-3 mb-4 stat-row">
     <div class="col-6 col-lg-4">
         <a class="kpi-link" href="{{ url_for('sales.list_sales') }}">
-            <div class="kpi-card kpi-blue">
-                <div class="kpi-icon"><i class="bi bi-boxes"></i></div>
-                <div class="kpi-label">Bulk orders</div>
-                <div class="kpi-value">{{ bulk_data.count }}</div>
-                <div class="kpi-sub">{{ bulk_data.qty }} units &middot; Rs.{{ "{:,.0f}".format(bulk_data.revenue) }}</div>
-                <i class="bi bi-arrow-right kpi-go"></i>
+            <div class="stat-tile tone-blue">
+                <div class="stat-head"><span class="stat-chip"><i class="bi bi-boxes"></i></span><span class="stat-label">Bulk orders</span><i class="bi bi-chevron-right stat-go"></i></div>
+                <div class="stat-value">Rs.{{ "{:,.0f}".format(bulk_data.revenue) }}</div>
+                <div class="stat-sub">{{ bulk_data.count }} order{{ 's' if bulk_data.count != 1 }} &middot; {{ bulk_data.qty }} unit{{ 's' if bulk_data.qty != 1 }}</div>
             </div>
         </a>
     </div>
     <div class="col-6 col-lg-4">
         <a class="kpi-link" href="{{ url_for('adjustments.list_adjustments', type='promotional') }}">
-            <div class="kpi-card kpi-indigo">
-                <div class="kpi-icon"><i class="bi bi-gift"></i></div>
-                <div class="kpi-label">Given away (promo)</div>
-                <div class="kpi-value">{{ promo_data.qty }} units</div>
-                <div class="kpi-sub">Rs.{{ "{:,.0f}".format(promo_data.value) }} value</div>
-                <i class="bi bi-arrow-right kpi-go"></i>
+            <div class="stat-tile tone-purple">
+                <div class="stat-head"><span class="stat-chip"><i class="bi bi-gift"></i></span><span class="stat-label">Given away</span><i class="bi bi-chevron-right stat-go"></i></div>
+                <div class="stat-value">Rs.{{ "{:,.0f}".format(promo_data.value) }}</div>
+                <div class="stat-sub">{{ promo_data.qty }} unit{{ 's' if promo_data.qty != 1 }} as promo</div>
             </div>
         </a>
     </div>
     <div class="col-6 col-lg-4">
         <a class="kpi-link" href="{{ url_for('adjustments.list_adjustments') }}">
-            <div class="kpi-card kpi-rose">
-                <div class="kpi-icon"><i class="bi bi-heart-pulse"></i></div>
-                <div class="kpi-label">Damaged / returned</div>
-                <div class="kpi-value">{{ damage_data.qty }} units</div>
-                <div class="kpi-sub">Rs.{{ "{:,.0f}".format(damage_data.value) }} written off</div>
-                <i class="bi bi-arrow-right kpi-go"></i>
+            <div class="stat-tile tone-rose">
+                <div class="stat-head"><span class="stat-chip"><i class="bi bi-heart-pulse"></i></span><span class="stat-label">Damaged</span><i class="bi bi-chevron-right stat-go"></i></div>
+                <div class="stat-value">Rs.{{ "{:,.0f}".format(damage_data.value) }}</div>
+                <div class="stat-sub">{{ damage_data.qty }} unit{{ 's' if damage_data.qty != 1 }} written off</div>
             </div>
         </a>
     </div>
     <div class="col-6 col-lg-4">
         <a class="kpi-link" href="{{ url_for('sales.discount_report') }}">
-            <div class="kpi-card kpi-amber">
-                <div class="kpi-icon"><i class="bi bi-tags"></i></div>
-                <div class="kpi-label">Discounts given</div>
-                <div class="kpi-value">Rs.{{ "{:,.0f}".format(customer_discount_total) }}</div>
-                <div class="kpi-sub">{{ customer_discount_count }} order{{ 's' if customer_discount_count != 1 }}</div>
-                <i class="bi bi-arrow-right kpi-go"></i>
+            <div class="stat-tile tone-amber">
+                <div class="stat-head"><span class="stat-chip"><i class="bi bi-tags"></i></span><span class="stat-label">Discounts</span><i class="bi bi-chevron-right stat-go"></i></div>
+                <div class="stat-value">Rs.{{ "{:,.0f}".format(customer_discount_total) }}</div>
+                <div class="stat-sub">on {{ customer_discount_count }} order{{ 's' if customer_discount_count != 1 }}</div>
             </div>
         </a>
     </div>
     <div class="col-6 col-lg-4">
         <a class="kpi-link" href="{{ url_for('transport_expense.list_expenses') if su else url_for('sales.list_sales') }}">
-            <div class="kpi-card kpi-emerald">
-                <div class="kpi-icon"><i class="bi bi-truck"></i></div>
-                <div class="kpi-label">Transport cost</div>
-                <div class="kpi-value">Rs.{{ "{:,.0f}".format(transport_total) }}</div>
-                <div class="kpi-sub">Supplier pays Rs.{{ "{:,.0f}".format(transport_supplier) }}</div>
-                <i class="bi bi-arrow-right kpi-go"></i>
+            <div class="stat-tile tone-green">
+                <div class="stat-head"><span class="stat-chip"><i class="bi bi-truck"></i></span><span class="stat-label">Transport</span><i class="bi bi-chevron-right stat-go"></i></div>
+                <div class="stat-value">Rs.{{ "{:,.0f}".format(transport_total) }}</div>
+                <div class="stat-sub">Rs.{{ "{:,.0f}".format(transport_supplier) }} by supplier</div>
             </div>
         </a>
     </div>
     {% if su %}
     <div class="col-6 col-lg-4">
         <a class="kpi-link" href="{{ url_for('expenses.list_expenses') }}">
-            <div class="kpi-card kpi-rose">
-                <div class="kpi-icon"><i class="bi bi-receipt"></i></div>
-                <div class="kpi-label">Expenses</div>
-                <div class="kpi-value">Rs.{{ "{:,.0f}".format(expense_total) }}</div>
-                <div class="kpi-sub">Rs.{{ "{:,.0f}".format(expense_supplier_deducted) }} charged to supplier</div>
-                <i class="bi bi-arrow-right kpi-go"></i>
+            <div class="stat-tile tone-indigo">
+                <div class="stat-head"><span class="stat-chip"><i class="bi bi-receipt"></i></span><span class="stat-label">Expenses</span><i class="bi bi-chevron-right stat-go"></i></div>
+                <div class="stat-value">Rs.{{ "{:,.0f}".format(expense_total) }}</div>
+                <div class="stat-sub">Rs.{{ "{:,.0f}".format(expense_supplier_deducted) }} by supplier</div>
             </div>
         </a>
     </div>
@@ -400,10 +388,10 @@
             <div class="split-header"><i class="bi bi-person-badge-fill"></i> Coach sales</div>
             <div class="split-body">
                 <div class="row">
-                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--accent-blue)">{{ coach_data.orders }}</div><div class="metric-label">Orders</div></div>
-                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--accent-blue)">{{ coach_data.qty }}</div><div class="metric-label">Qty</div></div>
-                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--accent-green)">Rs.{{ "{:,.0f}".format(coach_data.revenue) }}</div><div class="metric-label">Revenue</div></div>
-                    <div class="col-3 split-metric"><div class="metric-value" style="color:{{ 'var(--accent-green)' if coach_data.profit >= 0 else 'var(--accent-red)' }}">Rs.{{ "{:,.0f}".format(coach_data.profit) }}</div><div class="metric-label">Profit</div></div>
+                    <div class="col-6 col-sm-3 split-metric"><div class="metric-label">Orders</div><div class="metric-value">{{ coach_data.orders }}</div></div>
+                    <div class="col-6 col-sm-3 split-metric"><div class="metric-label">Qty sold</div><div class="metric-value">{{ coach_data.qty }}</div></div>
+                    <div class="col-6 col-sm-3 split-metric"><div class="metric-label">Revenue</div><div class="metric-value">Rs.{{ "{:,.0f}".format(coach_data.revenue) }}</div></div>
+                    <div class="col-6 col-sm-3 split-metric"><div class="metric-label">Profit</div><div class="metric-value {{ 'good' if coach_data.profit >= 0 else 'bad' }}">Rs.{{ "{:,.0f}".format(coach_data.profit) }}</div></div>
                 </div>
             </div>
         </div>
@@ -413,10 +401,10 @@
             <div class="split-header"><i class="bi bi-people-fill"></i> Public / customer sales</div>
             <div class="split-body">
                 <div class="row">
-                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--accent-purple)">{{ public_data.orders }}</div><div class="metric-label">Orders</div></div>
-                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--accent-purple)">{{ public_data.qty }}</div><div class="metric-label">Qty</div></div>
-                    <div class="col-3 split-metric"><div class="metric-value" style="color:var(--accent-green)">Rs.{{ "{:,.0f}".format(public_data.revenue) }}</div><div class="metric-label">Revenue</div></div>
-                    <div class="col-3 split-metric"><div class="metric-value" style="color:{{ 'var(--accent-green)' if public_data.profit >= 0 else 'var(--accent-red)' }}">Rs.{{ "{:,.0f}".format(public_data.profit) }}</div><div class="metric-label">Profit</div></div>
+                    <div class="col-6 col-sm-3 split-metric"><div class="metric-label">Orders</div><div class="metric-value">{{ public_data.orders }}</div></div>
+                    <div class="col-6 col-sm-3 split-metric"><div class="metric-label">Qty sold</div><div class="metric-value">{{ public_data.qty }}</div></div>
+                    <div class="col-6 col-sm-3 split-metric"><div class="metric-label">Revenue</div><div class="metric-value">Rs.{{ "{:,.0f}".format(public_data.revenue) }}</div></div>
+                    <div class="col-6 col-sm-3 split-metric"><div class="metric-label">Profit</div><div class="metric-value {{ 'good' if public_data.profit >= 0 else 'bad' }}">Rs.{{ "{:,.0f}".format(public_data.profit) }}</div></div>
                 </div>
             </div>
         </div>
@@ -433,7 +421,7 @@
                 <a href="{{ url_for('sales.list_sales') }}" class="btn btn-sm btn-outline-secondary">View all</a>
             </div>
             <div class="detail-body">
-                <table class="table mobile-stack mb-0">
+                <table class="table recent-list mb-0">
                     <thead><tr><th>Date</th><th>Customer</th><th>Payment</th><th class="text-end">Amount</th></tr></thead>
                     <tbody>
                     {% for sale in recent_sales %}
@@ -459,7 +447,7 @@
                 <a href="{{ url_for('purchases.list_purchases') }}" class="btn btn-sm btn-outline-secondary">View all</a>
             </div>
             <div class="detail-body">
-                <table class="table mobile-stack mb-0">
+                <table class="table recent-list mb-0">
                     <thead><tr><th>Date</th><th>Supplier</th><th>Status</th><th class="text-end">Amount</th></tr></thead>
                     <tbody>
                     {% for po in recent_purchases %}

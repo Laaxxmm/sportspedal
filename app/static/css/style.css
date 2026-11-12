@@ -1634,3 +1634,380 @@ a.att-main:hover strong { color: var(--tone-blue); }
     .att-act { width: 100%; }
     .att-act .btn, .att-act.btn { width: 100%; }
 }
+
+/* =====================================================================
+   Compact forms on phone + tablet
+   ===================================================================== */
+@media (max-width: 991px) {
+    /* Sale header fields: tighter vertical rhythm when paired */
+    #sale-form .row > [class*="col-"] { margin-bottom: 10px; }
+    #sale-form .row.mb-3 { margin-bottom: 4px !important; }
+    #sale-form .form-label { margin-bottom: 4px; font-size: 0.8rem; }
+    #sale-form small.text-muted { font-size: 0.72rem; line-height: 1.3; }
+    #sale-form .form-check { margin-top: 10px !important; }
+
+    /* ---- Line item card: 2-column grid instead of one field per line ---- */
+    #items-table .item-row {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px 12px;
+        padding: 22px 12px 12px;
+        margin-bottom: 16px;
+    }
+    #items-table .item-row > td {
+        display: flex !important;
+        flex-direction: column;
+        align-items: stretch !important;
+        justify-content: flex-start !important;
+        gap: 4px;
+        padding: 0 !important;
+        border: 0 !important;
+        min-width: 0;
+        white-space: normal;
+    }
+    #items-table .item-row > td::before {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: none;
+        letter-spacing: 0;
+        color: var(--text-secondary);
+        margin: 0 !important;
+    }
+    #items-table .item-row > td > select,
+    #items-table .item-row > td > input:not([type="checkbox"]) { max-width: 100% !important; width: 100%; min-height: 38px; }
+    #items-table .item-row > td { text-align: left !important; }
+    #items-table .item-row > td > input[type="checkbox"] { align-self: flex-start; }
+    /* an older rule gave inputs flex: 1, which stretched them vertically in this column layout */
+    #items-table .item-row > td > input, #items-table .item-row > td > select { flex: 0 0 auto !important; }
+    #items-table .item-row > td:first-child { grid-column: 1 / -1; }   /* product */
+    #items-table .item-row > td:first-child .prod-pick { width: 100%; }
+
+    /* read-only values (stock, GST amount, total) sit in boxes the same height as inputs */
+    #items-table .cell-val {
+        display: flex; align-items: center;
+        min-height: 38px; padding: 0 12px;
+        border: 1px solid #e6e9f2; border-radius: 8px;
+        background: #f6f7fb;
+        font-weight: 700; font-size: 0.9rem; color: var(--text-primary);
+    }
+    #items-table .row-total.cell-val { background: var(--tone-green-bg); border-color: transparent; color: var(--tone-green); }
+    #items-table .check-cell { min-height: 38px; border-radius: 8px; }
+
+    /* Remove: small x on the card corner instead of a full-width red bar */
+    #items-table .item-row > td:last-child {
+        position: absolute;
+        top: -11px; right: 10px;
+        padding: 0 !important;
+        border: 0 !important;
+    }
+    #items-table .item-row > td:last-child::before { display: none; }
+    #items-table .remove-row {
+        width: 30px !important; height: 30px; padding: 0 !important;
+        border-radius: 50% !important;
+        background: #fff !important; color: var(--tone-rose) !important;
+        border: 1px solid #ffd0d8 !important;
+        font-size: 0 !important;
+        display: grid; place-items: center;
+        box-shadow: var(--shadow-sm);
+    }
+    #items-table .remove-row i { font-size: 0.95rem; }
+
+    /* add buttons share one line */
+    #pick-by-photo, #add-row { flex: 1; width: auto !important; padding: 10px 12px !important; font-size: 0.9rem !important; }
+}
+
+/* Other forms on phones: short fields (dates, amounts, selects) pair up */
+@media (max-width: 767px) {
+    form .row > .col-md-1, form .row > .col-md-2, form .row > .col-md-3,
+    form .row.g-3 > .col-md-1, form .row.g-3 > .col-md-2, form .row.g-3 > .col-md-3 {
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+    }
+}
+
+
+/* =====================================================================
+   Consistency layer: one pattern per kind of thing, on every screen size
+   - stat tile: chip + label / value / one-line sub
+   - form field: label / same-height box / hint below
+   - lists on phones: compact rows instead of tall label stacks
+   ===================================================================== */
+
+/* ---- Stat tiles (dashboard activity) ---- */
+.stat-tile {
+    position: relative;
+    height: 100%;
+    display: flex; flex-direction: column;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    padding: 16px 18px;
+    transition: transform 0.22s var(--ease-out), box-shadow 0.22s var(--ease-out);
+}
+a.kpi-link:hover .stat-tile { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+.stat-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; min-width: 0; }
+.stat-chip {
+    width: 32px; height: 32px; flex-shrink: 0;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: var(--tb, var(--tone-blue-bg)); color: var(--t, var(--tone-blue));
+    font-size: 0.95rem;
+}
+.stat-label {
+    flex: 1; min-width: 0;
+    font-size: 0.82rem; font-weight: 600; color: var(--text-secondary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.stat-go { flex-shrink: 0; font-size: 0.72rem; color: var(--text-muted); transition: transform 0.2s var(--ease-out), color 0.2s; }
+a.kpi-link:hover .stat-go { transform: translateX(3px); color: var(--tone-blue); }
+.stat-value {
+    font-size: 1.45rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2;
+    color: var(--text-primary); white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.stat-sub {
+    margin-top: 3px;
+    font-size: 0.76rem; color: var(--text-muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ---- Coach / public metrics: label above value, left aligned like every other stat ---- */
+.split-card .split-body .row { row-gap: 14px; }
+.split-card .split-metric { text-align: left; }
+.split-card .split-metric .metric-label { font-size: 0.76rem; font-weight: 600; color: var(--text-secondary); margin: 0 0 3px; text-transform: none; letter-spacing: 0; }
+.split-card .split-metric .metric-value { font-size: 1.2rem; font-weight: 800; color: var(--text-primary); white-space: nowrap; letter-spacing: -0.02em; }
+.split-card .split-metric .metric-value.good { color: var(--tone-green); }
+.split-card .split-metric .metric-value.bad { color: var(--tone-rose); }
+
+/* ---- Form fields: hint text, checkbox as a field, optional-section headers ---- */
+.field-hint { margin-top: 5px; font-size: 0.75rem; line-height: 1.4; color: var(--text-muted); }
+.field-hint:empty { display: none; }
+.field-hint a { font-weight: 600; }
+.check-field {
+    display: flex; align-items: center; gap: 10px;
+    min-height: 42px; margin: 0; padding: 0 12px;
+    border: 1px solid #dfe3ee; border-radius: 10px; background: #fff;
+    font-size: 0.88rem; color: var(--text-secondary);
+    cursor: pointer; user-select: none;
+}
+.check-field .form-check-input { margin: 0 !important; flex-shrink: 0; width: 1.15em !important; height: 1.15em !important; }
+.check-field:has(.form-check-input:checked) { border-color: var(--tone-blue); background: var(--tone-blue-bg); color: var(--tone-blue); }
+#bulk-status-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.opt-head { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.opt-title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.92rem; color: var(--text-primary); }
+.opt-desc { margin-top: 2px; font-size: 0.78rem; line-height: 1.4; color: var(--text-secondary); }
+#transport-section .opt-head { background: var(--tone-blue-bg); }
+#transport-section .opt-title i { color: var(--tone-blue); }
+#supplier-discount-section .opt-head { background: var(--tone-purple-bg); }
+#supplier-discount-section .opt-title i { color: var(--tone-purple); }
+#transport-section, #supplier-discount-section { overflow: hidden; }
+.section-sub { font-size: 1rem; font-weight: 700; margin: 6px 0 12px; }
+
+/* package-price tick inside the desktop table: just the box, centred */
+@media (min-width: 992px) {
+    .check-cell { border: 0 !important; background: none !important; padding: 0; min-height: 0; justify-content: center; }
+    .check-cell span { display: none; }
+}
+
+/* ---- Phones + tablets ---- */
+@media (max-width: 991px) {
+    .stat-tile { padding: 12px 14px; }
+    .stat-head { gap: 8px; margin-bottom: 8px; }
+    .stat-chip { width: 28px; height: 28px; border-radius: 8px; font-size: 0.85rem; }
+    .stat-label { font-size: 0.78rem; }
+    .stat-value { font-size: 1.15rem; }
+
+    /* task tiles become an app-style launcher: icon on top, label below, same size every time */
+    .action-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 8px !important; }
+    .action-tile {
+        flex-direction: column !important; align-items: center !important; justify-content: flex-start !important;
+        gap: 8px !important; padding: 12px 6px 10px !important; min-height: 0 !important;
+        text-align: center;
+    }
+    .action-icon { width: 42px !important; height: 42px !important; font-size: 1.15rem !important; border-radius: 12px !important; }
+    .action-text { align-items: center; width: 100%; }
+    .action-label {
+        font-size: 0.78rem !important; font-weight: 600; line-height: 1.25 !important;
+        min-height: 2.5em;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .action-hint { display: none !important; }
+
+    /* option buttons share the row evenly */
+    .opt-toggle { flex: 1 1 0; }
+
+    /* every value shows in full: no wrapping, no clipping */
+    .money-flow-card .flow-value { white-space: nowrap; }
+
+    /* recent lists: two-line rows (who + amount / date + status) */
+    .recent-list, .recent-list tbody { display: block; width: 100%; }
+    .recent-list thead { display: none; }
+    .recent-list tbody tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas: "who amt" "when status";
+        column-gap: 12px; row-gap: 4px; align-items: center;
+        padding: 12px 18px;
+        border-bottom: 1px solid var(--border);
+    }
+    .recent-list tbody tr:last-child { border-bottom: 0; }
+    .recent-list tbody td { display: block; padding: 0 !important; border: 0 !important; background: none !important; }
+    .recent-list tbody td::before { display: none !important; }
+    .recent-list tbody td:nth-child(1) { grid-area: when; font-size: 0.78rem; color: var(--text-muted); }
+    .recent-list tbody td:nth-child(2) { grid-area: who; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .recent-list tbody td:nth-child(3) { grid-area: status; justify-self: end; }
+    .recent-list tbody td:nth-child(4) { grid-area: amt; justify-self: end; font-weight: 700; }
+    .recent-list tbody td[colspan] { grid-area: 1 / 1 / 2 / 3 !important; justify-self: center; }
+
+    /* stacked tables everywhere: two fields per row, sentence-case labels above values */
+    .table.mobile-stack tbody tr {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px 14px;
+        padding: 14px !important;
+    }
+    .table.mobile-stack tbody td {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        justify-content: flex-start !important;
+        gap: 2px !important;
+        padding: 0 !important;
+        border: 0 !important;
+    }
+    .table.mobile-stack tbody td[data-label]::before {
+        font-size: 0.72rem !important; font-weight: 600 !important;
+        text-transform: none !important; letter-spacing: 0 !important;
+        color: var(--text-secondary) !important; margin: 0 !important;
+    }
+    .table.mobile-stack tbody td:last-child {
+        grid-column: 1 / -1;
+        flex-direction: row !important; align-items: center !important; justify-content: flex-end !important;
+        gap: 6px !important;
+        padding-top: 10px !important;
+        border-top: 1px solid #f1f2f6 !important;
+    }
+    .table.mobile-stack tbody td[colspan] { grid-column: 1 / -1; align-items: center !important; }
+}
+
+@media (max-width: 575px) {
+    .panel-title .muted { display: none; }
+    .action-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+    .stat-value, .money-flow-card .flow-value { font-size: clamp(0.98rem, 4.4vw, 1.15rem) !important; }
+    .split-card .split-metric .metric-value { font-size: clamp(0.98rem, 4.4vw, 1.1rem); }
+    .split-card .split-body { padding: 14px 16px; }
+}
+
+/* money flow sub-lines: one line each, like every other stat */
+.money-flow-card .flow-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* sale forms: labels always one line so paired fields line up */
+#sale-form .form-label { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.opt-toggle.active { background: var(--tone-blue) !important; border-color: var(--tone-blue) !important; color: #fff !important; }
+
+/* =====================================================================
+   Buttons: one system everywhere
+   - same height per size, icon + text centred with a fixed gap, never wraps
+   - solid = main action, outline = secondary; outline hover tints, never floods
+   ===================================================================== */
+.btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 7px;
+    min-height: 42px; padding: 0 16px;
+    border-radius: 10px;
+    font-size: 0.88rem; font-weight: 600; line-height: 1.2;
+    white-space: nowrap;
+    box-shadow: none;
+}
+.btn-sm { min-height: 34px; padding: 0 12px; gap: 5px; border-radius: 8px; font-size: 0.8rem; }
+.btn-lg { min-height: 48px; padding: 0 20px; font-size: 0.95rem; }
+.btn > .bi, .btn > i { font-size: 1em; line-height: 1; margin: 0 !important; }
+.btn:disabled, .btn.disabled { opacity: 0.5; box-shadow: none; }
+
+/* solid */
+.btn-primary, .btn-success, .btn-danger, .btn-warning, .btn-info, .btn-secondary, .btn-dark { color: #fff !important; }
+.btn-primary { background: var(--tone-blue); border-color: var(--tone-blue); }
+.btn-primary:hover, .btn-primary:focus-visible { background: #2f5fe0; border-color: #2f5fe0; }
+.btn-success { background: var(--tone-green); border-color: var(--tone-green); }
+.btn-success:hover, .btn-success:focus-visible { background: #12a274; border-color: #12a274; }
+.btn-danger { background: var(--tone-rose); border-color: var(--tone-rose); }
+.btn-danger:hover, .btn-danger:focus-visible { background: #d93b53; border-color: #d93b53; }
+.btn-warning { background: var(--tone-amber); border-color: var(--tone-amber); }
+.btn-warning:hover, .btn-warning:focus-visible { background: #c98912; border-color: #c98912; }
+.btn-info { background: var(--tone-indigo); border-color: var(--tone-indigo); }
+.btn-secondary { background: #5b6478; border-color: #5b6478; }
+.btn-primary, .btn-success, .btn-danger { box-shadow: 0 2px 8px rgba(17, 24, 39, 0.10); }
+.btn-primary:hover, .btn-success:hover { transform: none; }
+
+/* outline: white face, coloured text and border, tinted on hover */
+.btn-outline-primary, .btn-outline-success, .btn-outline-danger, .btn-outline-warning,
+.btn-outline-info, .btn-outline-secondary, .btn-outline-dark, .btn-light { background: #fff; }
+.btn-outline-primary { color: var(--tone-blue); border-color: #c9d6fb; }
+.btn-outline-success { color: #0f9a6d; border-color: #b9e8d6; }
+.btn-outline-danger  { color: var(--tone-rose); border-color: #f8c6cf; }
+.btn-outline-warning { color: #b87a0c; border-color: #f3dcae; }
+.btn-outline-info    { color: var(--tone-indigo); border-color: #cdd3fb; }
+.btn-outline-secondary, .btn-outline-dark, .btn-light { color: var(--text-secondary); border-color: #dfe3ee; }
+.btn-outline-primary:hover, .btn-outline-primary:focus-visible { background: var(--tone-blue-bg); color: var(--tone-blue); border-color: var(--tone-blue); }
+.btn-outline-success:hover, .btn-outline-success:focus-visible { background: var(--tone-green-bg); color: #0f9a6d; border-color: var(--tone-green); }
+.btn-outline-danger:hover,  .btn-outline-danger:focus-visible  { background: var(--tone-rose-bg); color: var(--tone-rose); border-color: var(--tone-rose); }
+.btn-outline-warning:hover, .btn-outline-warning:focus-visible { background: var(--tone-amber-bg); color: #b87a0c; border-color: var(--tone-amber); }
+.btn-outline-info:hover,    .btn-outline-info:focus-visible    { background: var(--tone-indigo-bg); color: var(--tone-indigo); border-color: var(--tone-indigo); }
+.btn-outline-secondary:hover, .btn-outline-dark:hover, .btn-light:hover,
+.btn-outline-secondary:focus-visible { background: #f4f6fb; color: var(--text-primary); border-color: #cfd5e3; }
+/* pressed / toggled on = solid */
+.btn-outline-primary.active, .btn-outline-primary:active { background: var(--tone-blue) !important; border-color: var(--tone-blue) !important; color: #fff !important; }
+.btn-outline-success.active, .btn-outline-success:active { background: var(--tone-green) !important; border-color: var(--tone-green) !important; color: #fff !important; }
+.btn-outline-danger.active,  .btn-outline-danger:active  { background: var(--tone-rose) !important; border-color: var(--tone-rose) !important; color: #fff !important; }
+.btn-outline-secondary.active, .btn-check:checked + .btn-outline-secondary { background: #5b6478 !important; border-color: #5b6478 !important; color: #fff !important; }
+.btn:focus-visible { box-shadow: 0 0 0 4px rgba(61, 111, 245, 0.15); }
+
+/* inputs and buttons side by side share one height */
+.input-group > .btn { min-height: 42px; }
+.input-group-sm > .btn { min-height: 34px; }
+
+/* phones: no sticky hover after a tap */
+@media (hover: none) {
+    .btn-outline-primary:hover:not(.active) { background: #fff; border-color: #c9d6fb; }
+    .btn-outline-success:hover:not(.active) { background: #fff; border-color: #b9e8d6; }
+    .btn-outline-secondary:hover:not(.active) { background: #fff; border-color: #dfe3ee; color: var(--text-secondary); }
+}
+
+@media (max-width: 991px) {
+    .btn { min-height: 42px; }
+    .btn-sm { min-height: 36px; }
+    /* the sticky bar is the form's save row on phones: hide the in-form copy */
+    .form-footer-buttons { display: none !important; }
+    .sticky-save-bar .btn { min-height: 46px; font-size: 0.92rem; }
+}
+
+/* bottom nav: five equal slots, + always dead centre */
+.bottom-nav-inner { display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; justify-items: stretch; }
+.bottom-nav-inner > .bottom-nav-plus { justify-self: center; margin-left: 0 !important; margin-right: 0 !important; }
+.bottom-nav-gap { display: block; }
+
+/* card labels everywhere: sentence case, same size and colour as form labels */
+.mobile-card .mc-label,
+.variant-row label, .variant-card label,
+.variant-edit-table td::before,
+.form-section-title, .fin-section h6 {
+    text-transform: none !important; letter-spacing: 0 !important;
+    font-size: 0.74rem; font-weight: 600; color: var(--text-secondary);
+}
+
+/* card action rows: equal text buttons, delete as a square icon at the end */
+.mobile-card .mc-actions { align-items: stretch; }
+.mobile-card .mc-actions .btn { flex: 1 1 0; min-height: 38px; padding: 0 8px; font-size: 0.8rem; }
+.mobile-card .mc-actions form { display: flex; flex: 0 0 auto; }
+.mobile-card .mc-actions form .btn { flex: 0 0 38px; width: 38px; padding: 0; }
+.bottom-nav { padding-left: 12px !important; padding-right: 12px !important; }
+.bottom-nav-inner { column-gap: 4px; }
+.bottom-nav-inner > a {
+    justify-self: center; width: 100%; max-width: 64px;
+    min-height: 50px; padding: 6px 0 !important;
+    justify-content: center; gap: 3px;
+    font-size: 0.68rem; font-weight: 600; line-height: 1;
+    border-radius: 12px;
+}
+.bottom-nav-inner > a i { font-size: 1.2rem; line-height: 1; }
+.bottom-nav-inner > a span { white-space: nowrap; }
