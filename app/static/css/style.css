@@ -2011,3 +2011,34 @@ a.kpi-link:hover .stat-go { transform: translateX(3px); color: var(--tone-blue);
 }
 .bottom-nav-inner > a i { font-size: 1.2rem; line-height: 1; }
 .bottom-nav-inner > a span { white-space: nowrap; }
+
+/* ---- Money flow: list rows on phones, one even row of five on tablets ---- */
+@media (max-width: 767px) {
+    .money-flow-card .row { display: block !important; margin: 0 !important; }
+    .money-flow-card .row > .flow-item {
+        max-width: none !important; width: 100% !important; flex: none !important;
+        padding: 12px 0 !important;
+        border-bottom: 1px solid var(--border);
+    }
+    .money-flow-card .row > .flow-item:last-child { border-bottom: 0; padding-bottom: 2px !important; }
+    .money-flow-card .flow-item > a {
+        display: grid; grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas: "head value" "sub value";
+        column-gap: 12px; row-gap: 2px; align-items: center;
+    }
+    .money-flow-card .flow-head { grid-area: head; margin: 0 !important; }
+    .money-flow-card .flow-value { grid-area: value; text-align: right; font-size: 1.05rem !important; }
+    .money-flow-card .flow-sub { grid-area: sub; padding-left: 36px; }
+}
+@media (min-width: 768px) and (max-width: 991px) {
+    .money-flow-card .row { display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; margin: 0 !important; }
+    .money-flow-card .row > .flow-item { max-width: none !important; width: auto !important; flex: none !important; padding: 8px 10px !important; border-left: 1px solid var(--border); }
+    .money-flow-card .row > .flow-item:first-child { border-left: 0; padding-left: 0 !important; }
+    .money-flow-card .flow-value { font-size: 1.1rem !important; }
+}
+
+/* tablets: five task tiles per row (ten tasks = two full rows); centre the bottom nav */
+@media (min-width: 576px) and (max-width: 991px) {
+    .action-grid { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+}
+.bottom-nav-inner { max-width: 520px; margin: 0 auto; }
