@@ -35,7 +35,11 @@ def create_app():
     def inject_permissions():
         from flask_login import current_user
         from app.models import PERMISSION_KEYS
-        return {'PERMISSION_KEYS': PERMISSION_KEYS}
+        ctx = {'PERMISSION_KEYS': PERMISSION_KEYS, 'nav': None}
+        if current_user.is_authenticated and not current_user.is_supplier_user:
+            from app.navigation import build_navigation
+            ctx['nav'] = build_navigation(current_user)
+        return ctx
 
     @app.errorhandler(413)
     def handle_413(e):

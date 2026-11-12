@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="view-transition" content="same-origin">
     <title>{% block title %}Sportspedal Inventory{% endblock %}</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -12,137 +13,81 @@
 </head>
 <body>
 <div class="app-wrapper">
-    <!-- Mobile menu toggle -->
-    <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-label="Menu">
-        <i class="bi bi-list"></i>
-    </button>
+    <!-- Mobile top bar -->
+    <header class="mobile-topbar">
+        <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-label="Open menu">
+            <i class="bi bi-list"></i>
+        </button>
+        <a class="mobile-brand" href="{{ url_for('dashboard.index') if nav else url_for('supplier_portal.portal_dashboard') }}">
+            <i class="bi bi-bicycle"></i> Sportspedal
+        </a>
+    </header>
     <div class="mobile-overlay" id="mobile-overlay"></div>
 
     <!-- Sidebar -->
-    <nav class="sidebar" id="sidebar">
-        <div class="brand">
+    <nav class="sidebar" id="sidebar" aria-label="Main">
+        <a class="brand" href="{{ url_for('dashboard.index') if nav else url_for('supplier_portal.portal_dashboard') }}">
             <i class="bi bi-bicycle"></i>
             <span class="brand-text">Sportspedal</span>
-        </div>
+        </a>
 
         <div class="nav-section">
             <ul class="nav flex-column">
                 {% if current_user.is_supplier_user %}
                 <li class="nav-item">
-                    <a class="nav-link active" href="{{ url_for('supplier_portal.portal_dashboard') }}" title="Supplier Portal">
+                    <a class="nav-link active" href="{{ url_for('supplier_portal.portal_dashboard') }}">
                         <i class="bi bi-speedometer2"></i> <span class="nav-text">My Portal</span>
                     </a>
                 </li>
-                {% else %}
+                {% elif nav %}
                 <li class="nav-item">
-                    <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{{ url_for('dashboard.index') }}" title="Dashboard">
-                        <i class="bi bi-grid-1x2-fill"></i> <span class="nav-text">Dashboard</span>
+                    <a class="nav-link {{ 'active' if nav.home_active }}" href="{{ url_for('dashboard.index') }}">
+                        <i class="bi bi-house-door-fill"></i> <span class="nav-text">Home</span>
                     </a>
                 </li>
-                {% if current_user.has_permission('view_products') %}
+                {% for item in nav.sidebar %}
                 <li class="nav-item">
-                    <a class="nav-link {% if '/products' in request.path %}active{% endif %}" href="{{ url_for('products.list_products') }}" title="Products">
-                        <i class="bi bi-box-seam-fill"></i> <span class="nav-text">Products</span>
+                    <a class="nav-link {{ 'active' if item.active }}" href="{{ item.url }}">
+                        <i class="bi {{ item.icon }}"></i> <span class="nav-text">{{ item.label }}</span>
                     </a>
                 </li>
+                {% endfor %}
                 {% endif %}
-                {% if current_user.has_permission('view_inventory') %}
-                <li class="nav-item">
-                    <a class="nav-link {% if '/inventory' in request.path %}active{% endif %}" href="{{ url_for('inventory.view_inventory') }}" title="Inventory">
-                        <i class="bi bi-clipboard-data-fill"></i> <span class="nav-text">Inventory</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% if current_user.has_permission('view_purchases') %}
-                <li class="nav-item">
-                    <a class="nav-link {% if '/purchases' in request.path %}active{% endif %}" href="{{ url_for('purchases.list_purchases') }}" title="Purchases">
-                        <i class="bi bi-cart-plus-fill"></i> <span class="nav-text">Purchases</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% if current_user.has_permission('view_sales') %}
-                <li class="nav-item">
-                    <a class="nav-link {% if '/adjustments' in request.path %}active{% endif %}" href="{{ url_for('adjustments.list_adjustments') }}" title="Adjustments">
-                        <i class="bi bi-clipboard-minus"></i> <span class="nav-text">Adjustments</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if '/sales' in request.path %}active{% endif %}" href="{{ url_for('sales.list_sales') }}" title="Sales">
-                        <i class="bi bi-receipt-cutoff"></i> <span class="nav-text">Sales</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% if current_user.has_permission('view_customers') %}
-                <li class="nav-item">
-                    <a class="nav-link {% if '/customers' in request.path %}active{% endif %}" href="{{ url_for('customers.list_customers') }}" title="Customers">
-                        <i class="bi bi-people-fill"></i> <span class="nav-text">Customers</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% if current_user.is_superadmin %}
-                <li class="nav-item">
-                    <a class="nav-link {% if '/suppliers' in request.path %}active{% endif %}" href="{{ url_for('suppliers.list_suppliers') }}" title="Suppliers">
-                        <i class="bi bi-truck"></i> <span class="nav-text">Suppliers</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if '/transfers' in request.path %}active{% endif %}" href="{{ url_for('transfers.list_transfers') }}" title="Transfers">
-                        <i class="bi bi-arrow-left-right"></i> <span class="nav-text">Transfers</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% endif %}{# end of not supplier_user #}
             </ul>
+
+            {% if nav and nav.actions %}
+            <div class="nav-cta">
+                <button type="button" class="btn btn-primary w-100" data-bs-toggle="offcanvas" data-bs-target="#actionSheet">
+                    <i class="bi bi-plus-lg"></i> <span class="nav-text">Do something</span>
+                </button>
+            </div>
+            {% endif %}
         </div>
 
-        <!-- Bottom section -->
         <div class="nav-bottom">
             <div class="nav-divider"></div>
             <ul class="nav flex-column">
-                {% if current_user.is_superadmin %}
+                {% if nav %}
+                {% for item in nav.admin %}
                 <li class="nav-item">
-                    <a class="nav-link {% if '/accounts' in request.path %}active{% endif %}" href="{{ url_for('customers.accounts') }}" title="Buyer Accounts">
-                        <i class="bi bi-wallet2"></i> <span class="nav-text">Buyer Accounts</span>
+                    <a class="nav-link {{ 'active' if item.active }}" href="{{ item.url }}">
+                        <i class="bi {{ item.icon }}"></i> <span class="nav-text">{{ item.label }}</span>
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if '/payments' in request.path %}active{% endif %}" href="{{ url_for('payments.list_payments') }}" title="Supplier Payments">
-                        <i class="bi bi-cash-stack"></i> <span class="nav-text">Supplier Payments</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if '/transport-expenses' in request.path %}active{% endif %}" href="{{ url_for('transport_expense.list_expenses') }}" title="Transport Expenses">
-                        <i class="bi bi-truck"></i> <span class="nav-text">Transport Expenses</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if request.path.startswith('/expenses') %}active{% endif %}" href="{{ url_for('expenses.list_expenses') }}" title="Expenses">
-                        <i class="bi bi-receipt"></i> <span class="nav-text">Expenses</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if '/users' in request.path %}active{% endif %}" href="{{ url_for('users.list_users') }}" title="Users">
-                        <i class="bi bi-person-gear"></i> <span class="nav-text">Users</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if '/settings' in request.path %}active{% endif %}" href="{{ url_for('settings.business_settings') }}" title="Settings">
-                        <i class="bi bi-gear-fill"></i> <span class="nav-text">Settings</span>
-                    </a>
-                </li>
+                {% endfor %}
                 {% endif %}
                 <li class="nav-item">
-                    <a class="nav-link user-info" href="#" title="{{ current_user.full_name }}">
+                    <div class="nav-link user-info">
                         <i class="bi bi-person-circle"></i>
                         <span class="nav-text">
-                            <small class="d-block" style="opacity:0.6; font-size:0.7rem;">{{ current_user.role|upper }}</small>
+                            <small class="d-block">{{ current_user.role|upper }}</small>
                             {{ current_user.full_name }}
                         </span>
-                    </a>
+                    </div>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link text-danger" href="{{ url_for('auth.logout') }}" title="Logout">
-                        <i class="bi bi-box-arrow-left"></i> <span class="nav-text">Logout</span>
+                    <a class="nav-link nav-logout" href="{{ url_for('auth.logout') }}">
+                        <i class="bi bi-box-arrow-left"></i> <span class="nav-text">Log out</span>
                     </a>
                 </li>
             </ul>
@@ -151,50 +96,75 @@
 
     <!-- Main content -->
     <main class="main-content" id="main-content">
+        {% if nav and nav.tabs %}
+        <nav class="section-tabs" aria-label="Section">
+            {% for t in nav.tabs %}
+            <a href="{{ t.url }}" class="section-tab {{ 'active' if t.active }}" {% if t.active %}aria-current="page"{% endif %}>
+                <i class="bi {{ t.icon }}"></i> {{ t.label }}
+            </a>
+            {% endfor %}
+        </nav>
+        {% endif %}
+
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-        {% for category, message in messages %}
-        <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show" role="alert" style="border-radius: var(--radius-sm); font-size: 0.9rem;">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="flash-stack">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show flash-msg" role="alert" data-autohide="{{ '1' if category in ('success', 'info') else '0' }}">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
         {% endif %}
         {% endwith %}
 
-        {% block content %}{% endblock %}
+        <div class="page-enter">
+            {% block content %}{% endblock %}
+        </div>
     </main>
 </div>
 
+{% if nav %}
+<!-- Quick actions sheet (sidebar button + mobile "+") -->
+<div class="offcanvas offcanvas-bottom action-sheet" tabindex="-1" id="actionSheet" aria-labelledby="actionSheetLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="actionSheetLabel">What do you want to do?</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="action-grid">
+            {% for a in nav.actions %}
+            <a href="{{ a.url }}" class="action-tile tone-{{ a.tone }}">
+                <span class="action-icon"><i class="bi {{ a.icon }}"></i></span>
+                <span class="action-text">
+                    <span class="action-label">{{ a.label }}</span>
+                    <span class="action-hint">{{ a.hint }}</span>
+                </span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
 <!-- Bottom Navigation (mobile only) -->
-{% if current_user.is_authenticated and not current_user.is_supplier_user %}
-<nav class="bottom-nav">
+<nav class="bottom-nav" aria-label="Quick">
     <div class="bottom-nav-inner">
-        <a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if request.path == '/' }}">
-            <i class="bi bi-grid-1x2-fill"></i>
-            <span>Home</span>
+        <a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if nav.home_active }}">
+            <i class="bi bi-house-door-fill"></i><span>Home</span>
         </a>
-        {% if current_user.has_permission('view_sales') %}
-        <a href="{{ url_for('sales.list_sales') }}" class="{{ 'active' if '/sales' in request.path }}">
-            <i class="bi bi-receipt-cutoff"></i>
-            <span>Sales</span>
+        {% for item in nav.sidebar if item.key in ('sales', 'stock') %}
+        <a href="{{ item.url }}" class="{{ 'active' if item.active }}">
+            <i class="bi {{ item.icon }}"></i><span>{{ item.label }}</span>
         </a>
-        {% endif %}
-        {% if current_user.has_permission('view_inventory') %}
-        <a href="{{ url_for('inventory.view_inventory') }}" class="{{ 'active' if '/inventory' in request.path }}">
-            <i class="bi bi-clipboard-data-fill"></i>
-            <span>Stock</span>
-        </a>
-        {% endif %}
-        {% if current_user.has_permission('view_sales') %}
-        <a href="{{ url_for('sales.new_sale') }}">
-            <i class="bi bi-plus-circle-fill" style="color:var(--accent-green); font-size:1.6rem;"></i>
-            <span>New</span>
-        </a>
+        {% endfor %}
+        {% if nav.actions %}
+        <button type="button" class="bottom-nav-plus" data-bs-toggle="offcanvas" data-bs-target="#actionSheet" aria-label="New">
+            <i class="bi bi-plus-lg"></i>
+        </button>
         {% endif %}
         <a href="#" onclick="document.getElementById('mobile-nav-toggle').click(); return false;">
-            <i class="bi bi-list"></i>
-            <span>More</span>
+            <i class="bi bi-grid-3x3-gap-fill"></i><span>Menu</span>
         </a>
     </div>
 </nav>
@@ -202,32 +172,35 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Mobile sidebar toggle
+// Mobile sidebar drawer
 const toggle = document.getElementById('mobile-nav-toggle');
 const sidebar = document.getElementById('sidebar');
 const overlay = document.getElementById('mobile-overlay');
+function closeDrawer() {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+    toggle.innerHTML = '<i class="bi bi-list"></i>';
+}
 if (toggle && sidebar && overlay) {
     toggle.addEventListener('click', () => {
-        sidebar.classList.toggle('open');
-        overlay.classList.toggle('open');
-        toggle.innerHTML = sidebar.classList.contains('open') ? '<i class="bi bi-x-lg"></i>' : '<i class="bi bi-list"></i>';
+        const open = sidebar.classList.toggle('open');
+        overlay.classList.toggle('open', open);
+        toggle.innerHTML = open ? '<i class="bi bi-x-lg"></i>' : '<i class="bi bi-list"></i>';
     });
-    overlay.addEventListener('click', () => {
-        sidebar.classList.remove('open');
-        overlay.classList.remove('open');
-        toggle.innerHTML = '<i class="bi bi-list"></i>';
-    });
-    // Close sidebar on nav link click (mobile)
-    sidebar.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', () => {
-            if (window.innerWidth < 992) {
-                sidebar.classList.remove('open');
-                overlay.classList.remove('open');
-                toggle.innerHTML = '<i class="bi bi-list"></i>';
-            }
-        });
+    overlay.addEventListener('click', closeDrawer);
+    sidebar.querySelectorAll('a.nav-link, .nav-cta button').forEach(el => {
+        el.addEventListener('click', () => { if (window.innerWidth < 992) closeDrawer(); });
     });
 }
+
+// Success/info messages fade away on their own; errors stay until dismissed
+document.querySelectorAll('.flash-msg[data-autohide="1"]').forEach(el => {
+    setTimeout(() => { try { bootstrap.Alert.getOrCreateInstance(el).close(); } catch (e) {} }, 4500);
+});
+
+// Keep the active section tab in view on narrow screens
+const activeTab = document.querySelector('.section-tab.active');
+if (activeTab) activeTab.scrollIntoView({ block: 'nearest', inline: 'center' });
 
 // Auto-label table cells from headers (only for opt-in .mobile-stack tables)
 function autoLabelTables() {
@@ -247,6 +220,14 @@ function autoLabelTables() {
     });
 }
 autoLabelTables();
+
+// Rows/cards marked data-href open their detail page when clicked
+document.querySelectorAll('[data-href]').forEach(el => {
+    el.addEventListener('click', e => {
+        if (e.target.closest('a, button, input, select, form')) return;
+        window.location = el.dataset.href;
+    });
+});
 </script>
 {% block extra_js %}{% endblock %}
 </body>

@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>Buyer Accounts <small class="text-muted" style="font-size:0.5em;">advance / prepaid buyers only</small></h2>
-    <a href="{{ url_for('customers.list_customers') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-people"></i> All Customers</a>
+    <a href="{{ url_for('customers.new_advance') }}" class="btn btn-success btn-sm"><i class="bi bi-plus-lg"></i> Record advance</a>
 </div>
 
 <!-- Summary KPIs -->
@@ -64,7 +64,7 @@
                 </td>
             </tr>
             {% else %}
-            <tr><td colspan="7" class="text-center text-muted py-4">No buyer has paid an advance yet. Go to <a href="{{ url_for('customers.list_customers') }}">Customers</a> and use the wallet icon to record one.</td></tr>
+            <tr><td colspan="7" class="text-center text-muted py-4">No buyer has paid an advance yet. <a href="{{ url_for('customers.new_advance') }}">Record the first one</a>.</td></tr>
             {% endfor %}
             </tbody>
         </table>

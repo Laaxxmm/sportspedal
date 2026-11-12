@@ -143,6 +143,9 @@ def compute_dashboard_data(location_id=None):
     if location_id:
         bulk_q = bulk_q.filter_by(location_id=location_id)
     bulk_orders = bulk_q.all()
+    # Sales still waiting for money from the customer
+    unpaid_sales = [x for x in all_sales if (x.payment_status or 'paid') in ('pending', 'partial')]
+
     bulk_data = {
         'count': len(bulk_orders),
         'qty': sum(sum(i.quantity for i in s.items) for s in bulk_orders),
@@ -191,6 +194,8 @@ def compute_dashboard_data(location_id=None):
         'expense_total': ex_all,
         'expense_supplier_deducted': ex_sup,
         'bulk_data': bulk_data,
+        'unpaid_count': len(unpaid_sales),
+        'unpaid_total': sum(x.grand_total for x in unpaid_sales),
         'promo_data': promo_data,
         'damage_data': damage_data,
     }

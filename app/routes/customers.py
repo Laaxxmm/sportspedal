@@ -153,34 +153,63 @@ def account_detail(id):
                            bal=bal, payments=payments, events=events)
 
 
+def _save_customer_payment(customer, back_url):
+    """Create a CustomerPayment from the posted form. Returns a redirect response."""
+    amount = form_float(request.form, 'amount')
+    if amount <= 0:
+        flash('Enter an amount greater than zero.', 'danger')
+        return redirect(back_url)
+
+    payment = CustomerPayment(
+        customer_id=customer.id,
+        payment_date=form_date(request.form, 'payment_date'),
+        amount=amount,
+        payment_type=request.form.get('payment_type', 'advance'),
+        payment_mode=request.form.get('payment_mode', ''),
+        reference_number=request.form.get('reference_number', ''),
+        notes=request.form.get('notes', ''),
+        created_by=current_user.id,
+    )
+    db.session.add(payment)
+    db.session.commit()
+    flash(f'Recorded Rs.{payment.amount:,.2f} from {customer.name}.', 'success')
+    return redirect(url_for('customers.account_detail', id=customer.id))
+
+
 @bp.route('/<int:id>/payment', methods=['GET', 'POST'])
 @login_required
 @superadmin_required
 def record_payment(id):
     customer = Customer.query.get_or_404(id)
     if request.method == 'POST':
-        amount = form_float(request.form, 'amount')
-        if amount <= 0:
-            flash('Enter an amount greater than zero.', 'danger')
-            return redirect(url_for('customers.record_payment', id=customer.id))
-
-        payment = CustomerPayment(
-            customer_id=customer.id,
-            payment_date=form_date(request.form, 'payment_date'),
-            amount=amount,
-            payment_type=request.form.get('payment_type', 'advance'),
-            payment_mode=request.form.get('payment_mode', ''),
-            reference_number=request.form.get('reference_number', ''),
-            notes=request.form.get('notes', ''),
-            created_by=current_user.id,
-        )
-        db.session.add(payment)
-        db.session.commit()
-        flash(f'Recorded Rs.{payment.amount:,.2f} from {customer.name}.', 'success')
-        return redirect(url_for('customers.account_detail', id=customer.id))
+        return _save_customer_payment(customer, url_for('customers.record_payment', id=customer.id))
 
     bal = get_customer_balance(id)
     return render_template('customers/payment_form.html', customer=customer, bal=bal,
+                           today=date.today().isoformat())
+
+
+@bp.route('/advance/new', methods=['GET', 'POST'])
+@login_required
+@superadmin_required
+def new_advance():
+    """Record money received from any buyer - the dashboard quick action.
+
+    Same as the per-customer payment form, with the buyer picked from a list so
+    it can be reached without first finding the customer.
+    """
+    if request.method == 'POST':
+        customer = Customer.query.get(form_int(request.form, 'customer_id'))
+        if not customer:
+            flash('Select the buyer who paid.', 'danger')
+            return redirect(url_for('customers.new_advance'))
+        return _save_customer_payment(customer, url_for('customers.new_advance'))
+
+    from app.services.customer_account import customer_advance_map
+    customers = Customer.query.order_by(Customer.name).all()
+    return render_template('customers/payment_form.html', customer=None, bal=None,
+                           customers=customers, advance_map=customer_advance_map(),
+                           preselect=request.args.get('customer_id', type=int),
                            today=date.today().isoformat())
 
 
