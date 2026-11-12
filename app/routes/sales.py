@@ -407,6 +407,21 @@ def edit_sale(id):
                            suppliers=suppliers, advance_map=advance_map)
 
 
+@bp.route('/<int:id>/mark-paid', methods=['POST'])
+@login_required
+def mark_paid(id):
+    """One-tap 'customer has paid' from the dashboard's unpaid-sales list."""
+    sale = SaleOrder.query.get_or_404(id)
+    scope_sale(sale)
+    sale.payment_status = 'paid'
+    db.session.commit()
+    flash(f'{sale.invoice_number} marked as paid (Rs.{sale.grand_total:,.0f} from {sale.customer.name}).', 'success')
+    nxt = request.form.get('next') or ''
+    if not nxt.startswith('/') or nxt.startswith('//'):
+        nxt = url_for('sales.view_sale', id=sale.id)
+    return redirect(nxt)
+
+
 @bp.route('/<int:id>/delete', methods=['POST'])
 @login_required
 def delete_sale(id):

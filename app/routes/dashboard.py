@@ -103,6 +103,11 @@ def compute_dashboard_data(location_id=None):
     adv = customer_advance_map()
     buyer_advance_held = sum(v for v in adv.values() if v > 0)
     buyer_advance_due = sum(-v for v in adv.values() if v < 0)
+    # Who exactly has been billed beyond their advance, biggest first
+    owing_ids = {cid: -v for cid, v in adv.items() if v < 0}
+    buyers_owing = sorted(
+        ((c, owing_ids[c.id]) for c in Customer.query.filter(Customer.id.in_(owing_ids)).all()),
+        key=lambda t: t[1], reverse=True) if owing_ids else []
 
     # Customer discounts given (line-level + order-level)
     disc_sales = [s_ for s_ in all_sales if s_.total_customer_discount > 0]
@@ -196,6 +201,8 @@ def compute_dashboard_data(location_id=None):
         'bulk_data': bulk_data,
         'unpaid_count': len(unpaid_sales),
         'unpaid_total': sum(x.grand_total for x in unpaid_sales),
+        'unpaid_sales': sorted(unpaid_sales, key=lambda x: (x.sale_date or datetime.min.date(), x.id)),
+        'buyers_owing': buyers_owing,
         'promo_data': promo_data,
         'damage_data': damage_data,
     }

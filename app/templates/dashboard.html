@@ -42,57 +42,199 @@
 </section>
 {% endif %}
 
-<!-- 2. Needs attention -->
+<!-- 2. Needs attention - each chip opens the exact records behind it -->
 {% set show_supplier = current_user.has_permission('kpi_supplier_payable') and supplier_balance and supplier_balance.balance > 0 %}
+{% set can_buy = current_user.has_permission('edit_purchases') %}
 <section class="panel">
-    <h3 class="panel-title"><i class="bi bi-bell-fill" style="color:var(--tone-rose)"></i> Needs attention</h3>
-    {% if zero_stock or low_stock or show_supplier or unpaid_count or (su and buyer_advance_due > 0) %}
+    <h3 class="panel-title"><i class="bi bi-bell-fill" style="color:var(--tone-rose)"></i> Needs attention <span class="muted">Tap one to see exactly what</span></h3>
+    {% if zero_stock or low_stock or show_supplier or unpaid_count or (su and buyers_owing) %}
     <div class="attention">
         {% if zero_stock %}
-        <a class="attention-chip tone-rose" href="{{ url_for('inventory.view_inventory') }}">
+        <button type="button" class="attention-chip tone-rose" data-bs-toggle="offcanvas" data-bs-target="#att-soldout">
             <i class="bi bi-exclamation-octagon-fill"></i>
             <span><strong>{{ zero_stock|length }} sold out</strong>
-                <small>{{ zero_stock[:3]|map(attribute='product_name')|join(', ') }}{{ '...' if zero_stock|length > 3 }}</small></span>
+                <small>{{ zero_stock[:3]|map(attribute='product_name')|unique|join(', ') }}{{ '...' if zero_stock|length > 3 }}</small></span>
             <i class="bi bi-chevron-right"></i>
-        </a>
+        </button>
         {% endif %}
         {% if low_stock %}
-        <a class="attention-chip tone-amber" href="{{ url_for('inventory.view_inventory') }}">
+        <button type="button" class="attention-chip tone-amber" data-bs-toggle="offcanvas" data-bs-target="#att-low">
             <i class="bi bi-exclamation-triangle-fill"></i>
             <span><strong>{{ low_stock|length }} running low</strong>
                 <small>Fewer than 3 left</small></span>
             <i class="bi bi-chevron-right"></i>
-        </a>
+        </button>
         {% endif %}
         {% if unpaid_count %}
-        <a class="attention-chip tone-indigo" href="{{ url_for('sales.list_sales') }}">
+        <button type="button" class="attention-chip tone-indigo" data-bs-toggle="offcanvas" data-bs-target="#att-unpaid">
             <i class="bi bi-hourglass-split"></i>
             <span><strong>{{ unpaid_count }} unpaid sale{{ 's' if unpaid_count != 1 }}</strong>
                 <small>Rs.{{ "{:,.0f}".format(unpaid_total) }} to collect</small></span>
             <i class="bi bi-chevron-right"></i>
-        </a>
+        </button>
         {% endif %}
-        {% if su and buyer_advance_due > 0 %}
-        <a class="attention-chip tone-purple" href="{{ url_for('customers.accounts') }}">
+        {% if su and buyers_owing %}
+        <button type="button" class="attention-chip tone-purple" data-bs-toggle="offcanvas" data-bs-target="#att-buyers">
             <i class="bi bi-wallet2"></i>
-            <span><strong>Buyers owe Rs.{{ "{:,.0f}".format(buyer_advance_due) }}</strong>
+            <span><strong>{{ buyers_owing|length }} buyer{{ 's' if buyers_owing|length != 1 }} owe Rs.{{ "{:,.0f}".format(buyer_advance_due) }}</strong>
                 <small>Billed beyond their advance</small></span>
             <i class="bi bi-chevron-right"></i>
-        </a>
+        </button>
         {% endif %}
         {% if show_supplier %}
-        <a class="attention-chip tone-blue" href="{{ url_for('payments.new_payment') if su else url_for('dashboard.index') }}">
+        <button type="button" class="attention-chip tone-blue" data-bs-toggle="offcanvas" data-bs-target="#att-supplier">
             <i class="bi bi-bank"></i>
             <span><strong>Supplier due Rs.{{ "{:,.0f}".format(supplier_balance.balance) }}</strong>
-                <small>{{ 'Tap to record a payment' if su else 'Outstanding to supplier' }}</small></span>
+                <small>How it adds up{{ ' & pay' if su }}</small></span>
             <i class="bi bi-chevron-right"></i>
-        </a>
+        </button>
         {% endif %}
     </div>
     {% else %}
     <div class="attention-ok"><i class="bi bi-check-circle-fill"></i> All clear - nothing needs your attention.</div>
     {% endif %}
 </section>
+
+{# ---------- Detail panels ---------- #}
+{% macro stock_rows(items, mode) %}
+<ul class="att-list">
+    {% for item in items %}
+    <li class="att-item">
+        <span class="att-thumb">{% if item.image_url %}<img src="{{ item.image_url }}" alt="" loading="lazy">{% else %}<i class="bi bi-image"></i>{% endif %}</span>
+        <span class="att-main">
+            <strong>{{ item.product_name }}</strong>
+            <small>{{ [item.color, item.size]|reject('equalto', '-')|join(' / ') or 'Single variant' }} &middot; <code>{{ item.sku }}</code></small>
+        </span>
+        {% if mode == 'out' %}
+        <span class="att-side"><span class="badge bg-danger">Sold out</span><small>{{ item.outward }} sold</small></span>
+        {% else %}
+        <span class="att-side"><span class="badge bg-warning">{{ item.stock }} left</span><small>{{ item.outward }} sold</small></span>
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+{% endmacro %}
+
+{% if zero_stock %}
+<div class="offcanvas offcanvas-end att-panel" tabindex="-1" id="att-soldout" aria-labelledby="att-soldout-t">
+    <div class="offcanvas-header">
+        <div><h5 class="offcanvas-title" id="att-soldout-t"><i class="bi bi-exclamation-octagon-fill" style="color:var(--tone-rose)"></i> Sold out</h5>
+            <p class="att-sub">{{ zero_stock|length }} item{{ 's' if zero_stock|length != 1 }} you had before and have none of now.</p></div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">{{ stock_rows(zero_stock, 'out') }}</div>
+    <div class="att-foot">
+        {% if can_buy %}<a href="{{ url_for('purchases.new_purchase') }}" class="btn btn-primary"><i class="bi bi-box-arrow-in-down"></i> Record stock arrived</a>{% endif %}
+        <a href="{{ url_for('inventory.view_inventory') }}" class="btn btn-outline-secondary">All stock levels</a>
+    </div>
+</div>
+{% endif %}
+
+{% if low_stock %}
+<div class="offcanvas offcanvas-end att-panel" tabindex="-1" id="att-low" aria-labelledby="att-low-t">
+    <div class="offcanvas-header">
+        <div><h5 class="offcanvas-title" id="att-low-t"><i class="bi bi-exclamation-triangle-fill" style="color:var(--tone-amber)"></i> Running low</h5>
+            <p class="att-sub">Fewer than 3 left - reorder before they sell out.</p></div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">{{ stock_rows(low_stock|sort(attribute='stock'), 'low') }}</div>
+    <div class="att-foot">
+        {% if can_buy %}<a href="{{ url_for('purchases.new_purchase') }}" class="btn btn-primary"><i class="bi bi-box-arrow-in-down"></i> Record stock arrived</a>{% endif %}
+        <a href="{{ url_for('inventory.view_inventory') }}" class="btn btn-outline-secondary">All stock levels</a>
+    </div>
+</div>
+{% endif %}
+
+{% if unpaid_count %}
+<div class="offcanvas offcanvas-end att-panel" tabindex="-1" id="att-unpaid" aria-labelledby="att-unpaid-t">
+    <div class="offcanvas-header">
+        <div><h5 class="offcanvas-title" id="att-unpaid-t"><i class="bi bi-hourglass-split" style="color:var(--tone-indigo)"></i> Unpaid sales</h5>
+            <p class="att-sub">Rs.{{ "{:,.0f}".format(unpaid_total) }} to collect from {{ unpaid_count }} sale{{ 's' if unpaid_count != 1 }}, oldest first.</p></div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <ul class="att-list">
+            {% for sale in unpaid_sales %}
+            <li class="att-item">
+                <a class="att-main" href="{{ url_for('sales.view_sale', id=sale.id) }}">
+                    <strong>{{ sale.customer.name }}</strong>
+                    <small>{{ sale.invoice_number }} &middot; {{ sale.sale_date.strftime('%d %b %Y') if sale.sale_date else '' }}
+                        {% if sale.sale_date %}&middot; {{ (now.date() - sale.sale_date).days }} days ago{% endif %}</small>
+                </a>
+                <span class="att-side">
+                    <strong class="money">Rs.{{ "{:,.0f}".format(sale.grand_total) }}</strong>
+                    <span class="badge bg-{{ 'danger' if sale.payment_status == 'pending' else 'warning' }}">{{ sale.payment_status }}</span>
+                </span>
+                <form method="POST" action="{{ url_for('sales.mark_paid', id=sale.id) }}" class="att-act"
+                      onsubmit="return confirm('Mark {{ sale.invoice_number }} as fully paid?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="next" value="{{ url_for('dashboard.index', open='unpaid') }}">
+                    <button class="btn btn-sm btn-success"><i class="bi bi-check2"></i> Paid</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="att-foot">
+        <a href="{{ url_for('sales.list_sales') }}" class="btn btn-outline-secondary">All sales</a>
+    </div>
+</div>
+{% endif %}
+
+{% if su and buyers_owing %}
+<div class="offcanvas offcanvas-end att-panel" tabindex="-1" id="att-buyers" aria-labelledby="att-buyers-t">
+    <div class="offcanvas-header">
+        <div><h5 class="offcanvas-title" id="att-buyers-t"><i class="bi bi-wallet2" style="color:var(--tone-purple)"></i> Buyers who owe you</h5>
+            <p class="att-sub">Their orders have gone past the advance they paid.</p></div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <ul class="att-list">
+            {% for cust, owed in buyers_owing %}
+            <li class="att-item">
+                <a class="att-main" href="{{ url_for('customers.account_detail', id=cust.id) }}">
+                    <strong>{{ cust.name }}</strong>
+                    <small>{{ cust.customer_type|title }}{{ ' · ' ~ cust.phone if cust.phone }}</small>
+                </a>
+                <span class="att-side"><strong class="money" style="color:var(--tone-rose)">Rs.{{ "{:,.0f}".format(owed) }}</strong><small>owes</small></span>
+                <a class="btn btn-sm btn-success att-act" href="{{ url_for('customers.new_advance', customer_id=cust.id) }}"><i class="bi bi-plus"></i> Received</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="att-foot">
+        <a href="{{ url_for('customers.accounts') }}" class="btn btn-outline-secondary">All advances</a>
+    </div>
+</div>
+{% endif %}
+
+{% if show_supplier %}
+<div class="offcanvas offcanvas-end att-panel" tabindex="-1" id="att-supplier" aria-labelledby="att-supplier-t">
+    <div class="offcanvas-header">
+        <div><h5 class="offcanvas-title" id="att-supplier-t"><i class="bi bi-bank" style="color:var(--tone-blue)"></i> What you owe the supplier</h5>
+            <p class="att-sub">Everything that goes into the Net due figure.</p></div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="att-ledger">
+            <div class="fin-row"><span class="fin-label">Goods bought (incl GST)</span><span class="fin-value">Rs.{{ "{:,.0f}".format(supplier_balance.items_total) }}</span></div>
+            {% if supplier_balance.bulk_discount %}<div class="fin-row"><span class="fin-label">Purchase-order discounts</span><span class="fin-value" style="color:var(--tone-green)">-Rs.{{ "{:,.0f}".format(supplier_balance.bulk_discount) }}</span></div>{% endif %}
+            {% if supplier_balance.paid %}<div class="fin-row"><span class="fin-label">Payments you made</span><span class="fin-value" style="color:var(--tone-green)">-Rs.{{ "{:,.0f}".format(supplier_balance.paid) }}</span></div>{% endif %}
+            {% if supplier_balance.shipping_credit %}<div class="fin-row"><span class="fin-label">Transport the supplier pays</span><span class="fin-value" style="color:var(--tone-blue)">-Rs.{{ "{:,.0f}".format(supplier_balance.shipping_credit) }}</span></div>{% endif %}
+            {% if supplier_balance.adjustment_credit %}<div class="fin-row"><span class="fin-label">Give-away / damage credit</span><span class="fin-value" style="color:var(--tone-blue)">-Rs.{{ "{:,.0f}".format(supplier_balance.adjustment_credit) }}</span></div>{% endif %}
+            {% if supplier_balance.sale_discount %}<div class="fin-row"><span class="fin-label">Bulk sale discounts they bear</span><span class="fin-value" style="color:var(--tone-blue)">-Rs.{{ "{:,.0f}".format(supplier_balance.sale_discount) }}</span></div>{% endif %}
+            {% if supplier_balance.expense_credit %}<div class="fin-row"><span class="fin-label">Expenses charged to supplier</span><span class="fin-value" style="color:var(--tone-blue)">-Rs.{{ "{:,.0f}".format(supplier_balance.expense_credit) }}</span></div>{% endif %}
+            <div class="fin-row fin-total"><span class="fin-label">Net due</span><span class="fin-value" style="color:var(--tone-rose)">Rs.{{ "{:,.0f}".format(supplier_balance.balance) }}</span></div>
+        </div>
+    </div>
+    <div class="att-foot">
+        {% if su %}
+        <a href="{{ url_for('payments.new_payment') }}" class="btn btn-success"><i class="bi bi-cash-coin"></i> Record a payment</a>
+        <a href="{{ url_for('payments.list_payments') }}" class="btn btn-outline-secondary">Payment history</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
 
 <!-- 3. Money flow + supplier account -->
 <div class="row g-3 mb-4">
@@ -338,4 +480,18 @@
     {% endif %}
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Re-open a detail panel after an action on it (e.g. after marking a sale paid)
+(function () {
+    const want = new URLSearchParams(location.search).get('open');
+    const el = want && document.getElementById('att-' + want);
+    if (el) {
+        bootstrap.Offcanvas.getOrCreateInstance(el).show();
+        history.replaceState(null, '', location.pathname);
+    }
+})();
+</script>
 {% endblock %}

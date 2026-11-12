@@ -161,6 +161,7 @@
 
             <hr>
             <h5>Line Items</h5>
+            <div class="items-scroll">
             <table class="table table-sm" id="items-table">
                 <thead>
                     <tr>
@@ -194,7 +195,11 @@
                     </tr>
                 </tfoot>
             </table>
-            <button type="button" class="btn btn-outline-success mb-3" id="add-row"><i class="bi bi-plus-circle"></i> Add Item</button>
+            </div>
+            <div class="d-flex gap-2 flex-wrap mb-3">
+                <button type="button" class="btn btn-primary" id="pick-by-photo"><i class="bi bi-images"></i> Add item by photo</button>
+                <button type="button" class="btn btn-outline-success" id="add-row"><i class="bi bi-plus-circle"></i> Add item from list</button>
+            </div>
 
             <!-- Mobile-only Totals card -->
             <div class="mobile-totals">
@@ -258,6 +263,29 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" id="save-new-customer"><i class="bi bi-check-lg"></i> Add & Select</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Choose a product by photo -->
+<div class="modal fade" id="photoPicker" tabindex="-1" aria-labelledby="photoPickerLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-sm-down">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="photoPickerLabel"><i class="bi bi-images"></i> Choose a product</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="pp-toolbar">
+                <div class="pp-search">
+                    <i class="bi bi-search"></i>
+                    <input type="search" id="pp-search" class="form-control" placeholder="Search products..." autocomplete="off">
+                </div>
+                <div class="pp-cats" id="pp-cats"></div>
+            </div>
+            <div class="modal-body">
+                <div class="pp-grid" id="pp-grid"></div>
+                <div class="pp-empty d-none" id="pp-empty"><i class="bi bi-search"></i> No products match.</div>
             </div>
         </div>
     </div>
@@ -376,7 +404,13 @@ function getAvgPrice(category, custType) {
 
 function newRow() {
     return `<tr class="item-row">
-        <td data-label="Product"><select class="form-select form-select-sm product-select" required>${productOptions}</select></td>
+        <td data-label="Product">
+            <div class="prod-pick">
+                <button type="button" class="prod-thumb" title="Choose by photo"><i class="bi bi-image"></i></button>
+                <select class="form-select form-select-sm product-select" required>${productOptions}</select>
+                <button type="button" class="btn btn-sm btn-outline-primary pick-photo" title="Choose by photo"><i class="bi bi-grid-3x3-gap"></i></button>
+            </div>
+        </td>
         <td data-label="Color"><select class="form-select form-select-sm color-select"><option value="">-</option></select></td>
         <td data-label="Size"><select class="form-select form-select-sm size-select"><option value="">-</option></select></td>
         <td data-label="Stock" class="stock-cell">-</td>
@@ -405,6 +439,7 @@ function updateVariantSelection(row) {
     const size = row.querySelector('.size-select').value;
     const hiddenInput = row.querySelector('.variant-id-hidden');
     const stockCell = row.querySelector('.stock-cell');
+    setThumb(row, name);
 
     if (!name) {
         hiddenInput.value = '';
@@ -707,6 +742,124 @@ document.querySelectorAll('.opt-toggle').forEach(btn => {
 document.getElementById('package-info').classList.remove('d-none');
 
 bindEvents();
+
+// ---------- Choose product by photo ----------
+const productCards = productNames.map(name => {
+    const vs = products.filter(p => p.name === name);
+    return {
+        name: name,
+        category: vs[0].category,
+        image: (vs.find(v => v.image) || {}).image || '',
+        stock: vs.reduce((t, v) => t + (v.stock > 0 ? v.stock : 0), 0),
+        colors: [...new Set(vs.map(v => v.color).filter(Boolean))].length,
+        sample: vs[0],
+    };
+});
+let pickerRow = null;   // row being filled; null = add a new row
+let pickerCat = '';
+
+function thumbHTML(image, cls) {
+    return image ? `<img src="${image}" alt="" loading="lazy" class="${cls}">`
+                 : `<i class="bi bi-image"></i>`;
+}
+
+function setThumb(row, name) {
+    const box = row.querySelector('.prod-thumb');
+    if (!box) return;
+    const card = productCards.find(c => c.name === name);
+    box.innerHTML = card && card.image ? thumbHTML(card.image, '') : '<i class="bi bi-image"></i>';
+    box.classList.toggle('has-img', !!(card && card.image));
+}
+
+function renderPicker() {
+    const q = document.getElementById('pp-search').value.trim().toLowerCase();
+    const grid = document.getElementById('pp-grid');
+    const custType = getCustomerType();
+    const transportType = getTransportType();
+    grid.innerHTML = '';
+    let shown = 0;
+    productCards.forEach(c => {
+        if (pickerCat && c.category !== pickerCat) return;
+        if (q && !(c.name.toLowerCase().includes(q) || c.category.toLowerCase().includes(q))) return;
+        shown++;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'pp-card' + (c.stock <= 0 ? ' out' : '');
+        const img = document.createElement('span');
+        img.className = 'pp-img';
+        img.innerHTML = thumbHTML(c.image, '');
+        const nm = document.createElement('span');
+        nm.className = 'pp-name';
+        nm.textContent = c.name;
+        const meta = document.createElement('span');
+        meta.className = 'pp-meta';
+        meta.textContent = c.category + (c.colors ? ` · ${c.colors} colour${c.colors > 1 ? 's' : ''}` : '');
+        const foot = document.createElement('span');
+        foot.className = 'pp-foot';
+        const price = getPriceForVariant(c.sample, custType, transportType);
+        foot.innerHTML = `<span class="pp-price"></span><span class="pp-stock"></span>`;
+        foot.querySelector('.pp-price').textContent = 'Rs.' + Number(price || 0).toLocaleString('en-IN');
+        foot.querySelector('.pp-stock').textContent = c.stock > 0 ? `${c.stock} in stock` : 'Out of stock';
+        btn.append(img, nm, meta, foot);
+        btn.addEventListener('click', () => choosePicked(c.name));
+        grid.appendChild(btn);
+    });
+    document.getElementById('pp-empty').classList.toggle('d-none', shown > 0);
+}
+
+function renderCats() {
+    const box = document.getElementById('pp-cats');
+    const cats = [...new Set(productCards.map(c => c.category))];
+    box.innerHTML = '';
+    ['', ...cats].forEach(cat => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'pp-cat' + (cat === pickerCat ? ' active' : '');
+        b.textContent = cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : 'All';
+        b.addEventListener('click', () => { pickerCat = cat; renderCats(); renderPicker(); });
+        box.appendChild(b);
+    });
+}
+
+function openPicker(row) {
+    pickerRow = row;
+    document.getElementById('pp-search').value = '';
+    renderCats();
+    renderPicker();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('photoPicker')).show();
+}
+
+function choosePicked(name) {
+    let row = pickerRow;
+    if (!row) {
+        // reuse an empty line if there is one, otherwise add a new line
+        row = [...document.querySelectorAll('.item-row')].find(r => !r.querySelector('.product-select').value);
+        if (!row) {
+            document.getElementById('items-body').insertAdjacentHTML('beforeend', newRow());
+            bindEvents();
+            row = document.querySelector('.item-row:last-child');
+        }
+    }
+    const sel = row.querySelector('.product-select');
+    sel.value = name;
+    sel.dispatchEvent(new Event('change'));
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('photoPicker')).hide();
+    row.classList.add('row-flash');
+    setTimeout(() => row.classList.remove('row-flash'), 900);
+    const colorSel = row.querySelector('.color-select');
+    setTimeout(() => (colorSel && !colorSel.disabled ? colorSel : row.querySelector('.qty')).focus(), 350);
+}
+
+document.getElementById('pp-search').addEventListener('input', renderPicker);
+document.getElementById('photoPicker').addEventListener('shown.bs.modal', () => {
+    if (window.innerWidth >= 992) document.getElementById('pp-search').focus();
+});
+document.getElementById('pick-by-photo').addEventListener('click', () => openPicker(null));
+document.getElementById('items-body').addEventListener('click', e => {
+    const b = e.target.closest('.pick-photo, .prod-thumb');
+    if (b) openPicker(b.closest('.item-row'));
+});
+
 document.getElementById('add-row').click();
 
 // Quick Add Customer

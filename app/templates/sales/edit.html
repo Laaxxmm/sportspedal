@@ -152,12 +152,12 @@
                     {% for item in sale.items %}
                     <tr class="item-row">
                         <td>
-                            <select name="variant_id[]" class="form-select form-select-sm variant-select" required>
+                            <div class="prod-pick"><span class="prod-thumb"><i class="bi bi-image"></i></span><select name="variant_id[]" class="form-select form-select-sm variant-select" required>
                                 {% for v, p in variants %}
-                                <option value="{{ v.id }}" data-cost="{{ v.effective_cost }}" data-gst="{{ p.gst_percent }}"
+                                <option value="{{ v.id }}" data-cost="{{ v.effective_cost }}" data-gst="{{ p.gst_percent }}" data-image="{{ p.image_url or '' }}"
                                     {{ 'selected' if v.id == item.variant_id }}>{{ p.name }} - {{ v.color or '' }} {{ v.size or '' }} ({{ v.sku_code }})</option>
                                 {% endfor %}
-                            </select>
+                            </select></div>
                         </td>
                         <td><input type="number" name="qty[]" class="form-control form-control-sm qty" value="{{ item.quantity }}" min="1"></td>
                         <td><input type="number" name="unit_price[]" class="form-control form-control-sm unit-price" step="0.01" value="{{ item.unit_price }}"></td>
@@ -198,12 +198,12 @@
 {% block extra_js %}
 <script>
 const variantOptions = `<option value="">Select...</option>
-{% for v, p in variants %}<option value="{{ v.id }}" data-cost="{{ v.effective_cost }}" data-gst="{{ p.gst_percent }}">{{ p.name }} - {{ v.color or '' }} {{ v.size or '' }} ({{ v.sku_code }})</option>
+{% for v, p in variants %}<option value="{{ v.id }}" data-cost="{{ v.effective_cost }}" data-gst="{{ p.gst_percent }}" data-image="{{ p.image_url or '' }}">{{ p.name }} - {{ v.color or '' }} {{ v.size or '' }} ({{ v.sku_code }})</option>
 {% endfor %}`;
 
 function newRow() {
     return `<tr class="item-row">
-        <td><select name="variant_id[]" class="form-select form-select-sm variant-select" required>${variantOptions}</select></td>
+        <td><div class="prod-pick"><span class="prod-thumb"><i class="bi bi-image"></i></span><select name="variant_id[]" class="form-select form-select-sm variant-select" required>${variantOptions}</select></div></td>
         <td><input type="number" name="qty[]" class="form-control form-control-sm qty" value="1" min="1"></td>
         <td><input type="number" name="unit_price[]" class="form-control form-control-sm unit-price" step="0.01" value="0"></td>
         <td><input type="number" name="line_discount[]" class="form-control form-control-sm line-disc" step="0.01" min="0" value="0"></td>
@@ -288,8 +288,24 @@ function updateTransportUI() {
 document.getElementById('transport-borne-by').addEventListener('change', updateTransportUI);
 document.getElementById('transport-cost').addEventListener('input', updateTransportUI);
 document.getElementById('discount-amt').addEventListener('input', recalc);
+
+function syncThumbs() {
+    document.querySelectorAll('.item-row').forEach(row => {
+        const sel = row.querySelector('.variant-select');
+        const box = row.querySelector('.prod-thumb');
+        if (!sel || !box) return;
+        const opt = sel.selectedOptions[0];
+        const img = opt ? opt.dataset.image : '';
+        box.innerHTML = img ? `<img src="${img}" alt="" loading="lazy">` : '<i class="bi bi-image"></i>';
+        box.classList.toggle('has-img', !!img);
+    });
+}
+document.getElementById('items-body').addEventListener('change', e => {
+    if (e.target.classList.contains('variant-select')) syncThumbs();
+});
 bindEvents();
 updateTransportUI();
+syncThumbs();
 
 // Optional-section toggles
 document.querySelectorAll('.opt-toggle').forEach(btn => {
